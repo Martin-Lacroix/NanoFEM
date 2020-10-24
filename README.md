@@ -5,6 +5,7 @@
 ## Use
 
 ```css
+cd source
 g++ -O2 -I path-to-Alglib\src -L path-to-project\include\
 func.cpp elem.cpp mesh.cpp solver.cpp path-to-Alglib\src\*.cpp -o ..\test.exe
 ```
