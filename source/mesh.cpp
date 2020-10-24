@@ -1,0 +1,219 @@
+#include "..\include\mesh.h"
+using namespace std;
+
+// Builds the elements, shape functions and quadratures
+
+Mesh::Mesh(meshStruct mesh,bcStruct bc){
+
+    bcParam = bc;
+    meshParam = mesh;
+    int fLen = bcParam.fNode.size();
+    int eLen = meshParam.eNode.size();
+
+    eQuad = math::quadrature(3);
+    fQuad = math::quadrature(2);
+    eShape = shape(3);
+    fShape = shape(2);
+
+    // Stores the mesh elements into a vector
+
+    for(int i=0; i<eLen; i++){
+
+        vector<darray> eXYZ;
+        int nLen = mesh.eNode[i].length();
+        for(int j=0; j<nLen; j++){eXYZ.push_back(mesh.nXYZ[mesh.eNode[i][j]]);}
+        Elem elem(eXYZ,eShape);
+        eList.push_back(elem);
+    }
+
+    // Stores the mesh faces into a vector
+
+    for(int i=0; i<fLen; i++){
+
+        vector<darray> fXYZ;
+        int nLen = bc.fNode[i].length();
+        for(int j=0; j<nLen; j++){fXYZ.push_back(mesh.nXYZ[bc.fNode[i][j]]);}
+        Face face(fXYZ,fShape);
+        fList.push_back(face);
+    }
+}
+
+// Structure of linear shape functions
+
+shapeStruct Mesh::shape(int dim){
+
+    int nLen;
+    int gLen;
+    shapeStruct shape;
+    if(dim==3){gLen = eQuad.gRST.size();nLen = 8;}
+    if(dim==2){gLen = fQuad.gRST.size();nLen = 4;}
+    vector<vector<int>> n(nLen,vector<int>(dim));
+    shape.gLen = gLen;
+    shape.nLen = nLen;
+
+    // Memory allocation
+
+    shape.drN.setlength(nLen,gLen);
+    shape.dsN.setlength(nLen,gLen);
+    shape.dtN.setlength(nLen,gLen);
+    shape.N.setlength(nLen,gLen);
+
+    // 3D shape functions constructor
+
+    if(dim==3){
+
+        n[0] = {-1,-1,-1};
+        n[1] = {1,-1,-1};
+        n[2] = {1,1,-1};
+        n[3] = {-1,1,-1};
+        n[4] = {-1,-1,1};
+        n[5] = {1,-1,1};
+        n[6] = {1,1,1};
+        n[7] = {-1,1,1};
+
+        // Shape functions at Gauss points
+
+        for(int i=0; i<gLen; i++){
+
+            double r = eQuad.gRST[i][0];
+            double s = eQuad.gRST[i][1];
+            double t = eQuad.gRST[i][2];
+
+            for(int j=0; j<nLen; j++){
+
+                // Shape functions at Gauss points
+
+                shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
+                shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
+                shape.dsN(j,i) = n[j][1]*(1+n[j][0]*r)*(1+n[j][2]*t)/8;
+                shape.dtN(j,i) = n[j][2]*(1+n[j][0]*r)*(1+n[j][1]*s)/8;
+            }
+        }
+    }
+
+    // 2D shape functions constructor
+
+    if(dim==2){
+
+        n[0] = {-1,-1};
+        n[1] = {1,-1};
+        n[2] = {1,1};
+        n[3] = {-1,1};
+
+        // Shape functions at Gauss points
+
+        for(int i=0; i<gLen; i++){
+
+            double r = fQuad.gRST[i][0];
+            double s = fQuad.gRST[i][1];
+
+            for(int j=0; j<nLen; j++){
+
+                // Shape functions at Gauss points
+
+                shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)/4;
+                shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)/4;
+                shape.dsN(j,i) = n[j][1]*(1+n[j][0]*r)/4;
+            }
+        }
+    }
+    return shape;
+}
+
+// Computes the global stiffness matrix K
+
+sparse Mesh::localK(){
+
+    sparse K;
+    double eLen = eList.size();
+    double nLen = meshParam.nXYZ.size();
+    alglib::sparsecreate(3*nLen,3*nLen,K);
+
+    for(int i=0; i<eLen; i++){
+
+        int nbr = eList[i].nLen;
+        iarray eNode = meshParam.eNode[i];
+        matrix Ke = eList[i].localK(eQuad,meshParam.D);
+
+        // Inserts the submatrices into the global matrice
+
+        for(int j=0; j<nbr; j++){
+            for(int k=0; k<nbr; k++){
+                for(int m=0; m<3; m++){
+                    for(int n=0; n<3; n++){
+
+                        double val = Ke[j+m*nbr][k+n*nbr];
+                        alglib::sparseadd(K,eNode[j]+m*nLen,eNode[k]+n*nLen,val);
+                    }
+                }
+            }
+        }
+    }
+    math::clean(K);
+    return K;
+}
+
+// Builds the vector of Neumann boundary conditions
+
+darray Mesh::neumann(){
+
+    darray B;
+    double fLen = fList.size();
+    double nLen = meshParam.nXYZ.size();
+    B.setlength(3*nLen);
+    math::zero(B);
+
+    for(int i=0; i<fLen; i++){
+
+        int nbr = fList[i].nLen;
+        matrix N = fList[i].localN(fShape,fQuad);
+        darray Be = math::prod(1,N,bcParam.fVal[i]);
+
+        // Inserts the subvectors into the global vector
+
+        for(int j=0; j<nbr; j++){
+            for(int k=0; k<3; k++){
+                
+                double val = Be(j+k*nbr);
+                B(bcParam.fNode[i][j]+k*nLen) += val;
+            }
+        }
+    }
+    return B;
+}
+
+// Prepares the vector for Dirichlet BC
+
+void Mesh::dirichlet(darray &B){
+
+    int nLen = meshParam.nXYZ.size();
+    vector<iarray> nIdx = bcParam.nIdx;
+
+    for(int i=0; i<3; i++){
+        for(int j=0; j<nIdx[i].length(); j++){
+            B(bcParam.nIdx[i][j]+i*nLen) = bcParam.nVal[i][j];
+        }
+    }
+}
+
+// Prepares the matrix for Dirichlet BC
+
+void Mesh::dirichlet(sparse &K){
+
+    int nLen = meshParam.nXYZ.size();
+    vector<iarray> nIdx = bcParam.nIdx;
+
+    for(int i=0; i<3; i++){
+        for(int j=0; j<nIdx[i].length(); j++){
+
+            // Zeroes the row except the element in the diagonal
+
+            int row = bcParam.nIdx[i][j]+i*nLen;
+            alglib::sparseset(K,row,row,1);
+
+            for(int n=0; n<3*nLen; n++){
+                if(n!=row){alglib::sparseset(K,row,n,0);}
+            }
+        }
+    }
+}
