@@ -5,41 +5,47 @@ using namespace std;
 
 namespace math{
 
-    quadStruct quadrature(int dim){
+    quadStruct legendre(int dim,int order){
 
+        matrix M;
         quadStruct quad;
-        vector<double> weight;
+        int nbr = order+1;
         vector<darray> gRST;
-        vector<double> w = {5.0/9,5.0/9,8.0/9};
-        vector<double> g = {-sqrt(3.0/5),sqrt(3.0/5),0};
+        vector<double> weight;
+        darray Ja; Ja.setlength(nbr);
+        darray Jb; Jb.setlength(nbr-1);
 
-        if(dim==3){
+        // Generates the three term coefficients
+        
+        for(int i=1; i<nbr; i++){Jb(i-1) = i/sqrt(4*i*i-1);}
+        for(int i=0; i<nbr; i++){Ja(i) = 0;}
+        alglib::smatrixtdevd(Ja,Jb,nbr,3,M);
 
-            // Cube element quadrature rule
-                
-            for(int i=0; i<3; i++){
-                for(int j=0; j<3; j++){
-                    for(int k=0; k<3; k++){
-                        
-                        weight.push_back(w[i]*w[j]*w[k]);
-                        double v1[] = {g[i],g[j],g[k]};
-                        darray v2; v2.setcontent(3,v1);
+        // Cube element quadrature rule
+
+        if(dim==3){     
+            for(int i=0; i<nbr; i++){
+                for(int j=0; j<nbr; j++){
+                    for(int k=0; k<nbr; k++){
+
+                        double v1[] = {Ja(i),Ja(j),Ja(k)};
+                        weight.push_back(8*M(0,i)*M(0,i)*M(0,j)*M(0,j)*M(0,k)*M(0,k));
+                        darray v2; v2.setcontent(dim,v1);
                         gRST.push_back(v2);
                     }
                 }
             }
         }
 
+        // Square face quadrature rule
+
         if(dim==2){
+            for(int i=0; i<nbr; i++){
+                for(int j=0; j<nbr; j++){
 
-            // Square face quadrature rule
-
-            for(int i=0; i<3; i++){
-                for(int j=0; j<3; j++){
-                        
-                    double v1[] = {g[i],g[j]};
-                    weight.push_back(w[i]*w[j]);
-                    darray v2; v2.setcontent(2,v1);
+                    double v1[] = {Ja(i),Ja(j)};
+                    weight.push_back(4*M(0,i)*M(0,i)*M(0,j)*M(0,j));
+                    darray v2; v2.setcontent(dim,v1);
                     gRST.push_back(v2);
                 }
             }
@@ -48,6 +54,17 @@ namespace math{
         quad.weight = weight;
         quad.gRST = gRST;
         return quad;
+    }
+
+    // Non-local kernel density function
+
+    double kernel(darray x,darray y){
+
+        double d = 0.05;
+        double norm = 1/(8*d*d*d);
+        double dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2]);
+        double k = norm*exp(-dist/d);
+        return k;
     }
 
     // Converts a 3D square into 2D square
@@ -88,7 +105,7 @@ namespace math{
 
         for(int i=0; i<4; i++){
 
-            darray arr; arr.attach_to_ptr(2,xy[i]);
+            darray arr; arr.setcontent(2,xy[i]);
             nXY.push_back(arr);
         }
         return nXY;
@@ -175,7 +192,24 @@ namespace math{
         alglib::ae_int_t start;
 
         while(alglib::sparseenumerate(M,start,end,i,j,val)){
-            if(val*val<1e-25){alglib::sparserewriteexisting(M,i,j,0);}
+            if(val*val<1e-18){alglib::sparserewriteexisting(M,i,j,0);}
+        }
+    }
+
+    // Sparse matrix addition M2 = k1 M1 + k2 M2
+
+    void add(double k1,double k2,sparse &M1,sparse &M2){
+    
+        double val;
+        alglib::ae_int_t i,j;
+        alglib::ae_int_t end;
+        alglib::ae_int_t start;
+
+        while(alglib::sparseenumerate(M2,start,end,i,j,val)){
+            alglib::sparserewriteexisting(M2,i,j,k2*val);
+        }
+        while(alglib::sparseenumerate(M1,start,end,i,j,val)){
+            alglib::sparseadd(M2,i,j,k1*val);
         }
     }
 }

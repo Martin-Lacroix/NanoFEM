@@ -18,15 +18,16 @@ class Elem{
     public:
 
     Elem(std::vector<darray> nXYZ,shapeStruct shape);
-    matrix localK(quadStruct quad,matrix D);
+    matrix selfS(quadStruct quad,darray xyz);
+    matrix selfK(quadStruct quad,matrix D);
 
-    int nLen;
-    matrix N;
+    std::vector<darray> gXYZ;
     darray detJ;
     matrix dxN;
     matrix dyN;
     matrix dzN;
-    matrix gXYZ;
+    matrix N;
+    int nLen;
 };
 
 class Face{
@@ -34,12 +35,12 @@ class Face{
     public:
 
     Face(std::vector<darray> nXYZ,shapeStruct shape);
-    matrix localN(shapeStruct shape,quadStruct quad);
+    matrix selfN(shapeStruct shape,quadStruct quad);
 
-    int nLen;
     darray detJ;
     matrix dxN;
     matrix dyN;
+    int nLen;
 };
 
 #endif

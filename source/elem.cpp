@@ -50,9 +50,15 @@ Elem::Elem(vector<darray> nXYZ,shapeStruct shape){
         }
     }
 
-    gXYZ = math::prod(1,shape.N,coord,1);
+    matrix v1 = math::prod(1,shape.N,coord,1);
 
     for(int i=0; i<gLen; i++){
+
+        // Global coordinates of Gauss points
+
+        double v2[3] = {v1(i,0),v1(i,1),v1(i,2)};
+        darray v3; v3.setcontent(3,v2);
+        gXYZ.push_back(v3);
 
         // Determinant of the Jacobian matrix
 
@@ -85,13 +91,13 @@ Elem::Elem(vector<darray> nXYZ,shapeStruct shape){
 
 // Computes the elemental local stiffness matrix
 
-matrix Elem::localK(quadStruct quad,matrix D){
+matrix Elem::selfK(quadStruct quad,matrix D){
 
     matrix B;
     matrix K;
-    int gLen = quad.weight.size();
-    K.setlength(3*nLen,3*nLen);
     B.setlength(3*nLen,6);
+    K.setlength(3*nLen,3*nLen);
+    int gLen = quad.weight.size();
     math::zero(B);
     math::zero(K);
 
@@ -109,6 +115,30 @@ matrix Elem::localK(quadStruct quad,matrix D){
         math::add(1,1,K2,K);
     }
     return K;
+}
+
+// Computes the elemental local strain matrix
+
+matrix Elem::selfS(quadStruct quad,darray xyz){
+
+    matrix S;
+    S.setlength(6,3*nLen);
+    int gLen = quad.weight.size();
+    math::zero(S);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<gLen; i++){
+        double k = math::kernel(xyz,gXYZ[i])*quad.weight[i]*detJ[i];
+
+        for(int j=0; j<nLen; j++){
+
+            S(0,j) = S(3,j+nLen) = S(4,j+2*nLen) += k*dxN(j,i);
+            S(3,j) = S(1,j+nLen) = S(5,j+2*nLen) += k*dyN(j,i);
+            S(4,j) = S(5,j+nLen) = S(2,j+2*nLen) += k*dzN(j,i);
+        }   
+    }
+    return S;
 }
 
 // Class of square linear 2D element
@@ -167,7 +197,7 @@ Face::Face(vector<darray> nXYZ,shapeStruct shape){
 
 // Integrates the shape functions matrix
 
-matrix Face::localN(shapeStruct shape,quadStruct quad){
+matrix Face::selfN(shapeStruct shape,quadStruct quad){
 
     matrix N; N.setlength(3*nLen,3);
     int gLen = quad.weight.size();

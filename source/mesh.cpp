@@ -10,8 +10,8 @@ Mesh::Mesh(meshStruct mesh,bcStruct bc){
     int fLen = bcParam.fNode.size();
     int eLen = meshParam.eNode.size();
 
-    eQuad = math::quadrature(3);
-    fQuad = math::quadrature(2);
+    eQuad = math::legendre(3,mesh.order);
+    fQuad = math::legendre(2,mesh.order);
     eShape = shape(3);
     fShape = shape(2);
 
@@ -45,8 +45,8 @@ shapeStruct Mesh::shape(int dim){
     int nLen;
     int gLen;
     shapeStruct shape;
-    if(dim==3){gLen = eQuad.gRST.size();nLen = 8;}
-    if(dim==2){gLen = fQuad.gRST.size();nLen = 4;}
+    if(dim==3){gLen = eQuad.gRST.size(); nLen = 8;}
+    if(dim==2){gLen = fQuad.gRST.size(); nLen = 4;}
     vector<vector<int>> n(nLen,vector<int>(dim));
     shape.gLen = gLen;
     shape.nLen = nLen;
@@ -62,14 +62,8 @@ shapeStruct Mesh::shape(int dim){
 
     if(dim==3){
 
-        n[0] = {-1,-1,-1};
-        n[1] = {1,-1,-1};
-        n[2] = {1,1,-1};
-        n[3] = {-1,1,-1};
-        n[4] = {-1,-1,1};
-        n[5] = {1,-1,1};
-        n[6] = {1,1,1};
-        n[7] = {-1,1,1};
+        n[0] = {-1,-1,-1};n[1] = {1,-1,-1};n[2] = {1,1,-1};n[3] = {-1,1,-1};
+        n[4] = {-1,-1,1};n[5] = {1,-1,1};n[6] = {1,1,1};n[7] = {-1,1,1};
 
         // Shape functions at Gauss points
 
@@ -95,10 +89,8 @@ shapeStruct Mesh::shape(int dim){
 
     if(dim==2){
 
-        n[0] = {-1,-1};
-        n[1] = {1,-1};
-        n[2] = {1,1};
-        n[3] = {-1,1};
+        n[0] = {-1,-1};n[1] = {1,-1};
+        n[2] = {1,1};n[3] = {-1,1};
 
         // Shape functions at Gauss points
 
@@ -120,7 +112,7 @@ shapeStruct Mesh::shape(int dim){
     return shape;
 }
 
-// Computes the global stiffness matrix K
+// Computes the local stiffness matrix K
 
 sparse Mesh::localK(){
 
@@ -133,7 +125,7 @@ sparse Mesh::localK(){
 
         int nbr = eList[i].nLen;
         iarray eNode = meshParam.eNode[i];
-        matrix Ke = eList[i].localK(eQuad,meshParam.D);
+        matrix Ke = eList[i].selfK(eQuad,meshParam.D);
 
         // Inserts the submatrices into the global matrice
 
@@ -153,6 +145,96 @@ sparse Mesh::localK(){
     return K;
 }
 
+// Computes the non-local stiffness matrix K
+
+sparse Mesh::nonLocalK(){
+
+    sparse K;
+    double eLen = eList.size();
+    double nLen = meshParam.nXYZ.size();
+    alglib::sparsecreate(3*nLen,3*nLen,K);
+
+    for(int i=0; i<eLen; i++){
+
+        matrix K1 = elemK(i);
+        int nbr = eList[i].nLen;
+        iarray eNode = meshParam.eNode[i];
+
+        // Inserts the submatrices into the global matrice
+
+        for(int k=0; k<3*nLen; k++){
+            for(int j=0; j<nbr; j++){
+                for(int m=0; m<3; m++){
+
+                    double val = K1[j+m*nbr][k];
+                    if(abs(val)>1e-9){alglib::sparseadd(K,eNode[j]+m*nLen,k,val);}
+                }
+            }
+        }
+    }
+    math::clean(K);
+    return K;
+}
+
+// Evaluates the non-local S matrix at a point xyz
+
+matrix Mesh::totalS(darray xyz){
+
+    matrix S;
+    double eLen = eList.size();
+    double nLen = meshParam.nXYZ.size();
+    S.setlength(6,3*nLen);
+    math::zero(S);
+
+    for(int i=0; i<eLen; i++){
+
+        int nbr = eList[i].nLen;
+        iarray eNode = meshParam.eNode[i];
+        matrix S1 = eList[i].selfS(eQuad,xyz);
+
+        for(int j=0; j<6; j++){
+            for(int k=0; k<nbr; k++){
+                for(int n=0; n<3; n++){
+
+                    S(j,eNode[k]+n*nLen) += S1(j,k+n*nbr);
+                }
+            }
+        }
+    }
+    return S;
+}
+
+// Computes the elemental non-local stiffness matrix
+
+matrix Mesh::elemK(int idx){
+
+    matrix B;
+    matrix K;
+    Elem& elem = eList[idx];
+    double nLen = elem.nLen;
+    double gLen = eQuad.gRST.size();
+    K.setlength(3*nLen,3*meshParam.nXYZ.size());
+    B.setlength(3*nLen,6);
+    math::zero(B);
+    math::zero(K);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<gLen; i++){
+        for(int j=0; j<nLen; j++){
+            
+            B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = elem.dxN(j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = elem.dyN(j,i);
+            B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = elem.dzN(j,i);
+        }
+        matrix S = totalS(elem.gXYZ[i]);
+        matrix K1 = math::prod(eQuad.weight[i],B,meshParam.D);
+        matrix K2 = math::prod(elem.detJ[i],K1,S);
+        math::add(1,1,K2,K);
+    }
+    return K;
+}
+
 // Builds the vector of Neumann boundary conditions
 
 darray Mesh::neumann(){
@@ -166,15 +248,15 @@ darray Mesh::neumann(){
     for(int i=0; i<fLen; i++){
 
         int nbr = fList[i].nLen;
-        matrix N = fList[i].localN(fShape,fQuad);
-        darray Be = math::prod(1,N,bcParam.fVal[i]);
+        matrix N = fList[i].selfN(fShape,fQuad);
+        darray B1 = math::prod(1,N,bcParam.fVal[i]);
 
         // Inserts the subvectors into the global vector
 
         for(int j=0; j<nbr; j++){
             for(int k=0; k<3; k++){
                 
-                double val = Be(j+k*nbr);
+                double val = B1(j+k*nbr);
                 B(bcParam.fNode[i][j]+k*nLen) += val;
             }
         }

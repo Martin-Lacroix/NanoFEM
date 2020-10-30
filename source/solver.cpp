@@ -1,5 +1,8 @@
 #include "..\include\mesh.h"
 #include "solvers.h"
+#include <iostream>
+#include <fstream>
+#include <chrono> 
 using namespace std;
 
 meshStruct testMesh(){
@@ -58,6 +61,7 @@ meshStruct testMesh(){
     // Place the result in a struct
 
     param.D = D;
+    param.order = 9;
     param.nXYZ = nXYZ;
     param.eNode = eNode;
     return param;
@@ -102,21 +106,28 @@ bcStruct testBC(){
 
 // Solves the sparse linear system Ku = B
 
-darray solve(Mesh mesh){
-   
-    sparse K = mesh.localK();
-    darray B = mesh.neumann();
-    int nLen = B.length();
+darray solve(Mesh mesh,double p){
+
+    sparse K;
+    if(p==0){K = mesh.localK();}
+    else if(p==1){K = mesh.nonLocalK();}
+    else{
+
+        K = mesh.nonLocalK();
+        sparse KL = mesh.localK();
+        math::add(1-p,p,KL,K);
+    }
 
     // Applies boundary conditions
 
+    darray B = mesh.neumann();
+    int nLen = B.length();
     mesh.dirichlet(B);
     mesh.dirichlet(K);
 
     darray u; u.setlength(nLen);
     alglib::sparsesolverreport rep;
     alglib::sparsesolve(K,nLen,B,u,rep);
-
     return u;
 }
 
@@ -124,14 +135,62 @@ darray solve(Mesh mesh){
 
 int main(){
 
+    auto start = std::chrono::high_resolution_clock::now(); 
+
+
+    // -----------------------
+
+
+
+
+
     bcStruct bcParam = testBC();
     meshStruct meshParam = testMesh();
     Mesh mesh(meshParam,bcParam);
-    darray u = solve(mesh);
+    darray u = solve(mesh,1);
+    
 
 
+
+    // --------------------
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
     for(int i=0; i<u.length(); i++){cout << u[i] << "\n";}
-    cout << "\nDone\n" << endl;
+    cout << "\nDone --- " << duration.count()/1e6 << "sec\n" << endl;
+
+    // --------------------
+
+
+
+    sparse K1 = mesh.localK();
+    sparse K2 = mesh.nonLocalK();
+
+    ofstream textK1("K1.txt");
+    ofstream textK2("K2.txt");
+
+    int cols = alglib::sparsegetncols(K1);
+    int rows = alglib::sparsegetnrows(K1);
+
+    for (int i=0; i<rows; i++){
+        for (int j=0; j<cols; j++){
+            double val = alglib::sparseget(K1,i,j);
+            if(j==0){textK1 << val;}
+            else{textK1 << "," << val;}
+        }
+        textK1 << "\n";
+    }
+
+    for (int i=0; i<rows; i++){
+        for (int j=0; j<cols; j++){
+            double val = alglib::sparseget(K2,i,j);
+            if(j==0){textK2 << val;}
+            else{textK2 << "," << val;}
+        }
+        textK2 << "\n";
+    }
+
+    // ----------------------
 
 }
