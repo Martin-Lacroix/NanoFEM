@@ -195,7 +195,6 @@ matrix Mesh::totalS(darray xyz){
         for(int j=0; j<6; j++){
             for(int k=0; k<nbr; k++){
                 for(int n=0; n<3; n++){
-
                     S(j,eNode[k]+n*nLen) += S1(j,k+n*nbr);
                 }
             }
