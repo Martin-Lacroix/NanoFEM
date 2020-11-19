@@ -1,0 +1,2 @@
+mkdir build
+g++ -O2 -I C:\ProgramData\Alglib\src -L C:\Users\ORBBE\Desktop\Plugin\include\ source\func.cpp source\elem.cpp source\mesh.cpp source\solver.cpp C:\ProgramData\Alglib\src\*.cpp -o build\test.exe
