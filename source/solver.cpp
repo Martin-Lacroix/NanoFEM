@@ -1,6 +1,7 @@
 #include "..\include\mesh.h"
 #include <algorithm>
 #include "solvers.h"
+#include <direct.h>
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -30,13 +31,13 @@ matrix stiffness(double E,double v){
 
 // Reads the nascam output file
 
-void read(meshStruct &mesh, bcStruct &bc){
+void read(meshStruct &mesh, otherStruct &param){
 
     // ------------------------------
     // Needs to read the input file
 
-    mesh.order = 3;
-    mesh.D = stiffness(1,0.3);
+    param.order = 3;
+    param.D = stiffness(1,0.3);
 
     // ------------------------------
     // Needs to read the input file
@@ -63,7 +64,7 @@ void read(meshStruct &mesh, bcStruct &bc){
     int nbr;
     string input;
     ifstream fileMesh;
-    bc.dirichlet.resize(3);
+    param.dirichlet.resize(3);
     fileMesh.open("C:/Users/ORBBE/Desktop/TFE 2/Input/coating.xyz");
     fileMesh >> nbr;
 
@@ -110,32 +111,32 @@ void read(meshStruct &mesh, bcStruct &bc){
 
                 if(i==0){
                     for(int n=0; n<3; n++){
-                        if(x0Lock[n]){bc.dirichlet[0].push_back(idx);}
+                        if(x0Lock[n]){param.dirichlet[0].push_back(idx);}
                     }
                 }
                 if(i==nx){
                     for(int n=0; n<3; n++){
-                        if(x1Lock[n]){bc.dirichlet[0].push_back(idx);}
+                        if(x1Lock[n]){param.dirichlet[0].push_back(idx);}
                     }
                 }
                 if(j==0){
                     for(int n=0; n<3; n++){
-                        if(y0Lock[n]){bc.dirichlet[1].push_back(idx);}
+                        if(y0Lock[n]){param.dirichlet[1].push_back(idx);}
                     }
                 }
                 if(j==ny){
                     for(int n=0; n<3; n++){
-                        if(y1Lock[n]){bc.dirichlet[1].push_back(idx);}
+                        if(y1Lock[n]){param.dirichlet[1].push_back(idx);}
                     }
                 }
                 if(k==0){
                     for(int n=0; n<3; n++){
-                        if(z0Lock[n]){bc.dirichlet[2].push_back(idx);}
+                        if(z0Lock[n]){param.dirichlet[2].push_back(idx);}
                     }
                 }
                 if(k==nz){
                     for(int n=0; n<3; n++){
-                        if(z1Lock[n]){bc.dirichlet[2].push_back(idx);}
+                        if(z1Lock[n]){param.dirichlet[2].push_back(idx);}
                     }
                 }
             }
@@ -162,42 +163,42 @@ void read(meshStruct &mesh, bcStruct &bc){
                     alglib::ae_int_t node[4] = {a[0],a[3],b[3],b[0]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(x0BC);
+                    param.neumann.push_back(x0BC);
                 }
                 if(i==nx-1){
 
                     alglib::ae_int_t node[4] = {a[1],b[1],b[2],a[2]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(x1BC);
+                    param.neumann.push_back(x1BC);
                 }
                 if(j==0){
 
                     alglib::ae_int_t node[4] = {a[0],b[0],b[1],a[1]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(y0BC);
+                    param.neumann.push_back(y0BC);
                 }
                 if(j==ny-1){
 
                     alglib::ae_int_t node[4] = {a[3],a[2],b[2],b[3]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(y1BC);
+                    param.neumann.push_back(y1BC);
                 }
                 if(k==0){
                     
                     alglib::ae_int_t node[4] = {a[0],a[1],a[2],a[3]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(z0BC);
+                    param.neumann.push_back(z0BC);
                 }
                 if(k==nz-1){
                     
                     alglib::ae_int_t node[4] = {b[3],b[2],b[1],b[0]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
-                    bc.neumann.push_back(z1BC);
+                    param.neumann.push_back(z1BC);
                 }
             }
         }
@@ -273,7 +274,7 @@ int main(){
 
     // Reads the input files
 
-    bcStruct bcParam;
+    otherStruct bcParam;
     meshStruct meshParam;
     read(meshParam,bcParam);
 
@@ -296,17 +297,18 @@ int main(){
 
     // Writes the results in a file
 
+    mkdir("build");
     start = chrono::high_resolution_clock::now();
     ofstream coordinates("build/coordinates.txt");
     ofstream displacement("build/displacement.txt");
 
     //for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
 
-    for(int i=0; i<mesh.meshParam.nXYZ.size(); i++){
+    for(int i=0; i<mesh.meshData.nXYZ.size(); i++){
 
-        coordinates << mesh.meshParam.nXYZ[i][0] << ",";
-        coordinates << mesh.meshParam.nXYZ[i][1] << ",";
-        coordinates << mesh.meshParam.nXYZ[i][2] << "\n";
+        coordinates << mesh.meshData.nXYZ[i][0] << ",";
+        coordinates << mesh.meshData.nXYZ[i][1] << ",";
+        coordinates << mesh.meshData.nXYZ[i][2] << "\n";
         for(int j=0; j<3; j++){displacement << u[3*i+j] << "\n";}
     }
 

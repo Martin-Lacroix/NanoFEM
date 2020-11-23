@@ -71,8 +71,8 @@ namespace math{
         darray v1; v1.setlength(3);
         darray v2; v2.setlength(3);
         darray v3; v3.setlength(3);
-        double n21 = 0;
-        double n31 = 0;
+        double n21=0, dot2=0;
+        double n31=0, dot3=0;
 
         for(int i=0; i<3; i++){
 
@@ -92,15 +92,18 @@ namespace math{
             
             n21 += v21[i]*v21[i];
             n31 += v31[i]*v31[i];
+            dot2 += v2[i]*v1[i];
+            dot3 += v3[i]*v1[i];
         }
 
-        double d[2] = {sqrt(n21/n[0]),sqrt(n31/n[0])};
-        double l[2] = {sqrt(abs(n[1]-n21/n[0])),sqrt(abs(n[2]-n31/n[0]))};
-        double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l[0],d[0]},{l[1],d[1]}};
+        double l2 = sqrt(abs(n[1]-n21/n[0]))*copysign(1,dot2);
+        double l3 = sqrt(abs(n[2]-n31/n[0]))*copysign(1,dot3);
+        double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
 
         for(int i=0; i<4; i++){
 
-            darray arr; arr.setcontent(2,xy[i]);
+            darray arr;
+            arr.setcontent(2,xy[i]);
             nXY.push_back(arr);
         }
         return nXY;
@@ -197,9 +200,10 @@ namespace math{
     void add(double k1,double k2,sparse &M1,sparse &M2){
     
         double val;
-        alglib::ae_int_t i,j;
-        alglib::ae_int_t end;
-        alglib::ae_int_t start;
+        alglib::ae_int_t i=0;
+        alglib::ae_int_t j=0;
+        alglib::ae_int_t end=0;
+        alglib::ae_int_t start=0;
 
         while(alglib::sparseenumerate(M2,start,end,i,j,val)){
             alglib::sparserewriteexisting(M2,i,j,k2*val);

@@ -3,15 +3,15 @@ using namespace std;
 
 // Builds the elements, shape functions and quadratures
 
-Mesh::Mesh(meshStruct mesh,bcStruct bc){
+Mesh::Mesh(meshStruct mesh,otherStruct param){
+    
+    meshData = mesh;
+    otherData = param;
+    int fLen = mesh.fNode.size();
+    int eLen = mesh.eNode.size();
 
-    bcParam = bc;
-    meshParam = mesh;
-    int fLen = meshParam.fNode.size();
-    int eLen = meshParam.eNode.size();
-
-    eQuad = math::legendre(3,mesh.order);
-    fQuad = math::legendre(2,mesh.order);
+    eQuad = math::legendre(3,param.order);
+    fQuad = math::legendre(2,param.order);
     eShape = shape(3);
     fShape = shape(2);
 
@@ -31,8 +31,8 @@ Mesh::Mesh(meshStruct mesh,bcStruct bc){
     for(int i=0; i<fLen; i++){
 
         vector<darray> fXYZ;
-        int nLen = meshParam.fNode[i].length();
-        for(int j=0; j<nLen; j++){fXYZ.push_back(mesh.nXYZ[meshParam.fNode[i][j]]);}
+        int nLen = mesh.fNode[i].length();
+        for(int j=0; j<nLen; j++){fXYZ.push_back(mesh.nXYZ[mesh.fNode[i][j]]);}
         Face face(fXYZ,fShape);
         fList.push_back(face);
     }
@@ -118,14 +118,14 @@ sparse Mesh::localK(){
 
     sparse K;
     double eLen = eList.size();
-    double nLen = meshParam.nXYZ.size();
+    double nLen = meshData.nXYZ.size();
     alglib::sparsecreate(3*nLen,3*nLen,K);
 
     for(int i=0; i<eLen; i++){
 
         int nbr = eList[i].nLen;
-        iarray eNode = meshParam.eNode[i];
-        matrix K1 = eList[i].selfK(eQuad,meshParam.D);
+        iarray eNode = meshData.eNode[i];
+        matrix K1 = eList[i].selfK(eQuad,otherData.D);
 
         // Inserts the submatrices into the global matrice
 
@@ -150,14 +150,14 @@ sparse Mesh::nonLocalK(){
 
     sparse K;
     double eLen = eList.size();
-    double nLen = meshParam.nXYZ.size();
+    double nLen = meshData.nXYZ.size();
     alglib::sparsecreate(3*nLen,3*nLen,K);
 
     for(int i=0; i<eLen; i++){
 
         matrix K1 = elemK(i);
         int nbr = eList[i].nLen;
-        iarray eNode = meshParam.eNode[i];
+        iarray eNode = meshData.eNode[i];
 
         // Inserts the submatrices into the global matrice
 
@@ -180,7 +180,7 @@ matrix Mesh::totalS(darray xyz){
 
     matrix S;
     double eLen = eList.size();
-    double nLen = meshParam.nXYZ.size();
+    double nLen = meshData.nXYZ.size();
     S.setlength(6,3*nLen);
     math::zero(S);
 
@@ -192,7 +192,7 @@ matrix Mesh::totalS(darray xyz){
         for(int j=0; j<6; j++){
             for(int k=0; k<nbr; k++){
                 for(int n=0; n<3; n++){
-                    S(j,meshParam.eNode[i][k]+n*nLen) += S1(j,k+n*nbr);
+                    S(j,meshData.eNode[i][k]+n*nLen) += S1(j,k+n*nbr);
                 }
             }
         }
@@ -209,7 +209,7 @@ matrix Mesh::elemK(int idx){
     Elem& elem = eList[idx];
     double nLen = elem.nLen;
     double gLen = eQuad.gRST.size();
-    K.setlength(3*nLen,3*meshParam.nXYZ.size());
+    K.setlength(3*nLen,3*meshData.nXYZ.size());
     B.setlength(3*nLen,6);
     math::zero(B);
     math::zero(K);
@@ -224,7 +224,7 @@ matrix Mesh::elemK(int idx){
             B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = elem.dzN(j,i);
         }
         matrix S = totalS(elem.gXYZ[i]);
-        matrix K1 = math::prod(eQuad.weight[i],B,meshParam.D);
+        matrix K1 = math::prod(eQuad.weight[i],B,otherData.D);
         matrix K2 = math::prod(elem.detJ[i],K1,S);
         math::add(1,1,K2,K);
     }
@@ -237,7 +237,7 @@ darray Mesh::neumann(){
 
     darray B;
     double fLen = fList.size();
-    double nLen = meshParam.nXYZ.size();
+    double nLen = meshData.nXYZ.size();
     B.setlength(3*nLen);
     math::zero(B);
 
@@ -245,15 +245,15 @@ darray Mesh::neumann(){
 
         int nbr = fList[i].nLen;
         matrix N = fList[i].selfN(fShape,fQuad);
-        darray B1 = math::prod(1,N,bcParam.neumann[i]);
-        
+        darray B1 = math::prod(1,N,otherData.neumann[i]);
+
         // Inserts the subvectors into the global vector
 
         for(int j=0; j<nbr; j++){
             for(int k=0; k<3; k++){
                 
                 double val = B1(j+k*nbr);
-                B(meshParam.fNode[i][j]+k*nLen) += val;
+                B(meshData.fNode[i][j]+k*nLen) += val;
             }
         }
     }
@@ -264,8 +264,8 @@ darray Mesh::neumann(){
 
 void Mesh::dirichlet(darray &B){
 
-    int nLen = meshParam.nXYZ.size();
-    vector<vector<int>> dirichlet = bcParam.dirichlet;
+    int nLen = meshData.nXYZ.size();
+    vector<vector<int>> dirichlet = otherData.dirichlet;
 
     for(int i=0; i<3; i++){
         for(int j=0; j<dirichlet[i].size(); j++){
@@ -278,8 +278,8 @@ void Mesh::dirichlet(darray &B){
 
 void Mesh::dirichlet(sparse &K){
 
-    int nLen = meshParam.nXYZ.size();
-    vector<vector<int>> dirichlet = bcParam.dirichlet;
+    int nLen = meshData.nXYZ.size();
+    vector<vector<int>> dirichlet = otherData.dirichlet;
 
     for(int i=0; i<3; i++){
         for(int j=0; j<dirichlet[i].size(); j++){
