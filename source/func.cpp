@@ -10,8 +10,6 @@ namespace math{
         matrix M;
         quadStruct quad;
         int nbr = order+1;
-        vector<darray> gRST;
-        vector<double> weight;
         darray Ja; Ja.setlength(nbr);
         darray Jb; Jb.setlength(nbr-1);
 
@@ -29,9 +27,9 @@ namespace math{
                     for(int k=0; k<nbr; k++){
 
                         double v1[] = {Ja(i),Ja(j),Ja(k)};
-                        weight.push_back(8*M(0,i)*M(0,i)*M(0,j)*M(0,j)*M(0,k)*M(0,k));
+                        quad.weight.push_back(8*M(0,i)*M(0,i)*M(0,j)*M(0,j)*M(0,k)*M(0,k));
                         darray v2; v2.setcontent(dim,v1);
-                        gRST.push_back(v2);
+                        quad.gRST.push_back(v2);
                     }
                 }
             }
@@ -44,15 +42,12 @@ namespace math{
                 for(int j=0; j<nbr; j++){
 
                     double v1[] = {Ja(i),Ja(j)};
-                    weight.push_back(4*M(0,i)*M(0,i)*M(0,j)*M(0,j));
+                    quad.weight.push_back(4*M(0,i)*M(0,i)*M(0,j)*M(0,j));
                     darray v2; v2.setcontent(dim,v1);
-                    gRST.push_back(v2);
+                    quad.gRST.push_back(v2);
                 }
             }
         }
-
-        quad.weight = weight;
-        quad.gRST = gRST;
         return quad;
     }
 
@@ -101,7 +96,7 @@ namespace math{
 
         double d[2] = {sqrt(n21/n[0]),sqrt(n31/n[0])};
         double l[2] = {sqrt(n[1]-n21/n[0]),sqrt(n[2]-n31/n[0])};
-        double xy[4][2] {{0,0},{sqrt(n[0]),0},{l[0],d[0]},{l[1],d[1]}};
+        double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l[0],d[0]},{l[1],d[1]}};
 
         for(int i=0; i<4; i++){
 
@@ -187,12 +182,13 @@ namespace math{
     void clean(sparse &M){
     
         double val;
-        alglib::ae_int_t i,j;
-        alglib::ae_int_t end;
-        alglib::ae_int_t start;
+        alglib::ae_int_t i=0;
+        alglib::ae_int_t j=0;
+        alglib::ae_int_t end=0;
+        alglib::ae_int_t start=0;
 
         while(alglib::sparseenumerate(M,start,end,i,j,val)){
-            if(val*val<1e-18){alglib::sparserewriteexisting(M,i,j,0);}
+            if(abs(val)<1e-9){alglib::sparseset(M,i,j,0);}
         }
     }
 

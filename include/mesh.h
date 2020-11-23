@@ -4,30 +4,29 @@
 
 struct meshStruct{
 
+    // Quadrature order
     // Nodes indices of each element [m,8]
+    // Nodes indices of each face [m,4]
     // Node coordinates int [n,3]
     // Stiffness tensor [6,6]
-    // Quadrature order
 
-    std::vector<iarray> eNode;
-    std::vector<darray> nXYZ;
     int order;
+    std::vector<darray> nXYZ;
+    std::vector<iarray> eNode;
+    std::vector<iarray> fNode;
     matrix D;
 };
 
 struct bcStruct{
 
-    // Values of Neumann BC [n,3]
-    // Face-node indices int [n,4]
+    // Values of the applied stress on the faces
 
-    std::vector<darray> fVal;
-    std::vector<iarray> fNode;
+    std::vector<darray> neumann;
 
-    // Values of Dirichlet BC [3,m]
-    // Node indices int [3,m]
+    // Dimension first and and node index second
 
-    std::vector<darray> nVal;
-    std::vector<iarray> nIdx;
+    std::vector<std::vector<int>> dirichlet;
+    
 };
 
 class Mesh{

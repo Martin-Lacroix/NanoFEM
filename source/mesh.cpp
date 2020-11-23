@@ -7,7 +7,7 @@ Mesh::Mesh(meshStruct mesh,bcStruct bc){
 
     bcParam = bc;
     meshParam = mesh;
-    int fLen = bcParam.fNode.size();
+    int fLen = meshParam.fNode.size();
     int eLen = meshParam.eNode.size();
 
     eQuad = math::legendre(3,mesh.order);
@@ -31,8 +31,8 @@ Mesh::Mesh(meshStruct mesh,bcStruct bc){
     for(int i=0; i<fLen; i++){
 
         vector<darray> fXYZ;
-        int nLen = bc.fNode[i].length();
-        for(int j=0; j<nLen; j++){fXYZ.push_back(mesh.nXYZ[bc.fNode[i][j]]);}
+        int nLen = meshParam.fNode[i].length();
+        for(int j=0; j<nLen; j++){fXYZ.push_back(mesh.nXYZ[meshParam.fNode[i][j]]);}
         Face face(fXYZ,fShape);
         fList.push_back(face);
     }
@@ -62,8 +62,8 @@ shapeStruct Mesh::shape(int dim){
 
     if(dim==3){
 
-        n[0] = {-1,-1,-1};n[1] = {1,-1,-1};n[2] = {1,1,-1};n[3] = {-1,1,-1};
-        n[4] = {-1,-1,1};n[5] = {1,-1,1};n[6] = {1,1,1};n[7] = {-1,1,1};
+        n[0]={-1,-1,-1}; n[1]={1,-1,-1}; n[2]={1,1,-1}; n[3]={-1,1,-1};
+        n[4]={-1,-1,1}; n[5]={1,-1,1}; n[6]={1,1,1}; n[7]={-1,1,1};
 
         // Shape functions at Gauss points
 
@@ -89,8 +89,8 @@ shapeStruct Mesh::shape(int dim){
 
     if(dim==2){
 
-        n[0] = {-1,-1};n[1] = {1,-1};
-        n[2] = {1,1};n[3] = {-1,1};
+        n[0]={-1,-1}; n[1]={1,-1};
+        n[2]={1,1}; n[3]={-1,1};
 
         // Shape functions at Gauss points
 
@@ -125,7 +125,7 @@ sparse Mesh::localK(){
 
         int nbr = eList[i].nLen;
         iarray eNode = meshParam.eNode[i];
-        matrix Ke = eList[i].selfK(eQuad,meshParam.D);
+        matrix K1 = eList[i].selfK(eQuad,meshParam.D);
 
         // Inserts the submatrices into the global matrice
 
@@ -134,14 +134,13 @@ sparse Mesh::localK(){
                 for(int m=0; m<3; m++){
                     for(int n=0; n<3; n++){
 
-                        double val = Ke[j+m*nbr][k+n*nbr];
+                        double val = K1[j+m*nbr][k+n*nbr];
                         alglib::sparseadd(K,eNode[j]+m*nLen,eNode[k]+n*nLen,val);
                     }
                 }
             }
         }
     }
-    math::clean(K);
     return K;
 }
 
@@ -167,12 +166,11 @@ sparse Mesh::nonLocalK(){
                 for(int m=0; m<3; m++){
 
                     double val = K1[j+m*nbr][k];
-                    if(abs(val)>1e-9){alglib::sparseadd(K,eNode[j]+m*nLen,k,val);}
+                    alglib::sparseadd(K,eNode[j]+m*nLen,k,val);
                 }
             }
         }
     }
-    math::clean(K);
     return K;
 }
 
@@ -189,13 +187,12 @@ matrix Mesh::totalS(darray xyz){
     for(int i=0; i<eLen; i++){
 
         int nbr = eList[i].nLen;
-        iarray eNode = meshParam.eNode[i];
         matrix S1 = eList[i].selfS(eQuad,xyz);
 
         for(int j=0; j<6; j++){
             for(int k=0; k<nbr; k++){
                 for(int n=0; n<3; n++){
-                    S(j,eNode[k]+n*nLen) += S1(j,k+n*nbr);
+                    S(j,meshParam.eNode[i][k]+n*nLen) += S1(j,k+n*nbr);
                 }
             }
         }
@@ -248,7 +245,7 @@ darray Mesh::neumann(){
 
         int nbr = fList[i].nLen;
         matrix N = fList[i].selfN(fShape,fQuad);
-        darray B1 = math::prod(1,N,bcParam.fVal[i]);
+        darray B1 = math::prod(1,N,bcParam.neumann[i]);
 
         // Inserts the subvectors into the global vector
 
@@ -256,7 +253,7 @@ darray Mesh::neumann(){
             for(int k=0; k<3; k++){
                 
                 double val = B1(j+k*nbr);
-                B(bcParam.fNode[i][j]+k*nLen) += val;
+                B(meshParam.fNode[i][j]+k*nLen) += val;
             }
         }
     }
@@ -268,11 +265,11 @@ darray Mesh::neumann(){
 void Mesh::dirichlet(darray &B){
 
     int nLen = meshParam.nXYZ.size();
-    vector<iarray> nIdx = bcParam.nIdx;
+    vector<vector<int>> dirichlet = bcParam.dirichlet;
 
     for(int i=0; i<3; i++){
-        for(int j=0; j<nIdx[i].length(); j++){
-            B(bcParam.nIdx[i][j]+i*nLen) = bcParam.nVal[i][j];
+        for(int j=0; j<dirichlet[i].size(); j++){
+            B(dirichlet[i][j]+i*nLen) = 0;
         }
     }
 }
@@ -282,14 +279,14 @@ void Mesh::dirichlet(darray &B){
 void Mesh::dirichlet(sparse &K){
 
     int nLen = meshParam.nXYZ.size();
-    vector<iarray> nIdx = bcParam.nIdx;
+    vector<vector<int>> dirichlet = bcParam.dirichlet;
 
     for(int i=0; i<3; i++){
-        for(int j=0; j<nIdx[i].length(); j++){
+        for(int j=0; j<dirichlet[i].size(); j++){
 
             // Zeroes the row except the element in the diagonal
 
-            int row = bcParam.nIdx[i][j]+i*nLen;
+            int row = dirichlet[i][j]+i*nLen;
             alglib::sparseset(K,row,row,1);
 
             for(int n=0; n<3*nLen; n++){
