@@ -73,7 +73,7 @@ void read(meshStruct &mesh, bcStruct &bc){
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
     //darray domain(input.c_str());
-    darray domain = "[1,1,0.5]";
+    darray domain = "[20,20,20]";
 
     // Reads the origin of the domain
 
@@ -89,7 +89,7 @@ void read(meshStruct &mesh, bcStruct &bc){
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
     //darray elem(input.c_str());
-    darray elem = "[0.5,0.5,0.5]";
+    darray elem = "[1,1,1]";
 
     // Builds the mesh elements and nodes
 
@@ -207,7 +207,7 @@ void read(meshStruct &mesh, bcStruct &bc){
     }
 }
 
-// Solves the sparse linear system Ku = B
+// Solves the sparse symmetric linear system Ku = B
 
 darray solve(Mesh mesh,double p){
 
@@ -232,7 +232,7 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBuilding K --- " << time.count()/1e6 << " sec";
+    cout << "\nBuilding matrix --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
     // Applying boundary conditions
@@ -245,22 +245,37 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nApplying BC --- " << time.count()/1e6 << " sec";
+    cout << "\nApplying boundary --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
-    // Solves the linear system
+    /*
+    ofstream textK("build/K.txt");
+    int cols = alglib::sparsegetncols(K);
+    int rows = alglib::sparsegetnrows(K);
+
+    for (int i=0; i<rows; i++){
+        for (int j=0; j<cols; j++){
+            double val = alglib::sparseget(K,i,j);
+            if(j==0){textK << val;}
+            else{textK << "," << val;}
+        }
+        textK << "\n";
+    }
+    */
+
+    // Solves the symmetric linear system
 
     darray u;
     u.setlength(nLen);
-    alglib::linlsqrreport rep;
-    alglib::linlsqrstate state;
-    alglib::linlsqrcreate(nLen,nLen,state);
-    linlsqrsolvesparse(state,K,B);
-    linlsqrresults(state,u,rep);
-
+    alglib::lincgreport rep;
+    alglib::lincgstate state;
+    alglib::lincgcreate(nLen,state);
+    alglib::lincgsolvesparse(state,K,1,B);
+    alglib::lincgresults(state,u,rep);
+    
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nSolving System --- " << time.count()/1e6 << " sec\n\n";
+    cout << "\nSolving system --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
     return u;
 }
@@ -282,7 +297,7 @@ int main(){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nReading File --- " << time.count()/1e6 << " sec";
+    cout << "\nReading files --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
     // Creates the mesh object
@@ -291,11 +306,19 @@ int main(){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nCreating Mesh --- " << time.count()/1e6 << " sec";
+    cout << "\nCreating mesh --- " << time.count()/1e6 << " sec";
 
-    // Solves the linear system
+    // Solves the symmetric linear system
 
     darray u = solve(mesh,0);
-    ofstream displacment("build/displacment.txt");
-    for (int i=0; i<u.length(); i++){displacment << u[i] << "\n";}
+
+    // Writes the results in a file
+
+    start = chrono::high_resolution_clock::now();
+    ofstream displacement("build/displacement.txt");
+    for (int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
+
+    stop = chrono::high_resolution_clock::now();
+    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << "\nWriting results --- " << time.count()/1e6 << " sec\n\n";
 }

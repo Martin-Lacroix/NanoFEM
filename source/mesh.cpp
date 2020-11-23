@@ -286,11 +286,12 @@ void Mesh::dirichlet(sparse &K){
 
             // Zeroes the row except the element in the diagonal
 
-            int row = dirichlet[i][j]+i*nLen;
-            alglib::sparseset(K,row,row,1);
+            int idx = dirichlet[i][j]+i*nLen;
+            alglib::sparseset(K,idx,idx,1);
 
             for(int n=0; n<3*nLen; n++){
-                if(n!=row){alglib::sparseset(K,row,n,0);}
+                if(n!=idx){alglib::sparseset(K,idx,n,0);}
+                if(n!=idx){alglib::sparseset(K,n,idx,0);}
             }
         }
     }
