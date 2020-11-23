@@ -95,7 +95,7 @@ namespace math{
         }
 
         double d[2] = {sqrt(n21/n[0]),sqrt(n31/n[0])};
-        double l[2] = {sqrt(n[1]-n21/n[0]),sqrt(n[2]-n31/n[0])};
+        double l[2] = {sqrt(abs(n[1]-n21/n[0])),sqrt(abs(n[2]-n31/n[0]))};
         double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l[0],d[0]},{l[1],d[1]}};
 
         for(int i=0; i<4; i++){

@@ -72,24 +72,21 @@ void read(meshStruct &mesh, bcStruct &bc){
     for(int i=0; i<2; i++){getline(fileMesh,input,';');}
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
-    //darray domain(input.c_str());
-    darray domain = "[20,20,20]";
+    darray domain(input.c_str());
 
     // Reads the origin of the domain
 
     getline(fileMesh,input,';');
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(10)+"]";
-    //darray zero(input.c_str());
-    darray zero = "[0,0,0]";
+    darray zero(input.c_str());
 
     // Reads the size of an element
 
     getline(fileMesh,input,';');
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
-    //darray elem(input.c_str());
-    darray elem = "[1,1,1]";
+    darray elem(input.c_str());
 
     // Builds the mesh elements and nodes
 
@@ -162,7 +159,7 @@ void read(meshStruct &mesh, bcStruct &bc){
 
                 if(i==0){
 
-                    alglib::ae_int_t node[4] = {a[0],a[3],b[3],a[0]};
+                    alglib::ae_int_t node[4] = {a[0],a[3],b[3],b[0]};
                     iarray fNode; fNode.setcontent(4,node);
                     mesh.fNode.push_back(fNode);
                     bc.neumann.push_back(x0BC);
@@ -232,7 +229,7 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBuilding matrix --- " << time.count()/1e6 << " sec";
+    cout << "\nBuilds the matrix --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
     // Applying boundary conditions
@@ -245,24 +242,9 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nApplying boundary --- " << time.count()/1e6 << " sec";
+    cout << "\nBoundary conditions --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
-
-    /*
-    ofstream textK("build/K.txt");
-    int cols = alglib::sparsegetncols(K);
-    int rows = alglib::sparsegetnrows(K);
-
-    for (int i=0; i<rows; i++){
-        for (int j=0; j<cols; j++){
-            double val = alglib::sparseget(K,i,j);
-            if(j==0){textK << val;}
-            else{textK << "," << val;}
-        }
-        textK << "\n";
-    }
-    */
-
+    
     // Solves the symmetric linear system
 
     darray u;
@@ -272,10 +254,10 @@ darray solve(Mesh mesh,double p){
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
-    
+
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nSolving system --- " << time.count()/1e6 << " sec";
+    cout << "\nSolves the system --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
     return u;
 }
@@ -297,7 +279,7 @@ int main(){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nReading files --- " << time.count()/1e6 << " sec";
+    cout << "\nReads the files --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
     // Creates the mesh object
@@ -306,7 +288,7 @@ int main(){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nCreating mesh --- " << time.count()/1e6 << " sec";
+    cout << "\nCreates the mesh --- " << time.count()/1e6 << " sec";
 
     // Solves the symmetric linear system
 
@@ -315,10 +297,20 @@ int main(){
     // Writes the results in a file
 
     start = chrono::high_resolution_clock::now();
+    ofstream coordinates("build/coordinates.txt");
     ofstream displacement("build/displacement.txt");
-    for (int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
+
+    //for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
+
+    for(int i=0; i<mesh.meshParam.nXYZ.size(); i++){
+
+        coordinates << mesh.meshParam.nXYZ[i][0] << ",";
+        coordinates << mesh.meshParam.nXYZ[i][1] << ",";
+        coordinates << mesh.meshParam.nXYZ[i][2] << "\n";
+        for(int j=0; j<3; j++){displacement << u[3*i+j] << "\n";}
+    }
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nWriting results --- " << time.count()/1e6 << " sec\n\n";
+    cout << "\nWrites the results --- " << time.count()/1e6 << " sec\n\n";
 }

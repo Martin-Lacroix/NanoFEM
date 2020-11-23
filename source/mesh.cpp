@@ -246,7 +246,7 @@ darray Mesh::neumann(){
         int nbr = fList[i].nLen;
         matrix N = fList[i].selfN(fShape,fQuad);
         darray B1 = math::prod(1,N,bcParam.neumann[i]);
-
+        
         // Inserts the subvectors into the global vector
 
         for(int j=0; j<nbr; j++){
