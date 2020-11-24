@@ -96,8 +96,8 @@ namespace math{
             dot3 += v3[i]*v1[i];
         }
 
-        double l2 = sqrt(abs(n[1]-n21/n[0]))*copysign(1,dot2);
-        double l3 = sqrt(abs(n[2]-n31/n[0]))*copysign(1,dot3);
+        double l2 = copysign(sqrt(abs(n[1]-n21/n[0])),dot2);
+        double l3 = copysign(sqrt(abs(n[2]-n31/n[0])),dot3);
         double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
 
         for(int i=0; i<4; i++){
