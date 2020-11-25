@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "linalg.h"
 #include "stdafx.h"
 #ifndef FUNC_H
@@ -18,7 +19,6 @@ namespace math{
 
     void zero(darray &V);
     void zero(matrix &M);
-    void clean(sparse &M);
     double kernel(darray x,darray y);
     darray cross(darray &V1,darray &V2);
     quadStruct legendre(int dim,int order);

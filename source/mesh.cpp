@@ -274,24 +274,41 @@ void Mesh::dirichlet(darray &B){
     }
 }
 
-// Prepares the matrix for Dirichlet BC
+// Cleans and prepares the matrix for Dirichlet BC
 
 void Mesh::dirichlet(sparse &K){
 
+    double val;
+    alglib::ae_int_t i=0;
+    alglib::ae_int_t j=0;
+    alglib::ae_int_t end=0;
+    alglib::ae_int_t start=0;
+
     int nLen = meshData.nXYZ.size();
-    vector<vector<int>> dirichlet = otherData.dirichlet;
+    vector<vector<int>> row(3*nLen);
+    vector<vector<int>> col(3*nLen);
 
-    for(int i=0; i<3; i++){
-        for(int j=0; j<dirichlet[i].size(); j++){
+    while(alglib::sparseenumerate(K,start,end,i,j,val)){
 
-            // Zeroes the row except the element in the diagonal
+        if(abs(val)<1e-9){alglib::sparseset(K,i,j,0);}
+        else{row[i].push_back(j);col[j].push_back(i);}
+    }
 
-            int idx = dirichlet[i][j]+i*nLen;
-            alglib::sparseset(K,idx,idx,1);
+    for(int n=0; n<3; n++){
+        int dLen = otherData.dirichlet[n].size();
 
-            for(int n=0; n<3*nLen; n++){
-                if(n!=idx){alglib::sparseset(K,idx,n,0);}
-                if(n!=idx){alglib::sparseset(K,n,idx,0);}
+        for(int m=0; m<dLen; m++){
+            int idx = otherData.dirichlet[n][m]+n*nLen;
+
+            for(int k=0; k<row[idx].size(); k++){
+
+                if(idx==row[idx][k]){alglib::sparseset(K,idx,row[idx][k],1);}
+                else{alglib::sparseset(K,idx,row[idx][k],0);}
+            }
+            for(int k=0; k<col[idx].size(); k++){
+                
+                if(col[idx][k]==idx){alglib::sparseset(K,col[idx][k],idx,1);}
+                else{alglib::sparseset(K,col[idx][k],idx,0);}
             }
         }
     }

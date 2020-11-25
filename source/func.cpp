@@ -180,21 +180,6 @@ namespace math{
         }
     }
 
-    // Removes quasi-zero elements from a sparse matrix
-
-    void clean(sparse &M){
-    
-        double val;
-        alglib::ae_int_t i=0;
-        alglib::ae_int_t j=0;
-        alglib::ae_int_t end=0;
-        alglib::ae_int_t start=0;
-
-        while(alglib::sparseenumerate(M,start,end,i,j,val)){
-            if(abs(val)<1e-9){alglib::sparseset(M,i,j,0);}
-        }
-    }
-
     // Sparse matrix addition M2 = k1 M1 + k2 M2
 
     void add(double k1,double k2,sparse &M1,sparse &M2){

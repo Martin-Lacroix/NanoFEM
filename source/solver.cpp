@@ -244,7 +244,7 @@ darray solve(Mesh mesh,double p){
 
     // Applying boundary conditions
 
-    mesh.dirichlet(K); math::clean(K);
+    mesh.dirichlet(K);
     darray B = mesh.neumann();
     sparseconverttocrs(K);
     int nLen = B.length();
@@ -311,14 +311,12 @@ int main(){
     ofstream coordinates("output/coordinates.txt");
     ofstream displacement("output/displacement.txt");
 
-    //for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
-
+    for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
     for(int i=0; i<Mesh.meshData.nXYZ.size(); i++){
 
         coordinates << Mesh.meshData.nXYZ[i][0] << ",";
         coordinates << Mesh.meshData.nXYZ[i][1] << ",";
         coordinates << Mesh.meshData.nXYZ[i][2] << "\n";
-        for(int j=0; j<3; j++){displacement << u[3*i+j] << "\n";}
     }
 
     stop = chrono::high_resolution_clock::now();
