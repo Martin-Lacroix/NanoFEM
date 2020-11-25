@@ -8,7 +8,7 @@
 #include <string>
 using namespace std;
 
-// generates a stiffness tensor
+// Generates the stiffness tensor
 
 matrix stiffness(double E,double v){
 
@@ -29,15 +29,28 @@ matrix stiffness(double E,double v){
     return D;
 }
 
-// Reads the nascam output file
+// Reads the Nascam generated mesh
 
 void read(meshStruct &mesh, otherStruct &param){
 
-    // ------------------------------
-    // Needs to read the input file
+    int nbr;
+    string input;
+    ifstream file1,file2;
+    file1.open("input.txt");
+    file2.open("input/coating.xyz");
+    param.dirichlet.resize(3);
+    file2 >> nbr;
 
-    param.order = 3;
-    param.D = stiffness(1,0.3);
+    // Reads the general parameters
+
+    getline(file1,input,';');
+    param.order = stoi(input);
+
+    getline(file1,input,';');
+    double E = stod(input);
+
+    getline(file1,input,' ');
+    double v = stod(input);
 
     // ------------------------------
     // Needs to read the input file
@@ -61,37 +74,33 @@ void read(meshStruct &mesh, otherStruct &param){
 
     // ------------------------------
 
-    int nbr;
-    string input;
-    ifstream fileMesh;
-    param.dirichlet.resize(3);
-    fileMesh.open("C:/Users/ORBBE/Desktop/TFE 2/Input/coating.xyz");
-    fileMesh >> nbr;
-
     // Reads the size of the domain
 
-    for(int i=0; i<2; i++){getline(fileMesh,input,';');}
+    for(int i=0; i<2; i++){getline(file2,input,';');}
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
     darray domain(input.c_str());
 
     // Reads the origin of the domain
 
-    getline(fileMesh,input,';');
+    getline(file2,input,';');
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(10)+"]";
     darray zero(input.c_str());
 
     // Reads the size of an element
 
-    getline(fileMesh,input,';');
+    getline(file2,input,';');
     replace(input.begin(),input.end(),':',',');
     input = "["+input.substr(8)+"]";
     darray elem(input.c_str());
 
     // Builds the mesh elements and nodes
 
-    fileMesh.close();
+    file1.close();
+    file2.close();
+
+    param.D = stiffness(E,v);
     int nx = 0.1+domain(0)/elem(0);
     int ny = 0.1+domain(1)/elem(1);
     int nz = 0.1+domain(2)/elem(2);
@@ -210,8 +219,8 @@ void read(meshStruct &mesh, otherStruct &param){
 darray solve(Mesh mesh,double p){
 
     sparse K;
-    auto start = chrono::high_resolution_clock::now();
     auto stop = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
     // Builds the system matrix
@@ -268,15 +277,15 @@ darray solve(Mesh mesh,double p){
 int main(){
 
     alglib::setglobalthreading(alglib::parallel);
-    auto start = chrono::high_resolution_clock::now();
     auto stop = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
     // Reads the input files
 
-    otherStruct bcParam;
-    meshStruct meshParam;
-    read(meshParam,bcParam);
+    meshStruct mesh;
+    otherStruct param;
+    read(mesh,param);
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -285,7 +294,7 @@ int main(){
 
     // Creates the mesh object
 
-    Mesh mesh(meshParam,bcParam);
+    Mesh Mesh(mesh,param);
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -293,22 +302,22 @@ int main(){
 
     // Solves the symmetric linear system
 
-    darray u = solve(mesh,0);
+    darray u = solve(Mesh,0);
 
     // Writes the results in a file
 
-    mkdir("build");
+    mkdir("output");
     start = chrono::high_resolution_clock::now();
-    ofstream coordinates("build/coordinates.txt");
-    ofstream displacement("build/displacement.txt");
+    ofstream coordinates("output/coordinates.txt");
+    ofstream displacement("output/displacement.txt");
 
     //for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
 
-    for(int i=0; i<mesh.meshData.nXYZ.size(); i++){
+    for(int i=0; i<Mesh.meshData.nXYZ.size(); i++){
 
-        coordinates << mesh.meshData.nXYZ[i][0] << ",";
-        coordinates << mesh.meshData.nXYZ[i][1] << ",";
-        coordinates << mesh.meshData.nXYZ[i][2] << "\n";
+        coordinates << Mesh.meshData.nXYZ[i][0] << ",";
+        coordinates << Mesh.meshData.nXYZ[i][1] << ",";
+        coordinates << Mesh.meshData.nXYZ[i][2] << "\n";
         for(int j=0; j<3; j++){displacement << u[3*i+j] << "\n";}
     }
 

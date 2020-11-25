@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<plugin name="Mechanics">
+	<info>
+		<version>1.0</version>
+		<executable>Mechanics.exe</executable>
+		<developer name="You" email="Your email"/>
+		<readme>readme.txt</readme>
+	</info>
+
+	<requiredFiles>
+		<file type="OUTPUT">
+			<name>deposited_layer.xyz</name>
+		</file>
+	</requiredFiles>
+	
+	<userInput>
+		<group name="General parameters">
+			<param type="INT">
+				<name>Quadrature order</name>
+				<default>1</default>
+				<unit>-</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Young modulus</name>
+				<default>1</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Poisson ratio</name>
+				<default>0.3</default>
+				<unit>-</unit>
+			</param>
+		</group>
+
+		<group name="Dirichlet boundary conditions">
+			<param type="STRING">
+				<name>Lock face [-x]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+			<param type="STRING">
+				<name>Lock face [+x]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+			<param type="STRING">
+				<name>Lock face [-y]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+			<param type="STRING">
+				<name>Lock face [+y]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+			<param type="STRING">
+				<name>Lock face [-z]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+			<param type="STRING">
+				<name>Lock face [+z]</name>
+				<default>none</default>
+				<unit>x,y,z</unit>
+			</param>
+		</group>
+
+		<group name="Neumann boundary conditions">
+			<param type="STRING">
+				<name>Stress at face [-x]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="STRING">
+				<name>Stress at face [+x]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="STRING">
+				<name>Stress at face [-y]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="STRING">
+				<name>Stress at face [+y]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="STRING">
+				<name>Stress at face [-z]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="STRING">
+				<name>Stress at face [+z]</name>
+				<default>[0,0,0]</default>
+				<unit>MPa</unit>
+			</param>
+		</group>
+	</userInput>
+	
+	<userOutput>
+		<displayJmol>true</displayJmol>
+		<displayGraph>true</displayGraph>
+		<displayLog>true</displayLog>
+	</userOutput>
+	
+</plugin>
