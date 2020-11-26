@@ -14,7 +14,7 @@ darray solve(Mesh mesh,double p){
     auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
-    // Builds the system matrix
+    // Builds the full system matrix
 
     if(p==0){
         K = mesh.localK();
@@ -33,7 +33,7 @@ darray solve(Mesh mesh,double p){
     cout << "\nBuilds the matrix --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
 
-    // Applying boundary conditions
+    // Applies boundary conditions
 
     mesh.dirichlet(K);
     darray B = mesh.neumann();
@@ -63,7 +63,7 @@ darray solve(Mesh mesh,double p){
     return u;
 }
 
-// Main code
+// Main code of the finite element solver
 
 int main(){
 
