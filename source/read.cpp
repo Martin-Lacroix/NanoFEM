@@ -25,7 +25,7 @@ matrix stiffness(double E,double v){
 
 // Reads the parameter input file
 
-readStruct readParam(otherStruct &param){
+readStruct readParam(paramStruct &param){
 
     string input;
     ifstream file;
@@ -74,7 +74,7 @@ readStruct readParam(otherStruct &param){
 
 // Reads all the Nascam input files
 
-void readAll(meshStruct &mesh, otherStruct &param){
+void readAll(meshStruct &mesh, paramStruct &param){
 
     readStruct bc = readParam(param);
 

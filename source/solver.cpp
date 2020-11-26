@@ -75,7 +75,7 @@ int main(){
     // Reads the input files
 
     meshStruct mesh;
-    otherStruct param;
+    paramStruct param;
     readAll(mesh,param);
 
     stop = chrono::high_resolution_clock::now();
@@ -103,11 +103,11 @@ int main(){
     ofstream displacement("output/displacement.txt");
 
     for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
-    for(int i=0; i<Mesh.meshData.nXYZ.size(); i++){
+    for(int i=0; i<Mesh.mesh.nXYZ.size(); i++){
 
-        coordinates << Mesh.meshData.nXYZ[i][0] << ",";
-        coordinates << Mesh.meshData.nXYZ[i][1] << ",";
-        coordinates << Mesh.meshData.nXYZ[i][2] << "\n";
+        coordinates << Mesh.mesh.nXYZ[i][0] << ",";
+        coordinates << Mesh.mesh.nXYZ[i][1] << ",";
+        coordinates << Mesh.mesh.nXYZ[i][2] << "\n";
     }
 
     stop = chrono::high_resolution_clock::now();

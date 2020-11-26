@@ -15,7 +15,7 @@ struct readStruct{
 };
 
 matrix stiffness(double E,double v);
-readStruct readParam(otherStruct &param);
-void readAll(meshStruct &mesh, otherStruct &param);
+readStruct readParam(paramStruct &param);
+void readAll(meshStruct &mesh, paramStruct &param);
 
 #endif

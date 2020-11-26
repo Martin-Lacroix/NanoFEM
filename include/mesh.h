@@ -13,7 +13,7 @@ struct meshStruct{
     std::vector<iarray> fNode;
 };
 
-struct otherStruct{
+struct paramStruct{
 
     // Stiffness tensor and quadrature order
     // Neumann = values of the applied stress on the faces
@@ -40,16 +40,19 @@ class Mesh{
     void dirichlet(darray &B);
     void dirichlet(sparse &K);
     shapeStruct shape(int dim);
-    Mesh(meshStruct mesh,otherStruct bc);
+    Mesh(meshStruct mesh,paramStruct param);
 
     // Internal variables of the FEM system
 
-    quadStruct eQuad;
-    quadStruct fQuad;
-    shapeStruct eShape;
-    shapeStruct fShape;
-    meshStruct meshData;
-    otherStruct otherData;
+    meshStruct mesh;
+    paramStruct param;
+    quadStruct quad3D;
+    quadStruct quad2D;
+    shapeStruct shape3D;
+    shapeStruct shape2D;
+
+    // List of elements and faces
+
     std::vector<Elem> eList;
     std::vector<Face> fList;
 };
