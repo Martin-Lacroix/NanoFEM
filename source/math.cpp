@@ -1,4 +1,4 @@
-#include "..\include\func.h"
+#include "..\include\math.h"
 using namespace std;
 
 // Quadrature rule generator (to be modified)

@@ -1,8 +1,8 @@
 #include <algorithm>
 #include "linalg.h"
 #include "stdafx.h"
-#ifndef FUNC_H
-#define FUNC_H
+#ifndef MATH_H
+#define MATH_H
 
 typedef alglib::sparsematrix sparse;
 typedef alglib::real_2d_array matrix;

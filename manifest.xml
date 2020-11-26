@@ -36,33 +36,33 @@
 		<group name="Dirichlet boundary conditions">
 			<param type="STRING">
 				<name>Lock face [-x]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 			<param type="STRING">
 				<name>Lock face [+x]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 			<param type="STRING">
 				<name>Lock face [-y]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 			<param type="STRING">
 				<name>Lock face [+y]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 			<param type="STRING">
 				<name>Lock face [-z]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 			<param type="STRING">
 				<name>Lock face [+z]</name>
-				<default>none</default>
-				<unit>x,y,z</unit>
+				<default>[0,0,0]</default>
+				<unit>bool</unit>
 			</param>
 		</group>
 
