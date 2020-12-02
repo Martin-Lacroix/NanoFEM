@@ -17,85 +17,52 @@
 	<userInput>
 		<group name="General parameters">
 			<param type="INT">
-				<name>Quadrature order</name>
+				<name>Quadrature Order</name>
 				<default>1</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Young modulus</name>
+				<name>Young Modulus</name>
 				<default>1</default>
 				<unit>MPa</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Poisson ratio</name>
+				<name>Poisson Ratio</name>
 				<default>0.3</default>
 				<unit>-</unit>
 			</param>
 		</group>
 
 		<group name="Dirichlet boundary conditions">
-			<param type="STRING">
-				<name>Lock face [-x]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
+			<param type="DOUBLE">
+				<name>Ux Face [-x]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
-			<param type="STRING">
-				<name>Lock face [+x]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
+			<param type="DOUBLE">
+				<name>Ux Face [+x]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
-			<param type="STRING">
-				<name>Lock face [-y]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
+			<param type="DOUBLE">
+				<name>Uy Face [-y]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
-			<param type="STRING">
-				<name>Lock face [+y]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
+			<param type="DOUBLE">
+				<name>Uy Face [+y]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
-			<param type="STRING">
-				<name>Lock face [-z]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
+			<param type="DOUBLE">
+				<name>Uz Face [-z]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
-			<param type="STRING">
-				<name>Lock face [+z]</name>
-				<default>[0,0,0]</default>
-				<unit>bool</unit>
-			</param>
-		</group>
-
-		<group name="Neumann boundary conditions">
-			<param type="STRING">
-				<name>Stress at face [-x]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
-			</param>
-			<param type="STRING">
-				<name>Stress at face [+x]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
-			</param>
-			<param type="STRING">
-				<name>Stress at face [-y]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
-			</param>
-			<param type="STRING">
-				<name>Stress at face [+y]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
-			</param>
-			<param type="STRING">
-				<name>Stress at face [-z]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
-			</param>
-			<param type="STRING">
-				<name>Stress at face [+z]</name>
-				<default>[0,0,0]</default>
-				<unit>MPa</unit>
+			<param type="DOUBLE">
+				<name>Uz Face [+z]</name>
+				<default>NaN</default>
+				<unit>-</unit>
 			</param>
 		</group>
 	</userInput>

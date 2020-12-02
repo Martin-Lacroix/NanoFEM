@@ -1,41 +1,66 @@
 #include "..\include\read.h"
+#include <unordered_map>
+#include <iterator>
 #include <fstream>
+#include <sstream>
 using namespace std;
 
-// Generates the stiffness tensor
+// Converts a string to a vector of doubles
 
-matrix stiffness(double E,double v){
+dvector tovec(string input){
 
-    matrix D;
-    D.setlength(6,6);
-    math::zero(D);
+    replace(input.begin(),input.end(),':',' ');
+    replace(input.begin(),input.end(),',',' ');
 
-    double mu = E/(2*(1+v));
-    double lam = E*v/((1+v)*(1-2*v));
-    D(0,1) = D(0,2) = D(1,2)= lam;
-    D(1,0) = D(2,0) = D(2,1)= lam;
-
-    for(int i=0; i<3; i++){
-
-        D(i,i) = 2*mu+lam;
-        D(i+3,i+3) = mu;
-    }
-    return D;
+    double nbr;
+    dvector vector;
+    stringstream iss(input);
+    while (iss>>nbr){vector.push_back(nbr);}
+    return vector;
 }
 
-// Reads the parameter input file
+// Keeps only unique faces in the mesh
 
-readStruct readParam(paramStruct &param){
+void cleanFace(meshStruct &mesh){
+
+    ivector fElem;
+    vector<ivector> fNode;
+    int fLen = mesh.fNode.size();
+
+   unordered_map<string,int> map;
+   vector<string> liste;
+
+   for(int i=0; i<fLen; i++){
+
+        ostringstream key;
+        copy(mesh.fNode[i].begin(),mesh.fNode[i].end(),ostream_iterator<int>(key,":"));
+        liste.push_back(key.str());
+        map[liste[i]] += 1;
+   }
+
+   for(int i=0; i<fLen; i++){
+        if(map[liste[i]]==1){
+
+            fElem.push_back(mesh.fElem[i]);
+            fNode.push_back(mesh.fNode[i]);
+        }
+   }
+    mesh.fElem = fElem;
+    mesh.fNode = fNode;
+}
+
+// Reads the parameter input file 2
+
+void readInput(readStruct &read,meshStruct &mesh,string path){
 
     string input;
     ifstream file;
-    readStruct bc;
-    file.open("input.txt");
+    file.open(path);
 
     // Reads the general parameters
 
     getline(file,input,';');
-    param.order = stoi(input);
+    mesh.order = stoi(input);
 
     getline(file,input,';');
     double E = stod(input);
@@ -43,7 +68,7 @@ readStruct readParam(paramStruct &param){
     getline(file,input,' ');
     double v = stod(input);
 
-    param.D = stiffness(E,v);
+    mesh.D = math::stiffness(E,v);
 
     // Reads the Dirichlet boundary conditions
 
@@ -51,173 +76,156 @@ readStruct readParam(paramStruct &param){
     for(int i=0; i<5; i++){
 
         getline(file,input,';');
-        bc.fixed.push_back(input.c_str());
+        read.dirichlet.push_back(stod(input));
     }
 
     getline(file,input,' ');
-    bc.fixed.push_back(input.c_str());
-
-    // Reads the Neumann boundary conditions
-
-    getline(file,input,'\n');
-    for(int i=0; i<5; i++){
-
-        getline(file,input,';');
-        bc.force.push_back(input.c_str());
-    }
-
-    getline(file,input,' ');
-    bc.force.push_back(input.c_str());
-    file.close();
-    return bc;
+    read.dirichlet.push_back(stod(input));
 }
 
-// Reads all the Nascam input files
+// Reads the bulk mesh input file
 
-void readAll(meshStruct &mesh, paramStruct &param){
-
-    readStruct bc = readParam(param);
+void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     int nbr;
     string input;
     ifstream file;
-    file.open("input/coating.xyz");
-    param.dirichlet.resize(3);
+    mesh.dirNode.resize(3);
+    mesh.dirValue.resize(3);
+    dvector dirichlet = read.dirichlet;
+    file.open(path);
     file >> nbr;
 
     // Reads the size of the domain
 
     for(int i=0; i<2; i++){getline(file,input,';');}
-    replace(input.begin(),input.end(),':',',');
-    input = "["+input.substr(8)+"]";
-    darray domain(input.c_str());
+    dvector domain = tovec(input.substr(8));
 
     // Reads the origin of the domain
 
     getline(file,input,';');
-    replace(input.begin(),input.end(),':',',');
-    input = "["+input.substr(10)+"]";
-    darray zero(input.c_str());
+    dvector zero = tovec(input.substr(10));
 
     // Reads the size of an element
 
     getline(file,input,';');
-    replace(input.begin(),input.end(),':',',');
-    input = "["+input.substr(8)+"]";
-    darray elem(input.c_str());
+    dvector elem = tovec(input.substr(8));
 
-    // Builds the mesh elements and nodes
+    // Number of elements in each dimensions
 
-    file.close();
-    int nx = 0.1+domain(0)/elem(0);
-    int ny = 0.1+domain(1)/elem(1);
-    int nz = 0.1+domain(2)/elem(2);
+    int nx = 0.1+domain[0]/elem[0];
+    int ny = 0.1+domain[1]/elem[1];
+    int nz = 0.1+domain[2]/elem[2];
 
     for(int i=0; i<=nx; i++){
         for(int j=0; j<=ny; j++){
             for(int k=0; k<=nz; k++){
 
-                // Stores the nodes coordinates
+                // Creates the node coordinates
 
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
-                double xyz[3] = {zero(0)+i*elem(0),zero(1)+j*elem(1),zero(2)+k*elem(2)};
-                darray nXYZ; nXYZ.setcontent(3,xyz);
-                mesh.nXYZ.push_back(nXYZ);
+                mesh.nXYZ.push_back({zero[0]+i*elem[0],zero[1]+j*elem[1],zero[2]+k*elem[2]});
 
                 // Creates the nodes Dirichlet BC
 
-                if(i==0){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[0][n]){param.dirichlet[0].push_back(idx);}
-                    }
+                if(i==0 && !isnan(dirichlet[0])){
+                    mesh.dirValue[0].push_back(dirichlet[0]);
+                    mesh.dirNode[0].push_back(idx);
                 }
-                if(i==nx){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[1][n]){param.dirichlet[0].push_back(idx);}
-                    }
+                else if(i==nx && !isnan(dirichlet[1])){
+                    mesh.dirValue[0].push_back(dirichlet[1]);
+                    mesh.dirNode[0].push_back(idx);
                 }
-                if(j==0){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[2][n]){param.dirichlet[1].push_back(idx);}
-                    }
+                if(j==0 && !isnan(dirichlet[2])){
+                    mesh.dirValue[1].push_back(dirichlet[2]);
+                    mesh.dirNode[1].push_back(idx);
                 }
-                if(j==ny){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[3][n]){param.dirichlet[1].push_back(idx);}
-                    }
+                else if(j==ny && !isnan(dirichlet[3])){
+                    mesh.dirValue[1].push_back(dirichlet[3]);
+                    mesh.dirNode[1].push_back(idx);
                 }
-                if(k==0){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[4][n]){param.dirichlet[2].push_back(idx);}
-                    }
+                if(k==0 && !isnan(dirichlet[4])){
+                    mesh.dirValue[2].push_back(dirichlet[4]);
+                    mesh.dirNode[2].push_back(idx);
                 }
-                if(k==nz){
-                    for(int n=0; n<3; n++){
-                        if(bc.fixed[5][n]){param.dirichlet[2].push_back(idx);}
-                    }
+                else if(k==ny && !isnan(dirichlet[5])){
+                    mesh.dirValue[2].push_back(dirichlet[5]);
+                    mesh.dirNode[2].push_back(idx);
                 }
             }
         }
     }
+
+    // Builds the elements and the faces of the mesh
 
     for(int i=0; i<nx; i++){
         for(int j=0; j<ny; j++){
             for(int k=0; k<nz; k++){
 
-                // Associates the element nodes
+                vector<ivector> face(6,ivector(4));
+                int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
+                face[0] = {idx,(ny+1)*(nz+1)+idx,(ny+2)*(nz+1)+idx,nz+idx+1};
+                face[1] = {face[0][0]+1,face[0][1]+1,face[0][2]+1,face[0][3]+1};
 
-                int idx = i*(nz+1)*(ny+1)+j*(nz+1)+k;
-                int a[4] = {idx,(ny+1)*(nz+1)+idx,(ny+2)*(nz+1)+idx,nz+idx+1};
-                int b[4] = {idx+1,(ny+1)*(nz+1)+idx+1,(ny+2)*(nz+1)+idx+1,nz+idx+2};
-                alglib::ae_int_t node[8] = {a[0],a[1],a[2],a[3],b[0],b[1],b[2],b[3]};
-                iarray eNode; eNode.setcontent(8,node);
-                mesh.eNode.push_back(eNode);
+                // Makes the left, right, top and bottom faces
 
-                // Creates the element faces and Neumann BC
+                face[2] = {face[0][1],face[0][2],face[1][2],face[1][1]};
+                face[3] = {face[0][0],face[0][3],face[1][3],face[1][0]};
+                face[4] = {face[0][0],face[0][1],face[1][1],face[1][0]};
+                face[5] = {face[0][3],face[0][2],face[1][2],face[1][3]};
 
-                if(i==0){
+                // Associates the nodes to the elements
 
-                    alglib::ae_int_t node[4] = {a[0],a[3],b[3],b[0]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[0]);
-                    mesh.fNode.push_back(fNode);
-                }
-                if(i==nx-1){
+                ivector elem = face[0];
+                elem.insert(elem.end(),face[1].begin(),face[1].end());
+                mesh.eNode.push_back(elem);
 
-                    alglib::ae_int_t node[4] = {a[1],b[1],b[2],a[2]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[1]);
-                    mesh.fNode.push_back(fNode);
-                }
-                if(j==0){
+                // Stores all the faces of each element
 
-                    alglib::ae_int_t node[4] = {a[0],b[0],b[1],a[1]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[2]);
-                    mesh.fNode.push_back(fNode);
-                }
-                if(j==ny-1){
+                for(int n=0; n<6; n++){
 
-                    alglib::ae_int_t node[4] = {a[3],a[2],b[2],b[3]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[3]);
-                    mesh.fNode.push_back(fNode);
-                }
-                if(k==0){
-                    
-                    alglib::ae_int_t node[4] = {a[0],a[1],a[2],a[3]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[4]);
-                    mesh.fNode.push_back(fNode);
-                }
-                if(k==nz-1){
-                    
-                    alglib::ae_int_t node[4] = {b[3],b[2],b[1],b[0]};
-                    iarray fNode; fNode.setcontent(4,node);
-                    param.neumann.push_back(bc.force[5]);
-                    mesh.fNode.push_back(fNode);
+                    mesh.fNode.push_back(face[n]);
+                    mesh.fElem.push_back(mesh.eNode.size());
                 }
             }
         }
     }
+
+    // Reads the filling fraction of the elements
+
+    int fLen = mesh.fNode.size();
+    int eLen = mesh.eNode.size();
+    mesh.frac.resize(eLen,0);
+    getline(file,input,'\n');
+
+    while(getline(file,input,' ')){
+
+        // Coodrinates of the species
+
+        getline(file,input,';');
+        dvector coord = tovec(input);
+        getline(file,input,';');
+        getline(file,input,'\n');
+
+        // Filling fraction in the element
+
+        int idx = nx*coord[0]/domain[0];
+        int idy = ny*coord[1]/domain[1];
+        int idz = nz*coord[2]/domain[2];
+        int index = idx*ny*nz+idy*nz+idz;
+        mesh.frac[index] += stod(input);
+    }
+    file.close();
+}
+
+// Reads all the Nascam input files
+
+meshStruct read(string inputPath,string meshPath){
+
+    meshStruct mesh;
+    readStruct read;
+    readInput(read,mesh,inputPath);
+    readMesh(read,mesh,meshPath);
+    cleanFace(mesh);
+    return mesh;
 }

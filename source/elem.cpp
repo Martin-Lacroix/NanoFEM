@@ -3,7 +3,7 @@ using namespace std;
 
 // Class of cubic linear 3D element
 
-Elem::Elem(vector<darray> nXYZ,shapeStruct shape){
+Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 
     matrix J;
     matrix invJ;
@@ -56,9 +56,7 @@ Elem::Elem(vector<darray> nXYZ,shapeStruct shape){
 
         // Global coordinates of Gauss points
 
-        double v2[3] = {v1(i,0),v1(i,1),v1(i,2)};
-        darray v3; v3.setcontent(3,v2);
-        gXYZ.push_back(v3);
+        gXYZ.push_back({v1(i,0),v1(i,1),v1(i,2)});
 
         // Determinant of the Jacobian matrix
 
@@ -93,8 +91,7 @@ Elem::Elem(vector<darray> nXYZ,shapeStruct shape){
 
 matrix Elem::selfK(quadStruct quad,matrix D){
 
-    matrix B;
-    matrix K;
+    matrix B,K;
     B.setlength(3*nLen,6);
     K.setlength(3*nLen,3*nLen);
     int gLen = quad.weight.size();
@@ -119,7 +116,7 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 
 // Computes the elemental local strain matrix
 
-matrix Elem::selfS(quadStruct quad,darray xyz){
+matrix Elem::selfS(quadStruct quad,dvector xyz){
 
     matrix S;
     S.setlength(6,3*nLen);
@@ -143,11 +140,10 @@ matrix Elem::selfS(quadStruct quad,darray xyz){
 
 // Class of square linear 2D element
 
-Face::Face(vector<darray> nXYZ,shapeStruct shape){
+Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
-    matrix J;
-    matrix invJ;
-    vector<darray> nXY = math::to2D(nXYZ);
+    matrix J,invJ;
+    vector<dvector> nXY = math::to2D(nXYZ);
 
     // Memory allocation and initialization
 

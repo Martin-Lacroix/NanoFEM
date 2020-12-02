@@ -7,6 +7,9 @@ struct shapeStruct{
     int nLen;
     int gLen;
 
+    // Shape functions aty Gauss points
+    // Local derivatives of the shape functions at Gauss nodes
+
     matrix N;
     matrix drN;
     matrix dsN;
@@ -17,11 +20,13 @@ class Elem{
 
     public:
 
-    Elem(std::vector<darray> nXYZ,shapeStruct shape);
-    matrix selfS(quadStruct quad,darray xyz);
+    Elem(std::vector<dvector> nXYZ,shapeStruct shape);
+    matrix selfS(quadStruct quad,dvector xyz);
     matrix selfK(quadStruct quad,matrix D);
 
-    std::vector<darray> gXYZ;
+    // Parameters specific to each element
+
+    std::vector<dvector> gXYZ;
     darray detJ;
     matrix dxN;
     matrix dyN;
@@ -34,8 +39,10 @@ class Face{
 
     public:
 
-    Face(std::vector<darray> nXYZ,shapeStruct shape);
+    Face(std::vector<dvector> nXYZ,shapeStruct shape);
     matrix selfN(shapeStruct shape,quadStruct quad);
+
+    // Parameters specific to each face
 
     darray detJ;
     matrix dxN;

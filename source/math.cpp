@@ -1,9 +1,41 @@
 #include "..\include\math.h"
 using namespace std;
 
-// Quadrature rule generator (to be modified)
-
 namespace math{
+
+    // Non-local kernel density function
+
+    double kernel(dvector x,dvector y){
+
+        double d = 0.05;
+        double norm = 1/(8*d*d*d);
+        double dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2]);
+        double k = norm*exp(-dist/d);
+        return k;
+    }
+
+    // Generates the stiffness tensor
+
+    matrix stiffness(double E,double v){
+
+        matrix D;
+        D.setlength(6,6);
+        math::zero(D);
+
+        double mu = E/(2*(1+v));
+        double lam = E*v/((1+v)*(1-2*v));
+        D(0,1) = D(0,2) = D(1,2)= lam;
+        D(1,0) = D(2,0) = D(2,1)= lam;
+
+        for(int i=0; i<3; i++){
+
+            D(i,i) = 2*mu+lam;
+            D(i+3,i+3) = mu;
+        }
+        return D;
+    }
+
+    // Legendre quadrature rule generator
 
     quadStruct legendre(int dim,int order){
 
@@ -26,10 +58,8 @@ namespace math{
                 for(int j=0; j<nbr; j++){
                     for(int k=0; k<nbr; k++){
 
-                        double v1[] = {Ja(i),Ja(j),Ja(k)};
+                        quad.gRST.push_back({Ja(i),Ja(j),Ja(k)});
                         quad.weight.push_back(8*M(0,i)*M(0,i)*M(0,j)*M(0,j)*M(0,k)*M(0,k));
-                        darray v2; v2.setcontent(dim,v1);
-                        quad.gRST.push_back(v2);
                     }
                 }
             }
@@ -41,32 +71,18 @@ namespace math{
             for(int i=0; i<nbr; i++){
                 for(int j=0; j<nbr; j++){
 
-                    double v1[] = {Ja(i),Ja(j)};
+                    quad.gRST.push_back({Ja(i),Ja(j)});
                     quad.weight.push_back(4*M(0,i)*M(0,i)*M(0,j)*M(0,j));
-                    darray v2; v2.setcontent(dim,v1);
-                    quad.gRST.push_back(v2);
                 }
             }
         }
         return quad;
     }
 
-    // Non-local kernel density function
-
-    double kernel(darray x,darray y){
-
-        double d = 0.05;
-        double norm = 1/(8*d*d*d);
-        double dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2]);
-        double k = norm*exp(-dist/d);
-        return k;
-    }
-
     // Converts a 3D square into 2D square
 
-    vector<darray> to2D(vector<darray> &nXYZ){
+    vector<dvector> to2D(vector<dvector> &nXYZ){
 
-        vector<darray> nXY;
         vector<double> n{0,0,0};
         darray v1; v1.setlength(3);
         darray v2; v2.setlength(3);
@@ -98,14 +114,7 @@ namespace math{
 
         double l2 = copysign(sqrt(abs(n[1]-n21/n[0])),dot2);
         double l3 = copysign(sqrt(abs(n[2]-n31/n[0])),dot3);
-        double xy[4][2] = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
-
-        for(int i=0; i<4; i++){
-
-            darray arr;
-            arr.setcontent(2,xy[i]);
-            nXY.push_back(arr);
-        }
+        vector<dvector> nXY = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
         return nXY;
     }
 
@@ -174,10 +183,7 @@ namespace math{
     }
 
     void zero(darray &V){
-
-        for(int i=0; i<V.length(); i++){
-            V(i) = 0;
-        }
+        for(int i=0; i<V.length(); i++){V(i) = 0;}
     }
 
     // Sparse matrix addition M2 = k1 M1 + k2 M2
@@ -185,15 +191,13 @@ namespace math{
     void add(double k1,double k2,sparse &M1,sparse &M2){
     
         double val;
-        alglib::ae_int_t i=0;
-        alglib::ae_int_t j=0;
-        alglib::ae_int_t end=0;
-        alglib::ae_int_t start=0;
+        alglib::ae_int_t i=0,j=0;
+        alglib::ae_int_t I=0,J=0;
 
-        while(alglib::sparseenumerate(M2,start,end,i,j,val)){
+        while(alglib::sparseenumerate(M2,I,J,i,j,val)){
             alglib::sparserewriteexisting(M2,i,j,k2*val);
         }
-        while(alglib::sparseenumerate(M1,start,end,i,j,val)){
+        while(alglib::sparseenumerate(M1,I,J,i,j,val)){
             alglib::sparseadd(M2,i,j,k1*val);
         }
     }

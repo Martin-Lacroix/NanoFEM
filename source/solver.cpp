@@ -5,7 +5,7 @@
 #include <chrono>
 using namespace std;
 
-// Solves the sparse symmetric linear system Ku = B
+// Solves the sparse symmetric linear system
 
 darray solve(Mesh mesh,double p){
 
@@ -35,11 +35,10 @@ darray solve(Mesh mesh,double p){
 
     // Applies boundary conditions
 
-    mesh.dirichlet(K);
     darray B = mesh.neumann();
-    sparseconverttocrs(K);
     int nLen = B.length();
-    mesh.dirichlet(B);
+    mesh.dirichlet(K,B);
+    sparseconverttocrs(K);
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -74,9 +73,10 @@ int main(){
 
     // Reads the input files
 
-    meshStruct mesh;
-    paramStruct param;
-    readAll(mesh,param);
+    string inputPath = "input.txt";
+    string meshPath = "input/test.xyz";
+    meshStruct mesh = read(inputPath,meshPath);
+
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -85,17 +85,17 @@ int main(){
 
     // Creates the mesh object
 
-    Mesh Mesh(mesh,param);
+    Mesh Mesh(mesh);
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nCreates the mesh --- " << time.count()/1e6 << " sec";
 
-    // Solves the symmetric linear system
+    // Solves the linear system with Gram-Schmidt
 
     darray u = solve(Mesh,0);
 
-    // Writes the results in a file
+    // Writes the results in a text file
 
     mkdir("output");
     start = chrono::high_resolution_clock::now();

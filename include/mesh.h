@@ -4,26 +4,37 @@
 
 struct meshStruct{
 
-    // Nodes indices of each element
-    // Nodes indices of each face
-    // Global node coordinates
+    // nXYZ = node index then coordinates
+    // eNode = element index then nodes
+    // fNode = face index then nodes
 
-    std::vector<darray> nXYZ;
-    std::vector<iarray> eNode;
-    std::vector<iarray> fNode;
-};
+    std::vector<dvector> nXYZ;
+    std::vector<ivector> eNode;
+    std::vector<ivector> fNode;
 
-struct paramStruct{
+    // Frac = filling fraction of the elements
+    // fElem = element indices corresponding to the faces
+    
+    dvector frac;
+    ivector fElem;
 
-    // Stiffness tensor and quadrature order
-    // Neumann = values of the applied stress on the faces
-    // Dirichlet = dimension first and and node index second
+    // D = stiffness tensor of the elements
+    // Order = order of the quadrature rule
 
     matrix D;
     int order;
-    std::vector<darray> neumann;
-    std::vector<std::vector<int>> dirichlet;
+
+    // dirNode = dimension then node index
+    // dirValue = dimension then displacement
     
+    std::vector<dvector> dirValue;
+    std::vector<darray> neuValue;
+
+    // neuFace = face index
+    // neuValue = face index then traction vector
+
+    ivector neuFace;
+    std::vector<ivector> dirNode;
 };
 
 class Mesh{
@@ -36,16 +47,14 @@ class Mesh{
     darray neumann();
     sparse nonLocalK();
     matrix elemK(int idx);
-    matrix totalS(darray xyz);
-    void dirichlet(darray &B);
-    void dirichlet(sparse &K);
     shapeStruct shape(int dim);
-    Mesh(meshStruct mesh,paramStruct param);
+    matrix totalS(dvector xyz);
+    void dirichlet(sparse&K,darray &B);
+    Mesh(meshStruct &mesh1);
 
-    // Internal variables of the FEM system
+    // Internal variables of the system
 
     meshStruct mesh;
-    paramStruct param;
     quadStruct quad3D;
     quadStruct quad2D;
     shapeStruct shape3D;

@@ -1,21 +1,22 @@
 #include "mesh.h"
-#include "linalg.h"
-#include "stdafx.h"
 #ifndef READ_H
 #define READ_H
 
-typedef alglib::real_2d_array matrix;
-typedef alglib::real_1d_array darray;
-typedef alglib::integer_1d_array iarray;
-
 struct readStruct{
 
-    std::vector<iarray> fixed;
-    std::vector<darray> force;
+    // Dirichlet = displacement perpendicular to the faces
+    // Domain = maximum of x, y and z coordinates
+    // Zero = minimum of w x, y and z coordinates
+
+    dvector dirichlet;
+    dvector domain;
+    dvector zero;
 };
 
-matrix stiffness(double E,double v);
-readStruct readParam(paramStruct &param);
-void readAll(meshStruct &mesh, paramStruct &param);
+void cleanFace(meshStruct &mesh);
+dvector tovec(std::string input);
+void readMesh(readStruct &read,meshStruct &mesh,std::string path);
+void readInput(readStruct &read,meshStruct &mesh,std::string path);
+meshStruct read(std::string inputPath,std::string meshPath);
 
 #endif
