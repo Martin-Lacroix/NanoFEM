@@ -74,9 +74,8 @@ int main(){
     // Reads the input files
 
     string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
+    string meshPath = "input/coating.xyz";
     meshStruct mesh = read(inputPath,meshPath);
-
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
