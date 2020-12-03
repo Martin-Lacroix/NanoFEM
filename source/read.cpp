@@ -24,11 +24,10 @@ dvector tovec(string input){
 void cleanFace(meshStruct &mesh){
 
     ivector fElem;
+    vector<string> liste;
     vector<ivector> fNode;
     int fLen = mesh.fNode.size();
-
-   unordered_map<string,int> map;
-   vector<string> liste;
+    unordered_map<string,int> map;
 
    for(int i=0; i<fLen; i++){
 
@@ -49,10 +48,11 @@ void cleanFace(meshStruct &mesh){
     mesh.fNode = fNode;
 }
 
-// Reads the parameter input file 2
+// Reads the parameter input file
 
 void readInput(readStruct &read,meshStruct &mesh,string path){
 
+    double E,v;
     string input;
     ifstream file;
     file.open(path);
@@ -61,18 +61,26 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
     getline(file,input,';');
     mesh.order = stoi(input);
-
-    getline(file,input,';');
-    double E = stod(input);
-
     getline(file,input,' ');
-    double v = stod(input);
+    read.threshold = stod(input);
+    getline(file,input,'\n');
 
-    mesh.D = math::stiffness(E,v);
+    // Reads the bulk parameters
+
+    getline(file,input,';'); E = stod(input);
+    getline(file,input,' '); v = stod(input);
+    read.Db = math::stiffness(E,v);
+    getline(file,input,'\n');
+
+    // Reads the hole parameters
+
+    getline(file,input,';'); E = stod(input);
+    getline(file,input,' '); v = stod(input);
+    read.Dh = math::stiffness(E,v);
+    getline(file,input,'\n');
 
     // Reads the Dirichlet boundary conditions
 
-    getline(file,input,'\n');
     for(int i=0; i<5; i++){
 
         getline(file,input,';');
@@ -129,26 +137,32 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                 // Creates the nodes Dirichlet BC
 
                 if(i==0 && !isnan(dirichlet[0])){
+
                     mesh.dirValue[0].push_back(dirichlet[0]);
                     mesh.dirNode[0].push_back(idx);
                 }
                 else if(i==nx && !isnan(dirichlet[1])){
+
                     mesh.dirValue[0].push_back(dirichlet[1]);
                     mesh.dirNode[0].push_back(idx);
                 }
                 if(j==0 && !isnan(dirichlet[2])){
+
                     mesh.dirValue[1].push_back(dirichlet[2]);
                     mesh.dirNode[1].push_back(idx);
                 }
                 else if(j==ny && !isnan(dirichlet[3])){
+
                     mesh.dirValue[1].push_back(dirichlet[3]);
                     mesh.dirNode[1].push_back(idx);
                 }
                 if(k==0 && !isnan(dirichlet[4])){
+
                     mesh.dirValue[2].push_back(dirichlet[4]);
                     mesh.dirNode[2].push_back(idx);
                 }
                 else if(k==ny && !isnan(dirichlet[5])){
+                    
                     mesh.dirValue[2].push_back(dirichlet[5]);
                     mesh.dirNode[2].push_back(idx);
                 }
@@ -174,13 +188,13 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                 face[4] = {face[0][0],face[0][1],face[1][1],face[1][0]};
                 face[5] = {face[0][3],face[0][2],face[1][2],face[1][3]};
 
-                // Associates the nodes to the elements
+                // Stores the nodes of each element
 
                 ivector elem = face[0];
                 elem.insert(elem.end(),face[1].begin(),face[1].end());
                 mesh.eNode.push_back(elem);
 
-                // Stores all the faces of each element
+                // Stores the faces of each element
 
                 for(int n=0; n<6; n++){
 
@@ -193,10 +207,10 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     // Reads the filling fraction of the elements
 
-    int fLen = mesh.fNode.size();
-    int eLen = mesh.eNode.size();
-    mesh.frac.resize(eLen,0);
     getline(file,input,'\n');
+    int eLen = mesh.eNode.size();
+    dvector fraction(eLen,0);
+    mesh.D.resize(eLen);
 
     while(getline(file,input,' ')){
 
@@ -207,13 +221,21 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
         getline(file,input,';');
         getline(file,input,'\n');
 
-        // Filling fraction in the element
+        // Filling fraction of the elements
 
         int idx = nx*coord[0]/domain[0];
         int idy = ny*coord[1]/domain[1];
         int idz = nz*coord[2]/domain[2];
         int index = idx*ny*nz+idy*nz+idz;
-        mesh.frac[index] += stod(input);
+        fraction[index] += stod(input);
+    }
+
+    // Creates the element stiffness tensors
+
+    for(int i=0; i<eLen; i++){
+
+        if(fraction[i]>read.threshold){mesh.D[i] = read.Db;}
+        else{mesh.D[i] = read.Dh;}
     }
     file.close();
 }

@@ -12,17 +12,13 @@ struct meshStruct{
     std::vector<ivector> eNode;
     std::vector<ivector> fNode;
 
-    // Frac = filling fraction of the elements
-    // fElem = element indices corresponding to the faces
-    
-    dvector frac;
-    ivector fElem;
-
-    // D = stiffness tensor of the elements
     // Order = order of the quadrature rule
-
-    matrix D;
+    // fElem = element indices corresponding to the faces
+    // D = stiffness tensor of each element
+    
     int order;
+    ivector fElem;
+    std::vector<matrix> D;
 
     // dirNode = dimension then node index
     // dirValue = dimension then displacement

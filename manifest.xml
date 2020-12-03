@@ -15,52 +15,73 @@
 	</requiredFiles>
 	
 	<userInput>
-		<group name="General parameters">
+		<group name="General Parameters">
 			<param type="INT">
-				<name>Quadrature Order</name>
+				<name>Quadrature order</name>
 				<default>1</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Young Modulus</name>
+				<name>Filling threshold</name>
+				<default>0.5</default>
+				<unit>-</unit>
+			</param>
+		</group>
+
+		<group name="Bulk Parameters">
+			<param type="DOUBLE">
+				<name>Young modulus</name>
 				<default>1</default>
 				<unit>MPa</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Poisson Ratio</name>
+				<name>Poisson ratio</name>
 				<default>0.3</default>
 				<unit>-</unit>
 			</param>
 		</group>
 
-		<group name="Dirichlet boundary conditions">
+		<group name="Hole Parameters">
 			<param type="DOUBLE">
-				<name>Ux Face [-x]</name>
+				<name>Young modulus</name>
+				<default>1</default>
+				<unit>MPa</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Poisson ratio</name>
+				<default>0.3</default>
+				<unit>-</unit>
+			</param>
+		</group>
+
+		<group name="Dirichlet Boundary Conditions">
+			<param type="DOUBLE">
+				<name>Ux face [-x]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Ux Face [+x]</name>
+				<name>Ux face [+x]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Uy Face [-y]</name>
+				<name>Uy face [-y]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Uy Face [+y]</name>
+				<name>Uy face [+y]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Uz Face [-z]</name>
+				<name>Uz face [-z]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>
 			<param type="DOUBLE">
-				<name>Uz Face [+z]</name>
+				<name>Uz face [+z]</name>
 				<default>NaN</default>
 				<unit>-</unit>
 			</param>

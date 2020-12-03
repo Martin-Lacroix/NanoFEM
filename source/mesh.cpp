@@ -123,7 +123,7 @@ sparse Mesh::localK(){
 
         int nbr = eList[i].nLen;
         ivector eNode = mesh.eNode[i];
-        matrix K1 = eList[i].selfK(quad3D,mesh.D);
+        matrix K1 = eList[i].selfK(quad3D,mesh.D[i]);
 
         // Inserts the submatrices into the global matrice
 
@@ -221,7 +221,7 @@ matrix Mesh::elemK(int idx){
             B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = elem.dzN(j,i);
         }
         matrix S = totalS(elem.gXYZ[i]);
-        matrix K1 = math::prod(quad3D.weight[i],B,mesh.D);
+        matrix K1 = math::prod(quad3D.weight[i],B,mesh.D[idx]);
         matrix K2 = math::prod(elem.detJ[i],K1,S);
         math::add(1,1,K2,K);
     }
@@ -270,9 +270,9 @@ void Mesh::dirichlet(sparse&K,darray &B){
     // Stores the non-zero index per row and column
 
     while(alglib::sparseenumerate(K,I,J,i,j,val)){
-
-        if(abs(val)<1e-9){alglib::sparseset(K,i,j,0);}
-        else{row[i].push_back(j);col[j].push_back(i);}
+        
+        row[i].push_back(j);
+        col[j].push_back(i);
     }
 
     // Edits B and cand cancels column/rows corresponding to the BC

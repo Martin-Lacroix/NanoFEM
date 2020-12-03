@@ -4,13 +4,14 @@
 
 struct readStruct{
 
+    // Dh = stiffness tensor of holes
+    // Db = stiffness tensor of bulk material
+    // Threshold = maxumul fraction of a hole
     // Dirichlet = displacement perpendicular to the faces
-    // Domain = maximum of x, y and z coordinates
-    // Zero = minimum of w x, y and z coordinates
 
+    matrix Dh,Db;
+    double threshold;
     dvector dirichlet;
-    dvector domain;
-    dvector zero;
 };
 
 void cleanFace(meshStruct &mesh);
