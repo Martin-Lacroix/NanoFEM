@@ -79,19 +79,22 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     read.Dh = math::stiffness(E,v);
     getline(file,input,'\n');
 
-    // Reads the Dirichlet boundary conditions
+    // Reads the boundary Conditions
 
-    for(int i=0; i<5; i++){
+    for(int i=0; i<3; i++){
 
-        getline(file,input,';');
-        read.dirichlet.push_back(stod(input));
+        getline(file,input,'\n');
+        if(input!="imposed strain"){
+            read.dirichlet.push_back(input);
+        }
+        else{
+            getline(file,input,'\n');
+            read.dirichlet.push_back(input);
+        }
     }
-
-    getline(file,input,' ');
-    read.dirichlet.push_back(stod(input));
 }
 
-// Reads the bulk mesh input file
+// Reads the mesh file
 
 void readMesh(readStruct &read,meshStruct &mesh,string path){
 
@@ -100,7 +103,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     ifstream file;
     mesh.dirNode.resize(3);
     mesh.dirValue.resize(3);
-    dvector dirichlet = read.dirichlet;
+    svector dirichlet = read.dirichlet;
     file.open(path);
     file >> nbr;
 
@@ -131,40 +134,42 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
                 // Creates the node coordinates
 
+                int now = 0;
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
                 mesh.nXYZ.push_back({zero[0]+i*elem[0],zero[1]+j*elem[1],zero[2]+k*elem[2]});
 
                 // Creates the nodes Dirichlet BC
 
-                if(i==0 && !isnan(dirichlet[0])){
+                for(int n=0; n<3; n++){
 
-                    mesh.dirValue[0].push_back(dirichlet[0]);
-                    mesh.dirNode[0].push_back(idx);
-                }
-                else if(i==nx && !isnan(dirichlet[1])){
+                    switch(n){
+                    case 0: now = i; break;
+                    case 1: now = j; break;
+                    case 2: now = k; break;
+                    }
 
-                    mesh.dirValue[0].push_back(dirichlet[1]);
-                    mesh.dirNode[0].push_back(idx);
-                }
-                if(j==0 && !isnan(dirichlet[2])){
+                    if(now==0){
+                        if(dirichlet[n]=="clamped bottom"){
 
-                    mesh.dirValue[1].push_back(dirichlet[2]);
-                    mesh.dirNode[1].push_back(idx);
-                }
-                else if(j==ny && !isnan(dirichlet[3])){
+                            mesh.dirValue[n].push_back(0);
+                            mesh.dirNode[n].push_back(idx);
+                        }
+                        else if(dirichlet[n]=="periodic"){
+                        }
+                        else{
+                            mesh.dirValue[n].push_back(-stod(dirichlet[n])*domain[n]/2);
+                            mesh.dirNode[n].push_back(idx);
+                        }
+                    }
+                    else if(now==nx){
+                        if(dirichlet[n]=="periodic"){
+                        }
+                        else if(dirichlet[n]!="clamped bottom"){
 
-                    mesh.dirValue[1].push_back(dirichlet[3]);
-                    mesh.dirNode[1].push_back(idx);
-                }
-                if(k==0 && !isnan(dirichlet[4])){
-
-                    mesh.dirValue[2].push_back(dirichlet[4]);
-                    mesh.dirNode[2].push_back(idx);
-                }
-                else if(k==ny && !isnan(dirichlet[5])){
-                    
-                    mesh.dirValue[2].push_back(dirichlet[5]);
-                    mesh.dirNode[2].push_back(idx);
+                            mesh.dirValue[n].push_back(stod(dirichlet[n])*domain[n]/2);
+                            mesh.dirNode[n].push_back(idx);
+                        }
+                    }
                 }
             }
         }
@@ -234,7 +239,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     for(int i=0; i<eLen; i++){
 
-        if(fraction[i]>read.threshold){mesh.D[i] = read.Db;}
+        if(fraction[i]>=read.threshold){mesh.D[i] = read.Db;}
         else{mesh.D[i] = read.Dh;}
     }
     file.close();

@@ -53,37 +53,52 @@
 				<unit>-</unit>
 			</param>
 		</group>
+		
+		<group>
+			<param type="LIST" ref="X">
+				<name>BC along X axis</name>
+				<element>clamped bottom</element>
+				<element>free periodic</element>
+				<element>imposed strain</element>
+			</param>
+		</group>
+		<group displayIf="X:imposed strain">
+			<param type="DOUBLE">
+				<name>Total strain</name>
+				<default>0</default>
+				<unit>?</unit>
+			</param>
+		</group>
 
-		<group name="Dirichlet Boundary Conditions">
-			<param type="DOUBLE">
-				<name>Ux face [-x]</name>
-				<default>NaN</default>
-				<unit>-</unit>
+		<group>
+			<param type="LIST" ref="Y">
+				<name>BC along Y axis</name>
+				<element>clamped bottom</element>
+				<element>free periodic</element>
+				<element>imposed strain</element>
 			</param>
+		</group>
+		<group displayIf="Y:imposed strain">
 			<param type="DOUBLE">
-				<name>Ux face [+x]</name>
-				<default>NaN</default>
-				<unit>-</unit>
+				<name>Total strain</name>
+				<default>0</default>
+				<unit>?</unit>
 			</param>
-			<param type="DOUBLE">
-				<name>Uy face [-y]</name>
-				<default>NaN</default>
-				<unit>-</unit>
+		</group>
+
+		<group>
+			<param type="LIST" ref="Z">
+				<name>BC along Z axis</name>
+				<element>clamped bottom</element>
+				<element>free periodic</element>
+				<element>imposed strain</element>
 			</param>
+		</group>
+		<group displayIf="Z:imposed strain">
 			<param type="DOUBLE">
-				<name>Uy face [+y]</name>
-				<default>NaN</default>
-				<unit>-</unit>
-			</param>
-			<param type="DOUBLE">
-				<name>Uz face [-z]</name>
-				<default>NaN</default>
-				<unit>-</unit>
-			</param>
-			<param type="DOUBLE">
-				<name>Uz face [+z]</name>
-				<default>NaN</default>
-				<unit>-</unit>
+				<name>Total strain</name>
+				<default>0</default>
+				<unit>?</unit>
 			</param>
 		</group>
 	</userInput>

@@ -6,12 +6,12 @@ struct readStruct{
 
     // Dh = stiffness tensor of holes
     // Db = stiffness tensor of bulk material
-    // Threshold = maxumul fraction of a hole
+    // Threshold = maximum fraction of a hole
     // Dirichlet = displacement perpendicular to the faces
 
     matrix Dh,Db;
     double threshold;
-    dvector dirichlet;
+    svector dirichlet;
 };
 
 void cleanFace(meshStruct &mesh);
