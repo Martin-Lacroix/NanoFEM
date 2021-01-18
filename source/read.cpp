@@ -154,7 +154,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                             mesh.dirValue[n].push_back(0);
                             mesh.dirNode[n].push_back(idx);
                         }
-                        else if(dirichlet[n]=="periodic"){
+                        else if(dirichlet[n]=="free periodic"){
                         }
                         else{
                             mesh.dirValue[n].push_back(-stod(dirichlet[n])*domain[n]/2);
@@ -162,7 +162,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                         }
                     }
                     else if(now==nx){
-                        if(dirichlet[n]=="periodic"){
+                        if(dirichlet[n]=="free periodic"){
                         }
                         else if(dirichlet[n]!="clamped bottom"){
 
@@ -173,6 +173,19 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                 }
             }
         }
+    }
+
+    cout << "\n";
+    for(int i=0; i<mesh.dirValue[0].size(); i++){
+        cout << "Node " << mesh.dirNode[0][i] << " - DirValue ux = " << mesh.dirValue[0][i] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.dirValue[1].size(); i++){
+        cout << "Node " << mesh.dirNode[1][i] << " - DirValue uy = " << mesh.dirValue[2][i] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.dirValue[2].size(); i++){
+        cout << "Node " << mesh.dirNode[2][i] << " - DirValue uy = " << mesh.dirValue[2][i] << "\n";
     }
 
     // Builds the elements and the faces of the mesh

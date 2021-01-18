@@ -286,13 +286,10 @@ void Mesh::dirichlet(sparse&K,darray &B){
             for(int k=0; k<col[idx].size(); k++){
                 
                 B[col[idx][k]] -= alglib::sparseget(K,col[idx][k],idx)*mesh.dirValue[n][m];
-                if(col[idx][k]==idx){alglib::sparseset(K,col[idx][k],idx,1);}
-                else{alglib::sparseset(K,col[idx][k],idx,0);}
+                alglib::sparseset(K,col[idx][k],idx,0);
             }
             for(int k=0; k<row[idx].size(); k++){
-
-                if(idx==row[idx][k]){alglib::sparseset(K,idx,row[idx][k],1);}
-                else{alglib::sparseset(K,idx,row[idx][k],0);}
+                alglib::sparseset(K,idx,row[idx][k],0);
             }
         }
     }
@@ -301,7 +298,10 @@ void Mesh::dirichlet(sparse&K,darray &B){
 
     for(int n=0; n<3; n++){
         for(int m=0; m<mesh.dirNode[n].size(); m++){
-            B(mesh.dirNode[n][m]+n*nLen) = mesh.dirValue[n][m];
+            
+            int idx = mesh.dirNode[n][m]+n*nLen;
+            alglib::sparseset(K,idx,idx,1);
+            B(idx) = mesh.dirValue[n][m];
         }
     }
 }

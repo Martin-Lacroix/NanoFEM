@@ -74,7 +74,7 @@ int main(){
     // Reads the input files
 
     string inputPath = "input.txt";
-    string meshPath = "input/coating.xyz";
+    string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     stop = chrono::high_resolution_clock::now();
@@ -93,6 +93,19 @@ int main(){
     // Solves the linear system with Gram-Schmidt
 
     darray u = solve(Mesh,0);
+
+    cout << "\n\n";
+    for(int i=0; i<u.length()/3; i++){
+        cout << "Node " << i << " -- ux = " << u[i] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<u.length()/3; i++){
+        cout << "Node " << i << " -- uy = " << u[i+u.length()/3] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<u.length()/3; i++){
+        cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
+    }
 
     // Writes the results in a text file
 
