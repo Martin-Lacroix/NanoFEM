@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "linalg.h"
 #include "stdafx.h"
+
 #ifndef MATH_H
 #define MATH_H
 
@@ -10,7 +11,7 @@ typedef alglib::sparsematrix sparse;
 typedef alglib::real_2d_array matrix;
 typedef alglib::real_1d_array darray;
 typedef alglib::integer_1d_array iarray;
-typedef std::vector<std::string> svector;
+typedef std::pair<ivector,ivector> pvector;
 
 struct quadStruct{
 

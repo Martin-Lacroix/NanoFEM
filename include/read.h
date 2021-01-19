@@ -7,11 +7,11 @@ struct readStruct{
     // Dh = stiffness tensor of holes
     // Db = stiffness tensor of bulk material
     // Threshold = maximum fraction of a hole
-    // Dirichlet = displacement perpendicular to the faces
+    // Boundary = types of boundary conditions
 
     matrix Dh,Db;
     double threshold;
-    svector dirichlet;
+    std::vector<std::string> boundary;
 };
 
 void cleanFace(meshStruct &mesh);

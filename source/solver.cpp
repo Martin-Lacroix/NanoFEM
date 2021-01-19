@@ -28,6 +28,8 @@ darray solve(Mesh mesh,double p){
         math::add(1-p,p,KL,K);
     }
 
+    // Gets computation time
+
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nBuilds the matrix --- " << time.count()/1e6 << " sec";
@@ -37,7 +39,27 @@ darray solve(Mesh mesh,double p){
 
     darray B = mesh.neumann();
     int nLen = B.length();
+
+    mesh.periodic(K,B);
     mesh.dirichlet(K,B);
+
+/*
+    ofstream Kfile("Kfile.txt");
+    ofstream Bfile("Bfile.txt");
+
+    for(int i=0; i<B.length(); i++){
+        for(int j=0; j<B.length(); j++){
+            
+            double val = alglib::sparseget(K,i,j);
+            Kfile << val << " ";
+        }
+        Kfile << "\n";
+        Bfile << B[i] << "\n";
+    }
+
+*/
+
+
     sparseconverttocrs(K);
 
     stop = chrono::high_resolution_clock::now();
@@ -54,6 +76,9 @@ darray solve(Mesh mesh,double p){
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
+    mesh.complete(u);
+
+    // Gets computation time
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -74,8 +99,10 @@ int main(){
     // Reads the input files
 
     string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
+    string meshPath = "input/coating.xyz";
     meshStruct mesh = read(inputPath,meshPath);
+
+    // Gets computation time
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -93,7 +120,7 @@ int main(){
     // Solves the linear system with Gram-Schmidt
 
     darray u = solve(Mesh,0);
-
+/*
     cout << "\n\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
@@ -107,6 +134,7 @@ int main(){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
 
+*/
     // Writes the results in a text file
 
     mkdir("output");
@@ -121,6 +149,8 @@ int main(){
         coordinates << Mesh.mesh.nXYZ[i][1] << ",";
         coordinates << Mesh.mesh.nXYZ[i][2] << "\n";
     }
+
+    // Gets computation time
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);

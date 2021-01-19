@@ -29,6 +29,8 @@ void cleanFace(meshStruct &mesh){
     int fLen = mesh.fNode.size();
     unordered_map<string,int> map;
 
+    // removes all the duplicate faces
+
    for(int i=0; i<fLen; i++){
 
         ostringstream key;
@@ -36,6 +38,8 @@ void cleanFace(meshStruct &mesh){
         liste.push_back(key.str());
         map[liste[i]] += 1;
    }
+
+   // Rebuilds the face element and node vector
 
    for(int i=0; i<fLen; i++){
         if(map[liste[i]]==1){
@@ -79,17 +83,17 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     read.Dh = math::stiffness(E,v);
     getline(file,input,'\n');
 
-    // Reads the boundary Conditions
+    // Reads the boundary conditions
 
     for(int i=0; i<3; i++){
 
         getline(file,input,'\n');
         if(input!="imposed strain"){
-            read.dirichlet.push_back(input);
+            read.boundary.push_back(input);
         }
         else{
             getline(file,input,'\n');
-            read.dirichlet.push_back(input);
+            read.boundary.push_back(input);
         }
     }
 }
@@ -101,16 +105,16 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     int nbr;
     string input;
     ifstream file;
+    mesh.perNode.resize(3);
     mesh.dirNode.resize(3);
     mesh.dirValue.resize(3);
-    svector dirichlet = read.dirichlet;
     file.open(path);
     file >> nbr;
 
     // Reads the size of the domain
 
     for(int i=0; i<2; i++){getline(file,input,';');}
-    dvector domain = tovec(input.substr(8));
+    dvector dom = tovec(input.substr(8));
 
     // Reads the origin of the domain
 
@@ -122,11 +126,11 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     getline(file,input,';');
     dvector elem = tovec(input.substr(8));
 
-    // Number of elements in each dimensions
+    // Number of elements in each dimension
 
-    int nx = 0.1+domain[0]/elem[0];
-    int ny = 0.1+domain[1]/elem[1];
-    int nz = 0.1+domain[2]/elem[2];
+    int nx = 0.1+dom[0]/elem[0];
+    int ny = 0.1+dom[1]/elem[1];
+    int nz = 0.1+dom[2]/elem[2];
 
     for(int i=0; i<=nx; i++){
         for(int j=0; j<=ny; j++){
@@ -134,39 +138,41 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
                 // Creates the node coordinates
 
-                int now = 0;
+                int now,max;
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
                 mesh.nXYZ.push_back({zero[0]+i*elem[0],zero[1]+j*elem[1],zero[2]+k*elem[2]});
-
-                // Creates the nodes Dirichlet BC
 
                 for(int n=0; n<3; n++){
 
                     switch(n){
-                    case 0: now = i; break;
-                    case 1: now = j; break;
-                    case 2: now = k; break;
+                    case 0: now=i; max=nx; break;
+                    case 1: now=j; max=ny; break;
+                    case 2: now=k; max=nz; break;
                     }
 
+                    // Stores the nodes boundary conditions
+
                     if(now==0){
-                        if(dirichlet[n]=="clamped bottom"){
+                        if(read.boundary[n]=="clamped bottom"){
 
                             mesh.dirValue[n].push_back(0);
                             mesh.dirNode[n].push_back(idx);
                         }
-                        else if(dirichlet[n]=="free periodic"){
+                        else if(read.boundary[n]=="periodic free"){
+                            mesh.perNode[n].first.push_back(idx);
                         }
                         else{
-                            mesh.dirValue[n].push_back(-stod(dirichlet[n])*domain[n]/2);
+                            mesh.dirValue[n].push_back(-stod(read.boundary[n])*dom[n]/2);
                             mesh.dirNode[n].push_back(idx);
                         }
                     }
-                    else if(now==nx){
-                        if(dirichlet[n]=="free periodic"){
+                    else if(now==max){
+                        if(read.boundary[n]=="periodic free"){
+                            mesh.perNode[n].second.push_back(idx);
                         }
-                        else if(dirichlet[n]!="clamped bottom"){
+                        else if(read.boundary[n]!="clamped bottom"){
 
-                            mesh.dirValue[n].push_back(stod(dirichlet[n])*domain[n]/2);
+                            mesh.dirValue[n].push_back(stod(read.boundary[n])*dom[n]/2);
                             mesh.dirNode[n].push_back(idx);
                         }
                     }
@@ -174,7 +180,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
             }
         }
     }
-
+/*
     cout << "\n";
     for(int i=0; i<mesh.dirValue[0].size(); i++){
         cout << "Node " << mesh.dirNode[0][i] << " - DirValue ux = " << mesh.dirValue[0][i] << "\n";
@@ -185,8 +191,37 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     }
     cout << "\n";
     for(int i=0; i<mesh.dirValue[2].size(); i++){
-        cout << "Node " << mesh.dirNode[2][i] << " - DirValue uy = " << mesh.dirValue[2][i] << "\n";
+        cout << "Node " << mesh.dirNode[2][i] << " - DirValue uz = " << mesh.dirValue[2][i] << "\n";
     }
+
+
+
+    cout << "\nAnti x\n";
+    for(int i=0; i<mesh.perNode[0].first.size(); i++){
+        cout << mesh.perNode[0].first[i] << ", ";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.perNode[0].second.size(); i++){
+        cout << mesh.perNode[0].second[i] << ", ";
+    }
+    cout << "\n\nAnti y\n";
+    for(int i=0; i<mesh.perNode[1].first.size(); i++){
+        cout << mesh.perNode[1].first[i] << ", ";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.perNode[1].second.size(); i++){
+        cout << mesh.perNode[1].second[i] << ", ";
+    }
+    cout << "\n\nAnti z\n";
+    for(int i=0; i<mesh.perNode[2].first.size(); i++){
+        cout << mesh.perNode[2].first[i] << ", ";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.perNode[2].second.size(); i++){
+        cout << mesh.perNode[2].second[i] << ", ";
+    }
+    cout << "\n";
+*/
 
     // Builds the elements and the faces of the mesh
 
@@ -241,10 +276,10 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
         // Filling fraction of the elements
 
-        int idx = nx*coord[0]/domain[0];
-        int idy = ny*coord[1]/domain[1];
-        int idz = nz*coord[2]/domain[2];
-        int index = idx*ny*nz+idy*nz+idz;
+        int dx = nx*coord[0]/dom[0];
+        int dy = ny*coord[1]/dom[1];
+        int dz = nz*coord[2]/dom[2];
+        int index = dx*ny*nz+dy*nz+dz;
         fraction[index] += stod(input);
     }
 

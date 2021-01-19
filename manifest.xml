@@ -58,7 +58,7 @@
 			<param type="LIST" ref="X">
 				<name>BC along X axis</name>
 				<element>clamped bottom</element>
-				<element>free periodic</element>
+				<element>periodic free</element>
 				<element>imposed strain</element>
 			</param>
 		</group>
@@ -74,7 +74,7 @@
 			<param type="LIST" ref="Y">
 				<name>BC along Y axis</name>
 				<element>clamped bottom</element>
-				<element>free periodic</element>
+				<element>periodic free</element>
 				<element>imposed strain</element>
 			</param>
 		</group>
@@ -90,7 +90,7 @@
 			<param type="LIST" ref="Z">
 				<name>BC along Z axis</name>
 				<element>clamped bottom</element>
-				<element>free periodic</element>
+				<element>periodic free</element>
 				<element>imposed strain</element>
 			</param>
 		</group>

@@ -4,33 +4,37 @@
 
 struct meshStruct{
 
-    // nXYZ = node index then coordinates
-    // eNode = element index then nodes
-    // fNode = face index then nodes
+    // nXYZ = [node index] [node coordinates]
+    // eNode = [element index] [element nodes]
+    // fNode = [face index] [face nodes]
 
     std::vector<dvector> nXYZ;
     std::vector<ivector> eNode;
     std::vector<ivector> fNode;
 
     // Order = order of the quadrature rule
-    // fElem = element indices corresponding to the faces
-    // D = stiffness tensor of each element
+    // fElem = [element index of the free face]
+    // D = [element] [stiffness tensor]
     
     int order;
     ivector fElem;
     std::vector<matrix> D;
 
-    // dirNode = dimension then node index
-    // dirValue = dimension then displacement
+    // dirNode = [dimension] [node index]
+    // dirValue = [dimension] [displacement]
     
     std::vector<dvector> dirValue;
     std::vector<darray> neuValue;
 
-    // neuFace = face index
-    // neuValue = face index then traction vector
+    // neuFace = [face index]
+    // neuValue = [neuFace index] [traction vector]
 
     ivector neuFace;
     std::vector<ivector> dirNode;
+
+    // perNode = [antiperiodic axis] [node index pair]
+
+    std::vector<pvector> perNode;
 };
 
 class Mesh{
@@ -45,8 +49,10 @@ class Mesh{
     matrix elemK(int idx);
     shapeStruct shape(int dim);
     matrix totalS(dvector xyz);
+    void periodic(sparse&K,darray &B);
     void dirichlet(sparse&K,darray &B);
-    Mesh(meshStruct &mesh1);
+    void complete(darray &u);
+    Mesh(meshStruct &mesh);
 
     // Internal variables of the system
 
