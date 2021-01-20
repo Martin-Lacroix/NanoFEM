@@ -5,13 +5,13 @@
 struct readStruct{
 
     // Dh = stiffness tensor of holes
-    // Db = stiffness tensor of bulk material
-    // Threshold = maximum fraction of a hole
-    // Boundary = types of boundary conditions
+    // Db = stiffness tensor of the bulk
+    // threshold = maximum fraction of a hole
+    // boundary = [dimension] [pair of type and value]
 
     matrix Dh,Db;
     double threshold;
-    std::vector<std::string> boundary;
+    std::vector<spair> boundary;
 };
 
 void cleanFace(meshStruct &mesh);

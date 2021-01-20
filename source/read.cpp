@@ -86,14 +86,18 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     // Reads the boundary conditions
 
     for(int i=0; i<3; i++){
-
         getline(file,input,'\n');
-        if(input!="imposed strain"){
-            read.boundary.push_back(input);
+
+        if(input=="axial strain"){
+
+            getline(file,input,'\n');
+            spair pair = make_pair("axial strain",input);
+            read.boundary.push_back(pair);
         }
         else{
-            getline(file,input,'\n');
-            read.boundary.push_back(input);
+
+            spair pair = make_pair(input,"none");
+            read.boundary.push_back(pair);
         }
     }
 }
@@ -143,37 +147,40 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                 mesh.nXYZ.push_back({zero[0]+i*elem[0],zero[1]+j*elem[1],zero[2]+k*elem[2]});
 
                 for(int n=0; n<3; n++){
-
                     switch(n){
-                    case 0: now=i; max=nx; break;
-                    case 1: now=j; max=ny; break;
-                    case 2: now=k; max=nz; break;
+
+                        case 0: now=i; max=nx; break;
+                        case 1: now=j; max=ny; break;
+                        case 2: now=k; max=nz; break;
                     }
 
                     // Stores the nodes boundary conditions
 
                     if(now==0){
-                        if(read.boundary[n]=="clamped bottom"){
+                        if(read.boundary[n].first=="clamped"){
 
                             mesh.dirValue[n].push_back(0);
                             mesh.dirNode[n].push_back(idx);
                         }
-                        else if(read.boundary[n]=="periodic free"){
+                        else if(read.boundary[n].first=="periodic"){
                             mesh.perNode[n].first.push_back(idx);
                         }
-                        else{
-                            mesh.dirValue[n].push_back(-stod(read.boundary[n])*dom[n]/2);
+                        else if(read.boundary[n].first=="axial strain"){
+                            
+                            double val = stod(read.boundary[n].second)*dom[n]/2;
+                            mesh.dirValue[n].push_back(-val);
                             mesh.dirNode[n].push_back(idx);
                         }
                     }
                     else if(now==max){
-                        if(read.boundary[n]=="periodic free"){
-                            mesh.perNode[n].second.push_back(idx);
-                        }
-                        else if(read.boundary[n]!="clamped bottom"){
+                        if(read.boundary[n].first=="axial strain"){
 
-                            mesh.dirValue[n].push_back(stod(read.boundary[n])*dom[n]/2);
+                            double val = stod(read.boundary[n].second)*dom[n]/2;
+                            mesh.dirValue[n].push_back(val);
                             mesh.dirNode[n].push_back(idx);
+                        }
+                        else if(read.boundary[n].first=="periodic"){
+                            mesh.perNode[n].second.push_back(idx);
                         }
                     }
                 }

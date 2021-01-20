@@ -57,9 +57,11 @@
 		<group>
 			<param type="LIST" ref="X">
 				<name>BC along X axis</name>
-				<element>clamped bottom</element>
-				<element>periodic free</element>
-				<element>imposed strain</element>
+				<element>axial strain</element>
+				<element>periodic</element>
+				<element>clamped</element>
+				<element>none</element>
+				<default>none</default>
 			</param>
 		</group>
 		<group displayIf="X:imposed strain">
@@ -73,9 +75,11 @@
 		<group>
 			<param type="LIST" ref="Y">
 				<name>BC along Y axis</name>
-				<element>clamped bottom</element>
-				<element>periodic free</element>
-				<element>imposed strain</element>
+				<element>axial strain</element>
+				<element>periodic</element>
+				<element>clamped</element>
+				<element>none</element>
+				<default>none</default>
 			</param>
 		</group>
 		<group displayIf="Y:imposed strain">
@@ -89,9 +93,11 @@
 		<group>
 			<param type="LIST" ref="Z">
 				<name>BC along Z axis</name>
-				<element>clamped bottom</element>
-				<element>periodic free</element>
-				<element>imposed strain</element>
+				<element>axial strain</element>
+				<element>periodic</element>
+				<element>clamped</element>
+				<element>none</element>
+				<default>none</default>
 			</param>
 		</group>
 		<group displayIf="Z:imposed strain">

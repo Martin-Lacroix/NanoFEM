@@ -11,7 +11,9 @@ typedef alglib::sparsematrix sparse;
 typedef alglib::real_2d_array matrix;
 typedef alglib::real_1d_array darray;
 typedef alglib::integer_1d_array iarray;
-typedef std::pair<ivector,ivector> pvector;
+typedef std::vector<std::string> svector;
+typedef std::pair<ivector,ivector> pivector;
+typedef std::pair<std::string,std::string> spair;
 
 struct quadStruct{
 

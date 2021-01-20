@@ -117,7 +117,7 @@ int main(){
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nCreates the mesh --- " << time.count()/1e6 << " sec";
 
-    // Solves the linear system with Gram-Schmidt
+    // Solves the linear system with conjugate gradient
 
     darray u = solve(Mesh,0);
 /*
