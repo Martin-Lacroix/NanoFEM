@@ -14,7 +14,6 @@ struct readStruct{
     std::vector<spair> boundary;
 };
 
-void cleanFace(meshStruct &mesh);
 dvector tovec(std::string input);
 void readMesh(readStruct &read,meshStruct &mesh,std::string path);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);

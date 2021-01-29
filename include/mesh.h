@@ -4,30 +4,26 @@
 
 struct meshStruct{
 
-    // D = [element] [stiffness tensor]
-    // fNode = [face index] [face nodes]
-    // order = order of the quadrature rule
-    // nXYZ = [node index] [node coordinates]
-    // eNode = [element index] [element nodes]
-    // fElem = [element index of the free face]
+    // Main informations about the mesh
 
     int order;
-    ivector fElem;
     std::vector<matrix> D;
     std::vector<dvector> nXYZ;
     std::vector<ivector> eNode;
-    std::vector<ivector> fNode;
+    std::vector<ivector> eSurf;
 
-    // neuFace = [face index]
-    // dirNode = [dimension] [node index]
-    // dirValue = [dimension] [displacement]
-    // neuValue = [neuFace index] [traction vector]
-    // perNode = [antiperiodic axis] [node index pair]
+    // Neumann boundary conditions
     
-    ivector neuFace;
-    std::vector<darray> neuValue;
+    std::vector<ivector> neuNode;
+    std::vector<darray> neuVal;
+
+    // Dirichlet boundary conditions
+
     std::vector<ivector> dirNode;
-    std::vector<dvector> dirValue;
+    std::vector<dvector> dirVal;
+
+    // Periodic boundary conditions
+
     std::vector<pivector> perNode;
 };
 

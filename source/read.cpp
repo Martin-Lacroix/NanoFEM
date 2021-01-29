@@ -19,39 +19,6 @@ dvector tovec(string input){
     return vector;
 }
 
-// Keeps only unique faces in the mesh
-
-void cleanFace(meshStruct &mesh){
-
-    ivector fElem;
-    vector<string> liste;
-    vector<ivector> fNode;
-    int fLen = mesh.fNode.size();
-    unordered_map<string,int> map;
-
-    // removes all the duplicate faces
-
-   for(int i=0; i<fLen; i++){
-
-        ostringstream key;
-        copy(mesh.fNode[i].begin(),mesh.fNode[i].end(),ostream_iterator<int>(key,":"));
-        liste.push_back(key.str());
-        map[liste[i]] += 1;
-   }
-
-   // Rebuilds the face element and node vector
-
-   for(int i=0; i<fLen; i++){
-        if(map[liste[i]]==1){
-
-            fElem.push_back(mesh.fElem[i]);
-            fNode.push_back(mesh.fNode[i]);
-        }
-   }
-    mesh.fElem = fElem;
-    mesh.fNode = fNode;
-}
-
 // Reads the parameter input file
 
 void readInput(readStruct &read,meshStruct &mesh,string path){
@@ -109,9 +76,10 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     int nbr;
     string input;
     ifstream file;
+    vector<ivector> neighbour;
     mesh.perNode.resize(3);
     mesh.dirNode.resize(3);
-    mesh.dirValue.resize(3);
+    mesh.dirVal.resize(3);
     file.open(path);
     file >> nbr;
 
@@ -142,25 +110,25 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
                 // Creates the node coordinates
 
-                int now,max;
+                int ID,max;
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
                 mesh.nXYZ.push_back({zero[0]+i*elem[0],zero[1]+j*elem[1],zero[2]+k*elem[2]});
 
                 for(int n=0; n<3; n++){
                     switch(n){
 
-                        case 0: now=i; max=nx; break;
-                        case 1: now=j; max=ny; break;
-                        case 2: now=k; max=nz; break;
+                        case 0: ID=i; max=nx; break;
+                        case 1: ID=j; max=ny; break;
+                        case 2: ID=k; max=nz; break;
                     }
 
                     // Stores the nodes boundary conditions
 
-                    if(now==0){
+                    if(ID==0){
                         if(read.boundary[n].first=="clamped"){
 
-                            mesh.dirValue[n].push_back(0);
                             mesh.dirNode[n].push_back(idx);
+                            mesh.dirVal[n].push_back(0);
                         }
                         else if(read.boundary[n].first=="periodic"){
                             mesh.perNode[n].first.push_back(idx);
@@ -168,16 +136,16 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                         else if(read.boundary[n].first=="axial strain"){
                             
                             double val = stod(read.boundary[n].second)*dom[n]/2;
-                            mesh.dirValue[n].push_back(-val);
                             mesh.dirNode[n].push_back(idx);
+                            mesh.dirVal[n].push_back(-val);
                         }
                     }
-                    else if(now==max){
+                    else if(ID==max){
                         if(read.boundary[n].first=="axial strain"){
 
                             double val = stod(read.boundary[n].second)*dom[n]/2;
-                            mesh.dirValue[n].push_back(val);
                             mesh.dirNode[n].push_back(idx);
+                            mesh.dirVal[n].push_back(val);
                         }
                         else if(read.boundary[n].first=="periodic"){
                             mesh.perNode[n].second.push_back(idx);
@@ -187,48 +155,6 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
             }
         }
     }
-/*
-    cout << "\n";
-    for(int i=0; i<mesh.dirValue[0].size(); i++){
-        cout << "Node " << mesh.dirNode[0][i] << " - DirValue ux = " << mesh.dirValue[0][i] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.dirValue[1].size(); i++){
-        cout << "Node " << mesh.dirNode[1][i] << " - DirValue uy = " << mesh.dirValue[2][i] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.dirValue[2].size(); i++){
-        cout << "Node " << mesh.dirNode[2][i] << " - DirValue uz = " << mesh.dirValue[2][i] << "\n";
-    }
-
-
-
-    cout << "\nAnti x\n";
-    for(int i=0; i<mesh.perNode[0].first.size(); i++){
-        cout << mesh.perNode[0].first[i] << ", ";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[0].second.size(); i++){
-        cout << mesh.perNode[0].second[i] << ", ";
-    }
-    cout << "\n\nAnti y\n";
-    for(int i=0; i<mesh.perNode[1].first.size(); i++){
-        cout << mesh.perNode[1].first[i] << ", ";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[1].second.size(); i++){
-        cout << mesh.perNode[1].second[i] << ", ";
-    }
-    cout << "\n\nAnti z\n";
-    for(int i=0; i<mesh.perNode[2].first.size(); i++){
-        cout << mesh.perNode[2].first[i] << ", ";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[2].second.size(); i++){
-        cout << mesh.perNode[2].second[i] << ", ";
-    }
-    cout << "\n";
-*/
 
     // Builds the elements and the faces of the mesh
 
@@ -236,31 +162,25 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<ny; j++){
             for(int k=0; k<nz; k++){
 
-                vector<ivector> face(6,ivector(4));
+                int eLen = mesh.eNode.size();
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
-                face[0] = {idx,(ny+1)*(nz+1)+idx,(ny+2)*(nz+1)+idx,nz+idx+1};
-                face[1] = {face[0][0]+1,face[0][1]+1,face[0][2]+1,face[0][3]+1};
-
-                // Makes the left, right, top and bottom faces
-
-                face[2] = {face[0][1],face[0][2],face[1][2],face[1][1]};
-                face[3] = {face[0][0],face[0][3],face[1][3],face[1][0]};
-                face[4] = {face[0][0],face[0][1],face[1][1],face[1][0]};
-                face[5] = {face[0][3],face[0][2],face[1][2],face[1][3]};
+                neighbour.push_back({-1,-1,-1,-1,-1,-1});
 
                 // Stores the nodes of each element
 
-                ivector elem = face[0];
-                elem.insert(elem.end(),face[1].begin(),face[1].end());
-                mesh.eNode.push_back(elem);
+                ivector node = {idx,(ny+1)*(nz+1)+idx,(ny+2)*(nz+1)+idx,nz+idx+1};
+                node.insert(node.end(),{node[0]+1,node[1]+1,node[2]+1,node[3]+1});
+                mesh.eNode.push_back(node);
 
-                // Stores the faces of each element
+                // Stores the list of neightbour elements
 
-                for(int n=0; n<6; n++){
+                if(i!=0){neighbour.back()[0] = eLen-ny*nz;}
+                if(j!=0){neighbour.back()[2] = eLen-nz;}
+                if(k!=0){neighbour.back()[4] = eLen-1;}
 
-                    mesh.fNode.push_back(face[n]);
-                    mesh.fElem.push_back(mesh.eNode.size());
-                }
+                if(i!=nx-1){neighbour.back()[1] = eLen+ny*nz;}
+                if(j!=ny-1){neighbour.back()[3] = eLen+nz;}
+                if(k!=nz-1){neighbour.back()[5] = eLen+1;}
             }
         }
     }
@@ -270,6 +190,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
     getline(file,input,'\n');
     int eLen = mesh.eNode.size();
     dvector fraction(eLen,0);
+    mesh.eSurf.resize(eLen);
     mesh.D.resize(eLen);
 
     while(getline(file,input,' ')){
@@ -294,8 +215,20 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     for(int i=0; i<eLen; i++){
 
-        if(fraction[i]>=read.threshold){mesh.D[i] = read.Db;}
-        else{mesh.D[i] = read.Dh;}
+        if(fraction[i]<read.threshold){
+            mesh.D[i] = read.Dh;
+        }
+
+        // Stores the free surfaces of bulk elements
+
+        else{
+            mesh.D[i] = read.Db;
+            for(int j=0; j<6; j++){
+
+                int idx = neighbour[i][j];
+                if(fraction[idx]<read.threshold){mesh.eSurf[i].push_back(j);}
+            }
+        }
     }
     file.close();
 }
@@ -308,6 +241,5 @@ meshStruct read(string inputPath,string meshPath){
     readStruct read;
     readInput(read,mesh,inputPath);
     readMesh(read,mesh,meshPath);
-    cleanFace(mesh);
     return mesh;
 }

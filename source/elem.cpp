@@ -50,19 +50,18 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
         }
     }
 
-    matrix v1 = math::prod(1,shape.N,coord,1);
-
+    matrix v = math::prod(1,shape.N,coord,1);
     for(int i=0; i<gLen; i++){
 
         // Global coordinates of Gauss points
 
-        gXYZ.push_back({v1(i,0),v1(i,1),v1(i,2)});
+        gXYZ.push_back({v(i,0),v(i,1),v(i,2)});
 
         // Determinant of the Jacobian matrix
 
         detJ(i) = J[0][i]*(J[4][i]*J[8][i]-J[5][i]*J[7][i]);
-        detJ(i) + J[1][i]*(J[5][i]*J[6][i]-J[3][i]*J[8][i]);
-        detJ(i) + J[2][i]*(J[3][i]*J[7][i]-J[4][i]*J[6][i]);
+        detJ(i) += J[1][i]*(J[5][i]*J[6][i]-J[3][i]*J[8][i]);
+        detJ(i) += J[2][i]*(J[3][i]*J[7][i]-J[4][i]*J[6][i]);
 
         // Inverse of the Jacobian matrix
 

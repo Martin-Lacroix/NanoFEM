@@ -56,9 +56,7 @@ darray solve(Mesh mesh,double p){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-
 */
-
 
     sparseconverttocrs(K);
 
@@ -99,7 +97,7 @@ int main(){
     // Reads the input files
 
     string inputPath = "input.txt";
-    string meshPath = "input/coating.xyz";
+    string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Gets computation time
@@ -120,7 +118,7 @@ int main(){
     // Solves the linear system with conjugate gradient
 
     darray u = solve(Mesh,0);
-/*
+
     cout << "\n\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
@@ -134,7 +132,7 @@ int main(){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
 
-*/
+
     // Writes the results in a text file
 
     mkdir("output");

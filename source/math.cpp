@@ -83,7 +83,7 @@ namespace math{
 
     vector<dvector> to2D(vector<dvector> &nXYZ){
 
-        vector<double> n{0,0,0};
+        dvector n{0,0,0};
         darray v1; v1.setlength(3);
         darray v2; v2.setlength(3);
         darray v3; v3.setlength(3);
