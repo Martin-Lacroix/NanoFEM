@@ -55,10 +55,16 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     for(int i=0; i<3; i++){
         getline(file,input,'\n');
 
-        if(input=="axial strain"){
+        if(input=="periodic + strain"){
 
             getline(file,input,'\n');
-            spair pair = make_pair("axial strain",input);
+            spair pair = make_pair("periodic + strain",input);
+            read.boundary.push_back(pair);
+        }
+        else if(input=="clamped + stress"){
+
+            getline(file,input,'\n');
+            spair pair = make_pair("clamped + stress",input);
             read.boundary.push_back(pair);
         }
         else{
@@ -108,7 +114,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<=ny; j++){
             for(int k=0; k<=nz; k++){
 
-                // Creates the node coordinates
+                // Stores the node coordinates
 
                 int ID,max;
                 int idx = i*(ny+1)*(nz+1)+j*(nz+1)+k;
@@ -122,7 +128,7 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                         case 2: ID=k; max=nz; break;
                     }
 
-                    // Stores the nodes boundary conditions
+                    // Stores the Dirichlet boundary conditions
 
                     if(ID==0){
                         if(read.boundary[n].first=="clamped"){
@@ -130,20 +136,27 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
                             mesh.dirNode[n].push_back(idx);
                             mesh.dirVal[n].push_back(0);
                         }
+                        else if(read.boundary[n].first=="clamped + stress"){
+                            
+                            mesh.dirNode[n].push_back(idx);
+                            mesh.dirVal[n].push_back(0);
+                        }
                         else if(read.boundary[n].first=="periodic"){
                             mesh.perNode[n].first.push_back(idx);
                         }
-                        else if(read.boundary[n].first=="axial strain"){
+                        else if(read.boundary[n].first=="periodic + strain"){
                             
                             double val = stod(read.boundary[n].second)*dom[n]/2;
+                            mesh.perNode[n].first.push_back(idx);
                             mesh.dirNode[n].push_back(idx);
                             mesh.dirVal[n].push_back(-val);
                         }
                     }
                     else if(ID==max){
-                        if(read.boundary[n].first=="axial strain"){
+                        if(read.boundary[n].first=="periodic + strain"){
 
                             double val = stod(read.boundary[n].second)*dom[n]/2;
+                            mesh.perNode[n].second.push_back(idx);
                             mesh.dirNode[n].push_back(idx);
                             mesh.dirVal[n].push_back(val);
                         }
@@ -227,6 +240,28 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
                 int idx = neighbour[i][j];
                 if(fraction[idx]<read.threshold){mesh.eSurf[i].push_back(j);}
+            }
+
+            // Stores the Neumann boundary conditions
+
+            for(int n=0; n<3; n++){
+                if(read.boundary[n].first=="clamped + stress"){
+                    
+                    ivector node = mesh.eNode[i];
+                    vector<ivector> face(3,ivector(4));
+                    double val = stod(read.boundary[n].second);
+
+                    face[0] = {node[1],node[2],node[6],node[5]};
+                    face[1] = {node[2],node[6],node[7],node[3]};
+                    face[2] = {node[4],node[5],node[6],node[7]};
+
+                    if(neighbour[i][2*n+1]==-1){
+                                    
+                        mesh.neuNode.push_back(face[n]);
+                        mesh.neuVal.push_back("[0,0,0]");
+                        mesh.neuVal.back()[n] = val;
+                    }
+                }
             }
         }
     }

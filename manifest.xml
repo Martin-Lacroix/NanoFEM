@@ -57,16 +57,24 @@
 		<group>
 			<param type="LIST" ref="X">
 				<name>BC along X axis</name>
-				<element>axial strain</element>
+				<element>periodic + strain</element>
+				<element>clamped + stress</element>
 				<element>periodic</element>
 				<element>clamped</element>
 				<element>none</element>
 				<default>none</default>
 			</param>
 		</group>
-		<group displayIf="X:imposed strain">
+		<group displayIf="X:periodic + strain">
 			<param type="DOUBLE">
 				<name>Total strain</name>
+				<default>0</default>
+				<unit>-</unit>
+			</param>
+		</group>
+		<group displayIf="X:clamped + stress">
+			<param type="STRING">
+				<name>Total stress</name>
 				<default>0</default>
 				<unit>?</unit>
 			</param>
@@ -75,16 +83,24 @@
 		<group>
 			<param type="LIST" ref="Y">
 				<name>BC along Y axis</name>
-				<element>axial strain</element>
+				<element>periodic + strain</element>
+				<element>clamped + stress</element>
 				<element>periodic</element>
 				<element>clamped</element>
 				<element>none</element>
 				<default>none</default>
 			</param>
 		</group>
-		<group displayIf="Y:imposed strain">
+		<group displayIf="Y:periodic + strain">
 			<param type="DOUBLE">
 				<name>Total strain</name>
+				<default>0</default>
+				<unit>-</unit>
+			</param>
+		</group>
+		<group displayIf="Y:clamped + stress">
+			<param type="STRING">
+				<name>Total stress</name>
 				<default>0</default>
 				<unit>?</unit>
 			</param>
@@ -93,16 +109,24 @@
 		<group>
 			<param type="LIST" ref="Z">
 				<name>BC along Z axis</name>
-				<element>axial strain</element>
+				<element>periodic + strain</element>
+				<element>clamped + stress</element>
 				<element>periodic</element>
 				<element>clamped</element>
 				<element>none</element>
 				<default>none</default>
 			</param>
 		</group>
-		<group displayIf="Z:imposed strain">
+		<group displayIf="Z:periodic + strain">
 			<param type="DOUBLE">
 				<name>Total strain</name>
+				<default>0</default>
+				<unit>-</unit>
+			</param>
+		</group>
+		<group displayIf="Z:clamped + stress">
+			<param type="DOUBLE">
+				<name>Total stress</name>
 				<default>0</default>
 				<unit>?</unit>
 			</param>
