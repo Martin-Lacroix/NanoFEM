@@ -102,22 +102,25 @@ int main(){
 
     // Gets computation time
 
+    cout << "\nReads the files --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nReads the files --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec";
 
     // Creates the mesh object
 
     Mesh Mesh(mesh);
 
+    cout << "\nCreates the mesh --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nCreates the mesh --- " << time.count()/1e6 << " sec";
+    cout << time.count()/1e6 << " sec";
 
     // Solves the linear system with conjugate gradient
 
     darray u = solve(Mesh,0);
+
 
     cout << "\n\n";
     for(int i=0; i<u.length()/3; i++){
@@ -150,7 +153,8 @@ int main(){
 
     // Gets computation time
 
+    cout << "\nWrites the results --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nWrites the results --- " << time.count()/1e6 << " sec\n\n";
+    cout << time.count()/1e6 << " sec\n\n";
 }

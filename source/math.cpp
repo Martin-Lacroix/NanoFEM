@@ -24,8 +24,8 @@ namespace math{
 
         double mu = E/(2*(1+v));
         double lam = E*v/((1+v)*(1-2*v));
-        D(0,1) = D(0,2) = D(1,2)= lam;
-        D(1,0) = D(2,0) = D(2,1)= lam;
+        D(0,1) = D(0,2) = D(1,2) = lam;
+        D(1,0) = D(2,0) = D(2,1) = lam;
 
         for(int i=0; i<3; i++){
 

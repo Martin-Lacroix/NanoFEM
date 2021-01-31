@@ -1,3 +1,4 @@
+#include <bits/stdc++.h>
 #include <algorithm>
 #include "linalg.h"
 #include "stdafx.h"

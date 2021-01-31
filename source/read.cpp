@@ -23,31 +23,26 @@ dvector tovec(string input){
 
 void readInput(readStruct &read,meshStruct &mesh,string path){
 
-    double E,v;
     string input;
     ifstream file;
     file.open(path);
 
     // Reads the general parameters
 
-    getline(file,input,';');
-    mesh.order = stoi(input);
     getline(file,input,' ');
-    read.threshold = stod(input);
-    getline(file,input,'\n');
-
-    // Reads the bulk parameters
-
-    getline(file,input,';'); E = stod(input);
-    getline(file,input,' '); v = stod(input);
-    read.Db = math::stiffness(E,v);
+    mesh.order = stoi(input);
     getline(file,input,'\n');
 
     // Reads the hole parameters
 
-    getline(file,input,';'); E = stod(input);
-    getline(file,input,' '); v = stod(input);
-    read.Dh = math::stiffness(E,v);
+    getline(file,input,';'); read.E.push_back(stod(input));
+    getline(file,input,' '); read.v.push_back(stod(input));
+    getline(file,input,'\n');
+
+    // Reads the bulk parameters
+
+    getline(file,input,';'); read.E.push_back(stod(input));
+    getline(file,input,' '); read.v.push_back(stod(input));
     getline(file,input,'\n');
 
     // Reads the boundary conditions
@@ -202,14 +197,16 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     getline(file,input,'\n');
     int eLen = mesh.eNode.size();
+    dvector tol = {-1e-5,1e-5};
     dvector fraction(eLen,0);
     mesh.eSurf.resize(eLen);
     mesh.D.resize(eLen);
 
     while(getline(file,input,' ')){
 
-        // Coodrinates of the species
+        // Coodrinates of the chemical species
 
+        unordered_set<int> set;
         getline(file,input,';');
         dvector coord = tovec(input);
         getline(file,input,';');
@@ -217,49 +214,56 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
         // Filling fraction of the elements
 
-        int dx = nx*coord[0]/dom[0];
-        int dy = ny*coord[1]/dom[1];
-        int dz = nz*coord[2]/dom[2];
-        int index = dx*ny*nz+dy*nz+dz;
-        fraction[index] += stod(input);
+        for(int i=0; i<2; i++){
+
+            int dx = nx*coord[0]/dom[0]+tol[i];
+            if(dx>=nx){continue;}
+
+            for(int j=0; j<2; j++){
+
+                int dy = ny*coord[1]/dom[1]+tol[j];
+                if(dy>=ny){continue;}
+
+                for(int k=0; k<2; k++){
+                            
+                    int dz = nz*coord[2]/dom[2]+tol[k];
+                    if(dz<nz){set.insert(dx*ny*nz+dy*nz+dz);}
+                }
+            }
+        }
+        for (int i:set){
+            fraction[i] += stod(input)/set.size();
+        }
     }
 
-    // Creates the element stiffness tensors
+    // Computes the stiffness tensor of the elements
 
     for(int i=0; i<eLen; i++){
 
-        if(fraction[i]<read.threshold){
-            mesh.D[i] = read.Dh;
-        }
+        if(fraction[i]>1){fraction[i] = 1;}
+        double E = fraction[i]*read.E[1] + (1-fraction[i])*read.E[0];
+        double v = fraction[i]*read.v[1] + (1-fraction[i])*read.v[0];
+        mesh.D[i] = math::stiffness(E,v);
 
-        // Stores the free surfaces of bulk elements
+        // Stores the Neumann boundary conditions
 
-        else{
-            mesh.D[i] = read.Db;
-            for(int j=0; j<6; j++){
-
-                int idx = neighbour[i][j];
-                if(fraction[idx]<read.threshold){mesh.eSurf[i].push_back(j);}
-            }
-
-            // Stores the Neumann boundary conditions
-
-            for(int n=0; n<3; n++){
-                if(read.boundary[n].first=="clamped + stress"){
-                    
+        if(fraction[i]>0){
+            for(int j=0; j<3; j++){
+                if(read.boundary[j].first=="clamped + stress"){
+                        
                     ivector node = mesh.eNode[i];
                     vector<ivector> face(3,ivector(4));
-                    double val = stod(read.boundary[n].second);
+                    double val = stod(read.boundary[j].second);
 
                     face[0] = {node[1],node[2],node[6],node[5]};
                     face[1] = {node[2],node[6],node[7],node[3]};
                     face[2] = {node[4],node[5],node[6],node[7]};
 
-                    if(neighbour[i][2*n+1]==-1){
-                                    
-                        mesh.neuNode.push_back(face[n]);
+                    if(neighbour[i][2*j+1]==-1){
+                                        
+                        mesh.neuNode.push_back(face[j]);
                         mesh.neuVal.push_back("[0,0,0]");
-                        mesh.neuVal.back()[n] = val;
+                        mesh.neuVal.back()[j] = val;
                     }
                 }
             }

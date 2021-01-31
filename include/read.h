@@ -4,14 +4,13 @@
 
 struct readStruct{
 
-    // Dh = stiffness tensor of holes
-    // Db = stiffness tensor of the bulk
-    // threshold = maximum fraction of a hole
-    // boundary = [dimension] [pair of type and value]
+    // E and v are Young modulus and Poisson ratio
+    // boundary is the type and value of the BC in each dimension.
 
-    matrix Dh,Db;
-    double threshold;
+    dvector E;
+    dvector v;
     std::vector<spair> boundary;
+
 };
 
 dvector tovec(std::string input);

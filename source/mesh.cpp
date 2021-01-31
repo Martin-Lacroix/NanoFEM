@@ -1,5 +1,4 @@
 #include "..\include\mesh.h"
-#include <bits/stdc++.h>
 using namespace std;
 
 // Builds the elements, shape functions and quadratures

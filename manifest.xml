@@ -21,18 +21,13 @@
 				<default>1</default>
 				<unit>-</unit>
 			</param>
-			<param type="DOUBLE">
-				<name>Filling threshold</name>
-				<default>0.5</default>
-				<unit>-</unit>
-			</param>
 		</group>
 
-		<group name="Bulk Parameters">
+		<group name="Hole Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
 				<default>1</default>
-				<unit>MPa</unit>
+				<unit>?</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
@@ -41,11 +36,11 @@
 			</param>
 		</group>
 
-		<group name="Hole Parameters">
+		<group name="Bulk Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
 				<default>1</default>
-				<unit>MPa</unit>
+				<unit>?</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
