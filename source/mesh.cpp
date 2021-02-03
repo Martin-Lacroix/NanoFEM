@@ -265,40 +265,29 @@ darray Mesh::neumann(){
 void Mesh::dirichlet(sparse &K,darray &B){
 
     double val;
-    alglib::ae_int_t i=0,j=0;
-    alglib::ae_int_t I=0,J=0;
     int nLen = mesh.nXYZ.size();
-    vector<ivector> row(3*nLen);
-    vector<ivector> col(3*nLen);
-
-    // Stores the non-zero index per row and column
-
-    while(alglib::sparseenumerate(K,I,J,i,j,val)){
-        
-        row[i].push_back(j);
-        col[j].push_back(i);
-    }
+    matStruct mat = math::mapclean(K);
 
     // Edits the sparse matrix for dirichlet BC
 
     for(int n=0; n<3; n++){
         int dLen = mesh.dirNode[n].size();
 
-        for(int m=0; m<dLen; m++){
-            int idx = mesh.dirNode[n][m]+n*nLen;
+        for(int i=0; i<dLen; i++){
+            int idx = mesh.dirNode[n][i]+n*nLen;
 
-            for(int k=0; k<col[idx].size(); k++){
-                
-                B(col[idx][k]) -= alglib::sparseget(K,col[idx][k],idx)*mesh.dirVal[n][m];
-                alglib::sparseset(K,col[idx][k],idx,0);
+            for(int j:mat.col[idx]){
+
+                B[j] -= alglib::sparseget(K,j,idx)*mesh.dirVal[n][i];
+                alglib::sparseset(K,j,idx,0);
             }
-            for(int k=0; k<row[idx].size(); k++){
-                alglib::sparseset(K,idx,row[idx][k],0);
+            for(int j:mat.row[idx]){
+                alglib::sparseset(K,idx,j,0);
             }
         }
     }
 
-    // Edits the boundary vector for periodic BC
+    // Edits the boundary vector for dirichlet BC
 
     for(int n=0; n<3; n++){
         for(int m=0; m<mesh.dirNode[n].size(); m++){
@@ -315,55 +304,51 @@ void Mesh::dirichlet(sparse &K,darray &B){
 void Mesh::periodic(sparse &K,darray &B){
 
     double val;
-    ivector sign{-1,1,1};
-    alglib::ae_int_t i=0,j=0;
-    alglib::ae_int_t I=0,J=0;
     int nLen = mesh.nXYZ.size();
-    vector<unordered_set<int>> row(3*nLen);
-    vector<unordered_set<int>> col(3*nLen);
-
-    // Stores the non-zero index per row and column
-
-    while(alglib::sparseenumerate(K,I,J,i,j,val)){
-
-        row[i].insert(j);
-        col[j].insert(i);
-    }
+    matStruct mat = math::mapclean(K);
 
     // Edits the sparse matrix for periodic BC
 
     for(int n=0; n<3; n++){
+        for(int i=0; i<mesh.perNode[n].size(); i++){
+            int dLen = mesh.perNode[n][i].size();
 
-        ivector dim{n,(n+1)%3,(n+2)%3};
-        int dLen = mesh.perNode[n].first.size();
+            for(int j=0; j<dLen-1; j++){
 
-        for(int d=0; d<3; d++){
-            for(int m=0; m<dLen; m++){
+                int idx1 = mesh.perNode[n][i][j]+n*nLen;
+                int idx2 = mesh.perNode[n][i][j+1]+n*nLen;
 
-                int idx1 = mesh.perNode[n].first[m]+dim[d]*nLen;
-                int idx2 = mesh.perNode[n].second[m]+dim[d]*nLen;
+                for(int k:mat.row[idx1]){
+                    val = alglib::sparseget(K,idx1,k);
 
-                for (int k:row[idx1]){
+                    if(val!=0){
+                        if(alglib::sparseget(K,idx2,k)==0){
 
-                    val = sign[d]*alglib::sparseget(K,idx1,k);
-                    alglib::sparseadd(K,idx2,k,val);
-                    row[idx2].insert(k);
-                    col[k].insert(idx2);
+                            mat.row[idx2].push_back(k);
+                            mat.col[k].push_back(idx2);
+                        }
+                        alglib::sparseadd(K,idx2,k,val);
+                        alglib::sparseset(K,idx1,k,0);
+                    }
                 }
-                for (int k:col[idx1]){
-
-                    val = sign[d]*alglib::sparseget(K,k,idx1);
-                    alglib::sparseadd(K,k,idx2,val);
-                    col[idx2].insert(k);
-                    row[k].insert(idx2);
+                for(int k:mat.col[idx1]){
+                    val = alglib::sparseget(K,k,idx1);
+                    
+                    if(val!=0){
+                        if(alglib::sparseget(K,k,idx2)==0){
+                            
+                            mat.col[idx2].push_back(k);
+                            mat.row[k].push_back(idx2);
+                        }
+                        alglib::sparseadd(K,k,idx2,val);
+                        alglib::sparseset(K,k,idx1,0);
+                    }
                 }
-                for (int k:row[idx1]){alglib::sparseset(K,idx1,k,0);}
-                for (int k:col[idx1]){alglib::sparseset(K,k,idx1,0);}
 
                 // Edits the B vector for periodic BC
 
                 alglib::sparseset(K,idx1,idx1,1);
-                B(idx2) += sign[d]*B(idx1);
+                B(idx2) += B(idx1);
                 B(idx1) = 0;
             }
         }
@@ -374,18 +359,15 @@ void Mesh::periodic(sparse &K,darray &B){
 
 void Mesh::complete(darray &u){
 
-    ivector sign{-1,1,1};
     int nLen = mesh.nXYZ.size();
 
     for(int n=0; n<3; n++){
-        ivector dim{n,(n+1)%3,(n+2)%3};
+        for(int i=0; i<mesh.perNode[n].size(); i++){
+            for(int j=0; j<mesh.perNode[n][i].size(); j++){
 
-        for(int d=0; d<3; d++){
-            for(int i=0; i<mesh.perNode[n].first.size(); i++){
-
-                int idx1 = mesh.perNode[n].first[i]+dim[d]*nLen;
-                int idx2 = mesh.perNode[n].second[i]+dim[d]*nLen;
-                u[idx1] = sign[d]*u[idx2];
+                int idx1 = mesh.perNode[n][i][j]+n*nLen;
+                int idx2 = mesh.perNode[n][i].back()+n*nLen;
+                u[idx1] = u[idx2];
             }
         }
     }

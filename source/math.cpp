@@ -201,4 +201,32 @@ namespace math{
             alglib::sparseadd(M2,i,j,k1*val);
         }
     }
+
+    // Cleans and stores the non-zero indices of a sparse matrix
+
+    matStruct mapclean(sparse &K){
+
+        double val;
+        matStruct mat;
+        alglib::ae_int_t i=0,j=0;
+        alglib::ae_int_t I=0,J=0;
+
+        int nLen = alglib::sparsegetnrows(K);
+        mat.row.resize(3*nLen);
+        mat.col.resize(3*nLen);
+
+        // Stores the non-zero indices per row and column
+
+        while(alglib::sparseenumerate(K,I,J,i,j,val)){
+
+            if(abs(val)<1e-16){
+                alglib::sparseset(K,i,j,0);
+            }
+            else{
+                mat.row[i].push_back(j);
+                mat.col[j].push_back(i);
+            }
+        }
+        return mat;
+    }
 }

@@ -22,10 +22,17 @@ struct quadStruct{
     std::vector<dvector> gRST;
 };
 
+struct matStruct{
+
+    std::vector<ivector> row;
+    std::vector<ivector> col;
+};
+
 namespace math{
 
     void zero(darray &V);
     void zero(matrix &M);
+    matStruct mapclean(sparse &K);
     double kernel(dvector x,dvector y);
     matrix stiffness(double E,double v);
     darray cross(darray &V1,darray &V2);

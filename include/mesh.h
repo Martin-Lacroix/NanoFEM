@@ -22,9 +22,9 @@ struct meshStruct{
     std::vector<ivector> dirNode;
     std::vector<dvector> dirVal;
 
-    // Periodic boundary conditions
+    // Periodic and coupled boundary conditions
 
-    std::vector<pivector> perNode;
+    std::vector<std::vector<ivector>> perNode;
 };
 
 class Mesh{

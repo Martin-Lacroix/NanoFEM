@@ -13,6 +13,7 @@ darray solve(Mesh mesh,double p){
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << "Builds the matrix --- ";
 
     // Builds the full system matrix
 
@@ -32,20 +33,19 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBuilds the matrix --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
+    cout << "Boundary conditions --- ";
 
     // Applies boundary conditions
 
     darray B = mesh.neumann();
     int nLen = B.length();
-
     mesh.periodic(K,B);
-    mesh.dirichlet(K,B);
 
-/*
-    ofstream Kfile("Kfile.txt");
-    ofstream Bfile("Bfile.txt");
+
+    ofstream Kfile("output/K.txt");
+    ofstream Bfile("output/B.txt");
 
     for(int i=0; i<B.length(); i++){
         for(int j=0; j<B.length(); j++){
@@ -56,14 +56,16 @@ darray solve(Mesh mesh,double p){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-*/
 
+
+    mesh.dirichlet(K,B);
     sparseconverttocrs(K);
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBoundary conditions --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
+    cout << "Solves the system --- ";
     
     // Solves the symmetric linear system
 
@@ -80,8 +82,8 @@ darray solve(Mesh mesh,double p){
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nSolves the system --- " << time.count()/1e6 << " sec";
     start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
     return u;
 }
 
@@ -93,6 +95,7 @@ int main(){
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << "\nReads the files --- ";
 
     // Reads the input files
 
@@ -102,25 +105,23 @@ int main(){
 
     // Gets computation time
 
-    cout << "\nReads the files --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec";
+    cout << time.count()/1e6 << " sec\n";
+    cout << "Creates the mesh --- ";
 
     // Creates the mesh object
 
     Mesh Mesh(mesh);
 
-    cout << "\nCreates the mesh --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << time.count()/1e6 << " sec";
+    cout << time.count()/1e6 << " sec\n";
 
     // Solves the linear system with conjugate gradient
 
     darray u = solve(Mesh,0);
-
 
     cout << "\n\n";
     for(int i=0; i<u.length()/3; i++){
@@ -142,6 +143,7 @@ int main(){
     start = chrono::high_resolution_clock::now();
     ofstream coordinates("output/coordinates.txt");
     ofstream displacement("output/displacement.txt");
+    cout << "Writes the results --- ";
 
     for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
     for(int i=0; i<Mesh.mesh.nXYZ.size(); i++){
@@ -153,7 +155,6 @@ int main(){
 
     // Gets computation time
 
-    cout << "\nWrites the results --- ";
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << time.count()/1e6 << " sec\n\n";
