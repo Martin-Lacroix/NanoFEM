@@ -43,7 +43,7 @@ darray solve(Mesh mesh,double p){
     int nLen = B.length();
     mesh.periodic(K,B);
 
-
+/*
     ofstream Kfile("output/K.txt");
     ofstream Bfile("output/B.txt");
 
@@ -57,7 +57,7 @@ darray solve(Mesh mesh,double p){
         Bfile << B[i] << "\n";
     }
 
-
+*/
     mesh.dirichlet(K,B);
     sparseconverttocrs(K);
 

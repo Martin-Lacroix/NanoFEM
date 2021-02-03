@@ -38,15 +38,12 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 
             // Jacobian matrix at Gauss points
 
-            J(0,j) += shape.drN(i,j)*nXYZ[i][0];
-            J(1,j) += shape.drN(i,j)*nXYZ[i][1];
-            J(2,j) += shape.drN(i,j)*nXYZ[i][2];
-            J(3,j) += shape.dsN(i,j)*nXYZ[i][0];
-            J(4,j) += shape.dsN(i,j)*nXYZ[i][1];
-            J(5,j) += shape.dsN(i,j)*nXYZ[i][2];
-            J(6,j) += shape.dtN(i,j)*nXYZ[i][0];
-            J(7,j) += shape.dtN(i,j)*nXYZ[i][1];
-            J(8,j) += shape.dtN(i,j)*nXYZ[i][2];
+            for(int k=0; k<3; k++){
+                
+                J(k,j) += shape.drN(i,j)*nXYZ[i][k];
+                J(k+3,j) += shape.dsN(i,j)*nXYZ[i][k];
+                J(k+6,j) += shape.dtN(i,j)*nXYZ[i][k];
+            }
         }
     }
 
@@ -65,15 +62,14 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 
         // Inverse of the Jacobian matrix
 
-        invJ(0,i) = (J[4][i]*J[8][i]-J[5][i]*J[7][i])/detJ(i);
-        invJ(1,i) = (J[2][i]*J[7][i]-J[1][i]*J[8][i])/detJ(i);
-        invJ(2,i) = (J[1][i]*J[5][i]-J[2][i]*J[4][i])/detJ(i);
-        invJ(3,i) = (J[5][i]*J[6][i]-J[3][i]*J[8][i])/detJ(i);
-        invJ(4,i) = (J[0][i]*J[8][i]-J[2][i]*J[6][i])/detJ(i);
-        invJ(5,i) = (J[2][i]*J[3][i]-J[0][i]*J[5][i])/detJ(i);
-        invJ(6,i) = (J[3][i]*J[7][i]-J[4][i]*J[6][i])/detJ(i);
-        invJ(7,i) = (J[1][i]*J[6][i]-J[0][i]*J[7][i])/detJ(i);
-        invJ(8,i) = (J[0][i]*J[4][i]-J[1][i]*J[3][i])/detJ(i);
+        for(int j=0; j<3; j++){
+            for(int k=0; k<3; k++){
+
+                invJ(3*j+k,i) = J[(j+1)%3*3+(k+1)%3][i]*J[(j+2)%3*3+(k+2)%3][i];
+                invJ(3*j+k,i) -= J[(j+2)%3*3+(k+1)%3][i]*J[(j+1)%3*3+(k+2)%3][i];
+                invJ(3*j+k,i) /= detJ(i);
+            }
+        }
 
         // Global derivatives of shape functions
 
@@ -162,11 +158,11 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<gLen; j++){
+            for(int k=0; k<2; k++){
 
-            J(0,j) += shape.drN(i,j)*nXY[i][0];
-            J(1,j) += shape.drN(i,j)*nXY[i][1];
-            J(2,j) += shape.dsN(i,j)*nXY[i][0];
-            J(3,j) += shape.dsN(i,j)*nXY[i][1];
+                J(k,j) += shape.drN(i,j)*nXY[i][k];
+                J(k+2,j) += shape.dsN(i,j)*nXY[i][k];
+            }
         }
     }
 

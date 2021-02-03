@@ -42,7 +42,6 @@ void setBC(readStruct &read,meshStruct &mesh,vector<ivector> &row,ivector loop){
                 mesh.dirNode[i].push_back(idx);
                 mesh.dirVal[i].push_back(0);
             }
-
             else if(bc=="axial stress" || bc=="periodic"){
 
                 mesh.dirNode[i].push_back(idx);
@@ -157,19 +156,17 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
 void readMesh(readStruct &read,meshStruct &mesh,string path){
 
-    int nLen;
     string input;
-    ivector dLen;
     ifstream file;
     vector<ivector> neighbour;
     mesh.perNode.resize(3);
     mesh.dirNode.resize(3);
     mesh.dirVal.resize(3);
     file.open(path);
-    file >> nLen;
 
     // Reads the size of the domain
 
+    getline(file,input,'\n');
     for(int i=0; i<2; i++){getline(file,input,';');}
     dvector dom = tovec(input.substr(8));
 
@@ -188,13 +185,13 @@ void readMesh(readStruct &read,meshStruct &mesh,string path){
 
     for(int i=0; i<3; i++){
 
-        if(read.boundary[i].first=="axial stress"){mesh.perNode[i].resize(1);}
-        else if(read.boundary[i].first=="periodic"){mesh.perNode[i].resize(1);}
+        string bc = read.boundary[i].first;
+        if(bc=="axial stress" || bc=="periodic"){mesh.perNode[i].resize(1);}
         read.dLen.push_back(0.1+read.dSize[i]/eSize[i]);
-        dLen.push_back(read.dLen[i]);
     }
 
-    nLen = (dLen[0]+1)*(dLen[1]+1)*(dLen[2]+1);
+    ivector dLen = read.dLen;
+    int nLen = (dLen[0]+1)*(dLen[1]+1)*(dLen[2]+1);
     vector<ivector> row(3,ivector(nLen,-1));
 
     // Stores the node coordinates and set BC
@@ -325,36 +322,5 @@ meshStruct read(string inputPath,string meshPath){
     readStruct read;
     readInput(read,mesh,inputPath);
     readMesh(read,mesh,meshPath);
-
-
-/*
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[0].size(); i++){
-        cout << "perNode[0][" << i << "] = {";
-        for(int j=0; j<mesh.perNode[0][i].size(); j++){
-            cout << mesh.perNode[0][i][j] << ", ";
-        }
-        cout << "}\n";
-    }
-
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[1].size(); i++){
-        cout << "perNode[1][" << i << "] = {";
-        for(int j=0; j<mesh.perNode[1][i].size(); j++){
-            cout << mesh.perNode[1][i][j] << ", ";
-        }
-        cout << "}\n";
-    }
-
-    cout << "\n";
-    for(int i=0; i<mesh.perNode[2].size(); i++){
-        cout << "perNode[2][" << i << "] = {";
-        for(int j=0; j<mesh.perNode[2][i].size(); j++){
-            cout << mesh.perNode[2][i][j] << ", ";
-        }
-        cout << "}\n";
-    }
-*/
-
     return mesh;
 }

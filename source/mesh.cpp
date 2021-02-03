@@ -278,7 +278,7 @@ void Mesh::dirichlet(sparse &K,darray &B){
 
             for(int j:mat.col[idx]){
 
-                B[j] -= alglib::sparseget(K,j,idx)*mesh.dirVal[n][i];
+                B(j) -= alglib::sparseget(K,j,idx)*mesh.dirVal[n][i];
                 alglib::sparseset(K,j,idx,0);
             }
             for(int j:mat.row[idx]){
@@ -316,17 +316,14 @@ void Mesh::periodic(sparse &K,darray &B){
             for(int j=0; j<dLen-1; j++){
 
                 int idx1 = mesh.perNode[n][i][j]+n*nLen;
-                int idx2 = mesh.perNode[n][i][j+1]+n*nLen;
+                int idx2 = mesh.perNode[n][i].back()+n*nLen;
 
                 for(int k:mat.row[idx1]){
                     val = alglib::sparseget(K,idx1,k);
 
                     if(val!=0){
-                        if(alglib::sparseget(K,idx2,k)==0){
 
-                            mat.row[idx2].push_back(k);
-                            mat.col[k].push_back(idx2);
-                        }
+                        if(alglib::sparseget(K,idx2,k)==0){mat.col[k].push_back(idx2);}
                         alglib::sparseadd(K,idx2,k,val);
                         alglib::sparseset(K,idx1,k,0);
                     }
@@ -335,11 +332,8 @@ void Mesh::periodic(sparse &K,darray &B){
                     val = alglib::sparseget(K,k,idx1);
                     
                     if(val!=0){
-                        if(alglib::sparseget(K,k,idx2)==0){
-                            
-                            mat.col[idx2].push_back(k);
-                            mat.row[k].push_back(idx2);
-                        }
+
+                        if(alglib::sparseget(K,k,idx2)==0){mat.row[k].push_back(idx2);}
                         alglib::sparseadd(K,k,idx2,val);
                         alglib::sparseset(K,k,idx1,0);
                     }
