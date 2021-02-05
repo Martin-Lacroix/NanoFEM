@@ -2,6 +2,10 @@
 #ifndef MESH_H
 #define MESH_H
 
+// ----------------------------------------|
+// Structure storing the mesh parameters   |
+// ----------------------------------------|
+
 struct meshStruct{
 
     // Main informations about the mesh
@@ -27,11 +31,15 @@ struct meshStruct{
     std::vector<std::vector<ivector>> perNode;
 };
 
+// -------------------------------|
+// Class of finite element mesh   |
+// -------------------------------|
+
 class Mesh{
 
     public:
 
-    // Functions for computing the system matrix
+    // Functions available in the mesh.cpp file
 
     sparse localK();
     darray neumann();

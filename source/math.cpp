@@ -3,7 +3,9 @@ using namespace std;
 
 namespace math{
 
-    // Non-local kernel density function
+    // -------------------------------------------------|
+    // Computes the non-local kernel density function   |
+    // -------------------------------------------------|
 
     double kernel(dvector x,dvector y){
 
@@ -14,7 +16,9 @@ namespace math{
         return k;
     }
 
-    // Generates the stiffness tensor
+    // --------------------------------------------------------------------------|
+    // Computes the stiffness tensor D for linear elasticity in Voigh notation   |
+    // --------------------------------------------------------------------------|
 
     matrix stiffness(double E,double v){
 
@@ -22,10 +26,14 @@ namespace math{
         D.setlength(6,6);
         math::zero(D);
 
+        // Computes the Lamé parameters
+
         double mu = E/(2*(1+v));
         double lam = E*v/((1+v)*(1-2*v));
         D(0,1) = D(0,2) = D(1,2) = lam;
         D(1,0) = D(2,0) = D(2,1) = lam;
+
+        // Fills the diagonal elements of the matrix
 
         for(int i=0; i<3; i++){
 
@@ -35,7 +43,9 @@ namespace math{
         return D;
     }
 
-    // Legendre quadrature rule generator
+    // ------------------------------------------------|
+    // Generates the Gauss-Legendre quadrature rule    |
+    // ------------------------------------------------|
 
     quadStruct legendre(int dim,int order){
 
@@ -45,13 +55,13 @@ namespace math{
         darray Ja; Ja.setlength(nbr);
         darray Jb; Jb.setlength(nbr-1);
 
-        // Generates the three term coefficients
+        // Generates the three term recurrence coefficients
         
         for(int i=1; i<nbr; i++){Jb(i-1) = i/sqrt(4*i*i-1);}
         for(int i=0; i<nbr; i++){Ja(i) = 0;}
         alglib::smatrixtdevd(Ja,Jb,nbr,3,M);
 
-        // Cube element quadrature rule
+        // Quadrature rule for 8-node brick linear element in 3D
 
         if(dim==3){     
             for(int i=0; i<nbr; i++){
@@ -65,7 +75,7 @@ namespace math{
             }
         }
 
-        // Square face quadrature rule
+        // Quadrature rule for 4-node quadrangle linear element in 2D
 
         if(dim==2){
             for(int i=0; i<nbr; i++){
@@ -79,7 +89,9 @@ namespace math{
         return quad;
     }
 
-    // Converts a 3D square into 2D square
+    // ----------------------------------------------------------|
+    // Converts a 4-node quadrangle from 3D space to 2D space    |
+    // ----------------------------------------------------------|
 
     vector<dvector> to2D(vector<dvector> &nXYZ){
 
@@ -89,6 +101,8 @@ namespace math{
         darray v3; v3.setlength(3);
         double n21=0, dot2=0;
         double n31=0, dot3=0;
+
+        // Stores the basis vectors of the face and their norm
 
         for(int i=0; i<3; i++){
 
@@ -101,8 +115,12 @@ namespace math{
             n[2] += v3[i]*v3[i];
         }
 
+        // Computes the cross product of the basis vectors
+
         darray v21 = cross(v2,v1);
         darray v31 = cross(v3,v1);
+
+        // Dot product of the cross vectors and their norm
 
         for(int i=0; i<3; i++){
             
@@ -112,13 +130,17 @@ namespace math{
             dot3 += v3[i]*v1[i];
         }
 
+        // Coordinates in the 2D space of the quadrangle
+
         double l2 = copysign(sqrt(abs(n[1]-n21/n[0])),dot2);
         double l3 = copysign(sqrt(abs(n[2]-n31/n[0])),dot3);
         vector<dvector> nXY = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
         return nXY;
     }
 
-    // Standard vector cross product V3 = V1 × V2
+    // ----------------------------------------------|
+    // Standard vector cross product V3 = V1 × V2    |
+    // ----------------------------------------------|
 
     darray cross(darray &V1,darray &V2){
 
@@ -129,7 +151,9 @@ namespace math{
         return V3;
     }
 
-    // Standard matrix-matrix addition M2 = k1 M1 + k2 M2
+    // ------------------------------------------------------|
+    // Standard matrix-matrix addition M2 = k1 M1 + k2 M2    |
+    // ------------------------------------------------------|
 
     void add(double k1,double k2,matrix &M1,matrix &M2){
 
@@ -138,7 +162,9 @@ namespace math{
         alglib::rmatrixgencopy(m,n,k1,M1,0,0,k2,M2,0,0);
     }
 
-    // Matrix-matrix product M3 = k op(M1) op(M2), tj = matrix Mj is transposed
+    // --------------------------------------------------------------------------|
+    // Matrix-matrix product M3 = k M1 M2, tj = 1 means that Mj is transposed    |
+    // --------------------------------------------------------------------------|
 
     matrix prod(double k,matrix &M1,matrix &M2,int t1,int t2){
 
@@ -146,32 +172,44 @@ namespace math{
         int n = M2.cols();
         int w = M1.cols();
 
+        // Transpose the matrices if required
+
         if(t1==1){w = M1.rows(); m = M1.cols();}
         if(t2==1){n = M2.rows();}
+
+        // Performs the product with Alglib
 
         matrix M3; M3.setlength(m,n);
         alglib::rmatrixgemm(m,n,w,k,M1,0,0,t1,M2,0,0,t2,0,M3,0,0);
         return M3;
     }
 
-    // Matrix-vector product V2 = k op(M1) V1, t1 = matrix M1 is transposed
+    // --------------------------------------------------------------------------|
+    // Matrix-vector product V2 = k M1 V1, t1 = 1 means that M1 is transposed    |
+    // --------------------------------------------------------------------------|
 
     darray prod(double k,matrix &M1,darray &V1,int t1){
 
         int m = M1.rows();
         int n = M1.cols();
 
+        // Transpose the matrices if required
+
         if(t1==1){
             n = M1.rows();
             m = M1.cols();
         }
+
+        // Performs the product with Alglib
 
         darray V2; V2.setlength(m);
         alglib::rmatrixgemv(m,n,k,M1,0,0,t1,V1,0,0,V2,0);
         return V2;
     }
 
-    // Fills a dense matrix or an array with zeros
+    // -------------------------------------|
+    // Fills a dense matrix M with zeros    |
+    // -------------------------------------|
 
     void zero(matrix &M){
 
@@ -182,11 +220,17 @@ namespace math{
         }
     }
 
+    // ------------------------------------|
+    // Fills a dense array V with zeros    |
+    // ------------------------------------|
+
     void zero(darray &V){
         for(int i=0; i<V.length(); i++){V(i) = 0;}
     }
 
-    // Sparse matrix addition M2 = k1 M1 + k2 M2
+    // ---------------------------------------------|
+    // Sparse matrix addition M2 = k1 M1 + k2 M2    |
+    // ---------------------------------------------|
 
     void add(double k1,double k2,sparse &M1,sparse &M2){
     
@@ -194,15 +238,22 @@ namespace math{
         alglib::ae_int_t i=0,j=0;
         alglib::ae_int_t I=0,J=0;
 
+        // First multiplies M2 by the scalar k2
+
         while(alglib::sparseenumerate(M2,I,J,i,j,val)){
             alglib::sparserewriteexisting(M2,i,j,k2*val);
         }
+
+        // Seconds summs the product k1 M1 to M2
+
         while(alglib::sparseenumerate(M1,I,J,i,j,val)){
             alglib::sparseadd(M2,i,j,k1*val);
         }
     }
 
-    // Cleans and stores the non-zero indices of a sparse matrix
+    // -------------------------------------------------------------|
+    // Cleans and stores the non-zero indices of a sparse matrix    |
+    // -------------------------------------------------------------|
 
     matStruct mapclean(sparse &K){
 
@@ -211,11 +262,13 @@ namespace math{
         alglib::ae_int_t i=0,j=0;
         alglib::ae_int_t I=0,J=0;
 
+        // Initializes the vector containers
+
         int nLen = alglib::sparsegetnrows(K);
         mat.row.resize(3*nLen);
         mat.col.resize(3*nLen);
 
-        // Stores the non-zero indices per row and column
+        // Stores the non-zero indice locations per row and column
 
         while(alglib::sparseenumerate(K,I,J,i,j,val)){
 

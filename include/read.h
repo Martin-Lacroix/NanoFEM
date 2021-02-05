@@ -2,24 +2,36 @@
 #ifndef READ_H
 #define READ_H
 
+// --------------------------------------------------------------|
+// Structure storing temporary parameters from the input files   |
+// --------------------------------------------------------------|
+
 struct readStruct{
 
-    // E and v are Young modulus and Poisson ratio
-    // dom is the space domain of the simulation
-    // boundary is the type and value of the BC in each dimension.
+    // Young modulus and Poisson ratio of each type of element
 
     dvector E;
     dvector v;
+
+    // Number of elements and size of the domain in each dimension
+
     dvector dSize;
     ivector dLen;
-    std::vector<spair> boundary;
 
+    // BC and keeps track of the row of each node in each dimension in perNode
+
+    std::vector<sdpair> boundary;
+    std::vector<ivector> row;
 };
 
+// -------------------------------------------|
+// Functions available in the read.cpp file   |
+// -------------------------------------------|
+
 dvector tovec(std::string input);
+void setBC(readStruct &read,meshStruct &mesh,ivector loop);
+meshStruct read(std::string inputPath,std::string meshPath);
 void readMesh(readStruct &read,meshStruct &mesh,std::string path);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);
-void setBC(readStruct &read,meshStruct &mesh,std::vector<ivector> &row,ivector loop);
-meshStruct read(std::string inputPath,std::string meshPath);
 
 #endif

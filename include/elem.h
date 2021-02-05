@@ -2,12 +2,15 @@
 #ifndef ELEM_H
 #define ELEM_H
 
+// -------------------------------------------------------------------|
+// Structure storing the shape functions in the element local space   |
+// -------------------------------------------------------------------|
+
 struct shapeStruct{
 
     int nLen;
     int gLen;
 
-    // Shape functions aty Gauss points
     // Local derivatives of the shape functions at Gauss nodes
 
     matrix N;
@@ -16,9 +19,15 @@ struct shapeStruct{
     matrix dtN;
 };
 
+// ---------------------------------------------|
+// Class of 8-node brick linear element in 3D   |
+// ---------------------------------------------|
+
 class Elem{
 
     public:
+
+    // Functions available in the elem.cpp file
 
     Elem(std::vector<dvector> nXYZ,shapeStruct shape);
     matrix selfS(quadStruct quad,dvector xyz);
@@ -35,9 +44,15 @@ class Elem{
     int nLen;
 };
 
+// --------------------------------------------------|
+// Class of 4-node quadrangle linear element in 2D   |
+// --------------------------------------------------|
+
 class Face{
 
     public:
+
+    // Functions available in the elem.cpp file
 
     Face(std::vector<dvector> nXYZ,shapeStruct shape);
     matrix selfN(shapeStruct shape,quadStruct quad);

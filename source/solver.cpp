@@ -5,7 +5,9 @@
 #include <chrono>
 using namespace std;
 
-// Solves the sparse symmetric linear system
+// ---------------------------------------------|
+// Solves the sparse symmetric linear system    |
+// ---------------------------------------------|
 
 darray solve(Mesh mesh,double p){
 
@@ -15,7 +17,7 @@ darray solve(Mesh mesh,double p){
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "Builds the matrix --- ";
 
-    // Builds the full system matrix
+    // Builds the full K matrix of the system
 
     if(p==0){
         K = mesh.localK();
@@ -29,7 +31,7 @@ darray solve(Mesh mesh,double p){
         math::add(1-p,p,KL,K);
     }
 
-    // Gets computation time
+    // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -37,7 +39,7 @@ darray solve(Mesh mesh,double p){
     cout << time.count()/1e6 << " sec\n";
     cout << "Boundary conditions --- ";
 
-    // Applies boundary conditions
+    // Applies boundary conditions to K and B
 
     darray B = mesh.neumann();
     int nLen = B.length();
@@ -61,13 +63,15 @@ darray solve(Mesh mesh,double p){
     mesh.dirichlet(K,B);
     sparseconverttocrs(K);
 
+    // Prints the computation time of the operation
+
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
     cout << time.count()/1e6 << " sec\n";
     cout << "Solves the system --- ";
     
-    // Solves the symmetric linear system
+    // Solves the symmetric linear system with Alglib
 
     darray u;
     u.setlength(nLen);
@@ -78,7 +82,7 @@ darray solve(Mesh mesh,double p){
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
 
-    // Gets computation time
+    // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -87,7 +91,9 @@ darray solve(Mesh mesh,double p){
     return u;
 }
 
-// Main code of the finite element solver
+// ------------------------------------------|
+// Main code of the finite element solver    |
+// ------------------------------------------|
 
 int main(){
 
@@ -97,13 +103,13 @@ int main(){
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nReads the files --- ";
 
-    // Reads the input files
+    // Reads the input files from Nascam
 
     string inputPath = "input.txt";
     string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
-    // Gets computation time
+    // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -111,15 +117,19 @@ int main(){
     cout << time.count()/1e6 << " sec\n";
     cout << "Creates the mesh --- ";
 
-    // Creates the mesh object
+    // Creates the mesh class of the system
 
     Mesh Mesh(mesh);
 
+    // Prints the computation time of the operation
+
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    start = chrono::high_resolution_clock::now();
     cout << time.count()/1e6 << " sec\n";
+    cout << "Writes the results --- ";
 
-    // Solves the linear system with conjugate gradient
+    // Solves the linear system with conjugate gradient method
 
     darray u = solve(Mesh,0);
 
@@ -140,10 +150,8 @@ int main(){
     // Writes the results in a text file
 
     mkdir("output");
-    start = chrono::high_resolution_clock::now();
     ofstream coordinates("output/coordinates.txt");
     ofstream displacement("output/displacement.txt");
-    cout << "Writes the results --- ";
 
     for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
     for(int i=0; i<Mesh.mesh.nXYZ.size(); i++){
@@ -153,7 +161,7 @@ int main(){
         coordinates << Mesh.mesh.nXYZ[i][2] << "\n";
     }
 
-    // Gets computation time
+    // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);

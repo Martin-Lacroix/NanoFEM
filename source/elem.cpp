@@ -1,7 +1,9 @@
 #include "..\include\elem.h"
 using namespace std;
 
-// Class of cubic linear 3D element
+// ---------------------------------------------|
+// Class of 8-node brick linear element in 3D   |
+// ---------------------------------------------|
 
 Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 
@@ -20,6 +22,8 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
     invJ.setlength(9,gLen);
     detJ.setlength(gLen);
     J.setlength(9,gLen);
+
+    // Fills the matrices with zeros
 
     math::zero(J);
     math::zero(dxN);
@@ -82,7 +86,9 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
     }
 }
 
-// Computes the elemental local stiffness matrix
+// ---------------------------------------------------------|
+// Computes the elemental stiffness matrix K for local FEM  |
+// ---------------------------------------------------------|
 
 matrix Elem::selfK(quadStruct quad,matrix D){
 
@@ -97,11 +103,16 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 
     for(int i=0; i<gLen; i++){
         for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions derivative matrix B
             
             B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = dxN(j,i);
             B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = dyN(j,i);
             B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = dzN(j,i);
         }
+
+        // Computes K by Gauss-Legendre quadrature
+
         matrix K1 = math::prod(quad.weight[i],B,D);
         matrix K2 = math::prod(detJ[i],K1,B,0,1);
         math::add(1,1,K2,K);
@@ -109,7 +120,9 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     return K;
 }
 
-// Computes the elemental local strain matrix
+// ---------------------------------------------------|
+// Computes the elemental S matrix for non-local FEM  |
+// ---------------------------------------------------|
 
 matrix Elem::selfS(quadStruct quad,dvector xyz){
 
@@ -125,6 +138,8 @@ matrix Elem::selfS(quadStruct quad,dvector xyz){
 
         for(int j=0; j<nLen; j++){
 
+            // Computes the non-local S matrix
+
             S(0,j) = S(3,j+nLen) = S(4,j+2*nLen) += k*dxN(j,i);
             S(3,j) = S(1,j+nLen) = S(5,j+2*nLen) += k*dyN(j,i);
             S(4,j) = S(5,j+nLen) = S(2,j+2*nLen) += k*dzN(j,i);
@@ -133,7 +148,9 @@ matrix Elem::selfS(quadStruct quad,dvector xyz){
     return S;
 }
 
-// Class of square linear 2D element
+// --------------------------------------------------|
+// Class of 4-node quadrangle linear element in 2D   |
+// --------------------------------------------------|
 
 Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
@@ -150,11 +167,13 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
     detJ.setlength(gLen);
     J.setlength(4,gLen);
 
+    // Fills the matrices with zeros
+
     math::zero(J);
     math::zero(dxN);
     math::zero(dyN);
     
-    // Builds the Jacobian matrix
+    // Builds the Jacobian matrix at Gauss points
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<gLen; j++){
@@ -171,6 +190,7 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
         // Determinant and inverse of the Jacobian matrix
 
         detJ(i) = J[0][i]*J[3][i]-J[1][i]*J[2][i];
+
         invJ(1,i) = -J[1][i]/detJ(i);
         invJ(2,i) = -J[2][i]/detJ(i);
         invJ(0,i) = J[3][i]/detJ(i);
@@ -186,7 +206,9 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
     }
 }
 
-// Integrates the shape functions matrix
+// --------------------------------------------------------------|
+// Integrates the matrix of shape functions N over the element   |
+// --------------------------------------------------------------|
 
 matrix Face::selfN(shapeStruct shape,quadStruct quad){
 
@@ -194,7 +216,7 @@ matrix Face::selfN(shapeStruct shape,quadStruct quad){
     int gLen = quad.weight.size();
     math::zero(N);
 
-    // Builds the shape function matrix
+    // Integrates the matrix of local shape functions
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<gLen; j++){

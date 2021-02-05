@@ -1,13 +1,17 @@
 #include "..\include\mesh.h"
 using namespace std;
 
-// Builds the elements, shape functions and quadratures
+// -------------------------------------------------------------|
+// Builds the elements list, shape functions and quadratures    |
+// -------------------------------------------------------------|
 
 Mesh::Mesh(meshStruct &input){
     
     mesh = input;
     int fLen = mesh.neuNode.size();
     int eLen = mesh.eNode.size();
+
+    // Stores the quadrature rules and shape functions
 
     quad3D = math::legendre(3,mesh.order);
     quad2D = math::legendre(2,mesh.order);
@@ -37,7 +41,9 @@ Mesh::Mesh(meshStruct &input){
     }
 }
 
-// Structure of linear shape functions
+// -------------------------------------------------------------|
+// Returns the structure of 2D and 3D linear shape functions    |
+// -------------------------------------------------------------|
 
 shapeStruct Mesh::shape(int dim){
 
@@ -49,23 +55,23 @@ shapeStruct Mesh::shape(int dim){
     shape.gLen = gLen;
     shape.nLen = nLen;
 
-    // Memory allocation
+    // Performs the memory allocation
 
     shape.drN.setlength(nLen,gLen);
     shape.dsN.setlength(nLen,gLen);
     shape.dtN.setlength(nLen,gLen);
     shape.N.setlength(nLen,gLen);
 
-    // 3D shape functions constructor
-
     if(dim==3){
+
+        // Sets the coordinates of the 3D nodes
 
         n[0]={-1,-1,-1}; n[1]={1,-1,-1}; n[2]={1,1,-1}; n[3]={-1,1,-1};
         n[4]={-1,-1,1}; n[5]={1,-1,1}; n[6]={1,1,1}; n[7]={-1,1,1};
 
-        // Shape functions at Gauss points
-
         for(int i=0; i<gLen; i++){
+
+            // Extracts the 3D coordinates of the Gauss points
 
             double r = quad3D.gRST[i][0];
             double s = quad3D.gRST[i][1];
@@ -73,7 +79,7 @@ shapeStruct Mesh::shape(int dim){
 
             for(int j=0; j<nLen; j++){
 
-                // Shape functions at Gauss points
+                // Stores the shape functions evaluated at the Gauss points
 
                 shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
                 shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
@@ -83,23 +89,23 @@ shapeStruct Mesh::shape(int dim){
         }
     }
 
-    // 2D shape functions constructor
-
     if(dim==2){
+
+        // Sets the coordinates of the 2D nodes
 
         n[0]={-1,-1}; n[1]={1,-1};
         n[2]={1,1}; n[3]={-1,1};
 
-        // Shape functions at Gauss points
-
         for(int i=0; i<gLen; i++){
+
+            // Extracts the 2D coordinates of the Gauss points
 
             double r = quad2D.gRST[i][0];
             double s = quad2D.gRST[i][1];
 
             for(int j=0; j<nLen; j++){
 
-                // Shape functions at Gauss points
+                // Stores the shape functions evaluated at the Gauss pojnts
 
                 shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)/4;
                 shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)/4;
@@ -110,7 +116,9 @@ shapeStruct Mesh::shape(int dim){
     return shape;
 }
 
-// Computes the local stiffness matrix K
+// -----------------------------------------------------|
+// Computes the total stiffness matrix for local FEM    |
+// -----------------------------------------------------|
 
 sparse Mesh::localK(){
 
@@ -119,13 +127,15 @@ sparse Mesh::localK(){
     double nLen = mesh.nXYZ.size();
     alglib::sparsecreate(3*nLen,3*nLen,K);
 
+    // Computes the elemental K matrices
+
     for(int i=0; i<eLen; i++){
 
         int nbr = eList[i].nLen;
         ivector eNode = mesh.eNode[i];
         matrix K1 = eList[i].selfK(quad3D,mesh.D[i]);
 
-        // Inserts the submatrices into the global matrix
+        // Inserts the elemental matrices into the global K matrix
 
         for(int j=0; j<nbr; j++){
             for(int k=0; k<nbr; k++){
@@ -142,7 +152,9 @@ sparse Mesh::localK(){
     return K;
 }
 
-// Computes the non-local stiffness matrix K
+// -----------------------------------------------------------|
+// Computes the total stiffness matrix K for non-local FEM    |
+// -----------------------------------------------------------|
 
 sparse Mesh::nonLocalK(){
 
@@ -151,13 +163,15 @@ sparse Mesh::nonLocalK(){
     double nLen = mesh.nXYZ.size();
     alglib::sparsecreate(3*nLen,3*nLen,K);
 
+    // Computes the elemental K matrices
+
     for(int i=0; i<eLen; i++){
 
         matrix K1 = elemK(i);
         int nbr = eList[i].nLen;
         ivector eNode = mesh.eNode[i];
 
-        // Inserts the submatrices into the global matrix
+        // Inserts the elemental matrices into the global K matrix
 
         for(int k=0; k<3*nLen; k++){
             for(int j=0; j<nbr; j++){
@@ -172,7 +186,9 @@ sparse Mesh::nonLocalK(){
     return K;
 }
 
-// Evaluates the non-local S matrix at a point xyz
+// ---------------------------------------------------------------------|
+// Evaluates the total S matrix at a point (x,y,z) for non-local FEM    |
+// ---------------------------------------------------------------------|
 
 matrix Mesh::totalS(dvector xyz){
 
@@ -182,12 +198,14 @@ matrix Mesh::totalS(dvector xyz){
     S.setlength(6,3*nLen);
     math::zero(S);
 
+    // Computes the elemental S matrices
+
     for(int i=0; i<eLen; i++){
 
         int nbr = eList[i].nLen;
         matrix S1 = eList[i].selfS(quad3D,xyz);
 
-        // Inserts the submatrices into the global matrix
+        // Inserts the elemental matrices into the global S matrix
 
         for(int j=0; j<6; j++){
             for(int k=0; k<nbr; k++){
@@ -200,7 +218,9 @@ matrix Mesh::totalS(dvector xyz){
     return S;
 }
 
-// Computes the elemental non-local stiffness matrix
+// ---------------------------------------------------------------|
+// Computes the elemental stiffness matrix K for non-local FEM    |
+// ---------------------------------------------------------------|
 
 matrix Mesh::elemK(int idx){
 
@@ -217,13 +237,15 @@ matrix Mesh::elemK(int idx){
 
     for(int i=0; i<gLen; i++){
         for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions derivative matrix B
             
             B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = elem.dxN(j,i);
             B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = elem.dyN(j,i);
             B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = elem.dzN(j,i);
         }
 
-        // Computes the nonlocal Part
+        // Computes K by Gauss-Legendre quadrature
 
         matrix S = totalS(elem.gXYZ[i]);
         matrix K1 = math::prod(quad3D.weight[i],B,mesh.D[idx]);
@@ -233,6 +255,10 @@ matrix Mesh::elemK(int idx){
     return K;
 }
 
+// -------------------------------------------------------------|
+// Computes the vector of applied stresses B from Neumann BC    |
+// -------------------------------------------------------------|
+
 darray Mesh::neumann(){
 
     darray B;
@@ -241,7 +267,7 @@ darray Mesh::neumann(){
     B.setlength(3*nLen);
     math::zero(B);
 
-    // Computes the applied forces
+    // Computes the applied surface tractions on the 2D elements
 
     for(int i=0; i<fLen; i++){
 
@@ -260,34 +286,42 @@ darray Mesh::neumann(){
     return B;
 }
 
-// Prepares the matrix and vector for Dirichlet BC
+// ----------------------------------------------------|
+// Edits the matrix K and vector B for Dirichlet BC    |
+// ----------------------------------------------------|
 
 void Mesh::dirichlet(sparse &K,darray &B){
 
-    double val;
     int nLen = mesh.nXYZ.size();
     matStruct mat = math::mapclean(K);
 
-    // Edits the sparse matrix for dirichlet BC
+    // Gets the number of nodes in the dirichlet list
 
     for(int n=0; n<3; n++){
         int dLen = mesh.dirNode[n].size();
 
+        // Gets the index of the node in the solution vector
+
         for(int i=0; i<dLen; i++){
             int idx = mesh.dirNode[n][i]+n*nLen;
+
+            // Substract the node coefficients in K to B and cancels this row
 
             for(int j:mat.col[idx]){
 
                 B(j) -= alglib::sparseget(K,j,idx)*mesh.dirVal[n][i];
                 alglib::sparseset(K,j,idx,0);
             }
+
+            // Also cancels the corresponding column in k
+
             for(int j:mat.row[idx]){
                 alglib::sparseset(K,idx,j,0);
             }
         }
     }
 
-    // Edits the boundary vector for dirichlet BC
+    // Places the dirichlet value the B vector and 1 in the diagonal of K
 
     for(int n=0; n<3; n++){
         for(int m=0; m<mesh.dirNode[n].size(); m++){
@@ -299,7 +333,9 @@ void Mesh::dirichlet(sparse &K,darray &B){
     }
 }
 
-// Prepares the matrix and vector for periodic BC
+// ------------------------------------------------------------|
+// Edits the matrix K and vector B for periodic and flat BC    |
+// ------------------------------------------------------------|
 
 void Mesh::periodic(sparse &K,darray &B){
 
@@ -307,16 +343,20 @@ void Mesh::periodic(sparse &K,darray &B){
     int nLen = mesh.nXYZ.size();
     matStruct mat = math::mapclean(K);
 
-    // Edits the sparse matrix for periodic BC
+    // Gets the number of nodes in the periodic list
 
     for(int n=0; n<3; n++){
         for(int i=0; i<mesh.perNode[n].size(); i++){
             int dLen = mesh.perNode[n][i].size();
 
+            // Gets the index of the curent and final coupled nodes
+
             for(int j=0; j<dLen-1; j++){
 
                 int idx1 = mesh.perNode[n][i][j]+n*nLen;
                 int idx2 = mesh.perNode[n][i].back()+n*nLen;
+
+                // Adds the current row to the final row of K and cancels this row
 
                 for(int k:mat.row[idx1]){
                     val = alglib::sparseget(K,idx1,k);
@@ -328,6 +368,9 @@ void Mesh::periodic(sparse &K,darray &B){
                         alglib::sparseset(K,idx1,k,0);
                     }
                 }
+
+                // Adds the current column to the final column of K and cancels this column
+
                 for(int k:mat.col[idx1]){
                     val = alglib::sparseget(K,k,idx1);
                     
@@ -339,7 +382,7 @@ void Mesh::periodic(sparse &K,darray &B){
                     }
                 }
 
-                // Edits the B vector for periodic BC
+                // Removes the curent value in B and adds it to the final one
 
                 alglib::sparseset(K,idx1,idx1,1);
                 B(idx2) += B(idx1);
@@ -349,7 +392,9 @@ void Mesh::periodic(sparse &K,darray &B){
     }
 }
 
-// Completes the solution with periodic BC
+// ----------------------------------------------------|
+// Completes the solution with periodic and flat BC    |
+// ----------------------------------------------------|
 
 void Mesh::complete(darray &u){
 
@@ -358,6 +403,8 @@ void Mesh::complete(darray &u){
     for(int n=0; n<3; n++){
         for(int i=0; i<mesh.perNode[n].size(); i++){
             for(int j=0; j<mesh.perNode[n][i].size(); j++){
+
+                // Copy the value of the last node into the coupled ones
 
                 int idx1 = mesh.perNode[n][i][j]+n*nLen;
                 int idx2 = mesh.perNode[n][i].back()+n*nLen;
