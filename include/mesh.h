@@ -28,7 +28,7 @@ struct meshStruct{
 
     // Periodic and coupled boundary conditions
 
-    std::vector<std::vector<ivector>> perNode;
+    std::vector<std::vector<ivector>> coupNode;
 };
 
 // -------------------------------|
@@ -47,9 +47,10 @@ class Mesh{
     matrix elemK(int idx);
     shapeStruct shape(int dim);
     matrix totalS(dvector xyz);
-    void periodic(sparse&K,darray &B);
+    void coupling(sparse&K,darray &B);
     void dirichlet(sparse&K,darray &B);
     void complete(darray &u);
+    void update(darray &u);
     Mesh(meshStruct &mesh);
 
     // Internal variables of the system
@@ -59,11 +60,6 @@ class Mesh{
     quadStruct quad2D;
     shapeStruct shape3D;
     shapeStruct shape2D;
-
-    // List of elements and faces
-
-    std::vector<Elem> eList;
-    std::vector<Face> fList;
 };
 
 #endif

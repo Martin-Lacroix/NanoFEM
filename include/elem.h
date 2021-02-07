@@ -19,9 +19,9 @@ struct shapeStruct{
     matrix dtN;
 };
 
-// ---------------------------------------------|
-// Class of 8-node brick linear element in 3D   |
-// ---------------------------------------------|
+// --------------------------------------------------|
+// Class of 8-node hexahedron linear element in 3D   |
+// --------------------------------------------------|
 
 class Elem{
 

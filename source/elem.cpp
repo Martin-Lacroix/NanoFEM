@@ -1,9 +1,9 @@
 #include "..\include\elem.h"
 using namespace std;
 
-// ---------------------------------------------|
-// Class of 8-node brick linear element in 3D   |
-// ---------------------------------------------|
+// --------------------------------------------------|
+// Class of 8-node hexahedron linear element in 3D   |
+// --------------------------------------------------|
 
 Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 

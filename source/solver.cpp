@@ -9,27 +9,17 @@ using namespace std;
 // Solves the sparse symmetric linear system    |
 // ---------------------------------------------|
 
-darray solve(Mesh mesh,double p){
+darray solve(Mesh mesh){
 
     sparse K;
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "Builds the matrix --- ";
+    cout << "\nBuilds the matrix --- ";
 
     // Builds the full K matrix of the system
 
-    if(p==0){
-        K = mesh.localK();
-    }
-    else if(p==1){
-        K = mesh.nonLocalK();
-    }
-    else{
-        K = mesh.nonLocalK();
-        sparse KL = mesh.localK();
-        math::add(1-p,p,KL,K);
-    }
+    K = mesh.localK();
 
     // Prints the computation time of the operation
 
@@ -43,7 +33,6 @@ darray solve(Mesh mesh,double p){
 
     darray B = mesh.neumann();
     int nLen = B.length();
-    mesh.periodic(K,B);
 
 /*
     ofstream Kfile("output/K.txt");
@@ -58,8 +47,9 @@ darray solve(Mesh mesh,double p){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-
 */
+
+    mesh.coupling(K,B);
     mesh.dirichlet(K,B);
     sparseconverttocrs(K);
 
@@ -81,6 +71,7 @@ darray solve(Mesh mesh,double p){
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
+    mesh.update(u);
 
     // Prints the computation time of the operation
 
@@ -106,7 +97,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
+    string meshPath = "input/single Cu.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -114,26 +105,14 @@ int main(){
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
-    cout << "Creates the mesh --- ";
+    cout << time.count()/1e6 << " sec";
 
-    // Creates the mesh class of the system
+    // Creates the mesh class and solves with conjugate gradient
 
     Mesh Mesh(mesh);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
-    cout << "Writes the results --- ";
-
-    // Solves the linear system with conjugate gradient method
-
-    darray u = solve(Mesh,0);
-
-    cout << "\n\n";
+    darray u = solve(Mesh);
+/*
+    cout << "\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
     }
@@ -145,20 +124,31 @@ int main(){
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
-
-
+    cout << "\n";
+*/
     // Writes the results in a text file
 
     mkdir("output");
+    ofstream elements("output/elements.txt");
     ofstream coordinates("output/coordinates.txt");
     ofstream displacement("output/displacement.txt");
+    start = chrono::high_resolution_clock::now();
+    cout << "Writes the results --- ";
 
     for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
-    for(int i=0; i<Mesh.mesh.nXYZ.size(); i++){
 
-        coordinates << Mesh.mesh.nXYZ[i][0] << ",";
-        coordinates << Mesh.mesh.nXYZ[i][1] << ",";
-        coordinates << Mesh.mesh.nXYZ[i][2] << "\n";
+    // Writes the node coordinates in a text file
+
+    for(dvector nXYZ:Mesh.mesh.nXYZ){
+        for(int j=0; j<nXYZ.size()-1; j++){coordinates << nXYZ[j] << ",";}
+        coordinates << nXYZ.back() << "\n";
+    }
+
+    // Writes the element nodes in a text file
+
+    for(ivector eNode:Mesh.mesh.eNode){
+        for(int j=0; j<eNode.size()-1; j++){elements << eNode[j] << ",";}
+        elements << eNode.back() << "\n";
     }
 
     // Prints the computation time of the operation

@@ -25,16 +25,6 @@ struct quadStruct{
     std::vector<dvector> gRST;
 };
 
-// ---------------------------------------------------|
-// Location of non-zero elements in a sparse matrix   |
-// ---------------------------------------------------|
-
-struct matStruct{
-
-    std::vector<ivector> row;
-    std::vector<ivector> col;
-};
-
 // -------------------------------------------|
 // Functions available in the math.cpp file   |
 // -------------------------------------------|
@@ -61,13 +51,19 @@ namespace math{
 
     // Non-zero indices of a sparse matrix and vector cross product
 
-    matStruct mapclean(sparse &K);
+    std::vector<ivector> sparsemap(sparse &K);
     darray cross(darray &V1,darray &V2);
 
     // Kernel function and stiffness tensor in Voigh notation
 
     double kernel(dvector x,dvector y);
     matrix stiffness(double E,double v);
+
+    // Symmetric sparse matrix operations only
+
+    double symget(sparse &M,int row,int col);
+    void symset(sparse &M,int row,int col,double val);
+    void symadd(sparse &M,int row,int col,double val);
 }
 
 #endif

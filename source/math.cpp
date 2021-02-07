@@ -251,22 +251,39 @@ namespace math{
         }
     }
 
-    // -------------------------------------------------------------|
-    // Cleans and stores the non-zero indices of a sparse matrix    |
-    // -------------------------------------------------------------|
+    // -----------------------------------------------------------------------|
+    // Cleans and stores the non-zero indices of a sparse symmetric matrix    |
+    // -----------------------------------------------------------------------|
 
-    matStruct mapclean(sparse &K){
-
-        double val;
-        matStruct mat;
-        alglib::ae_int_t i=0,j=0;
-        alglib::ae_int_t I=0,J=0;
+    vector<ivector> sparsemap(sparse &K){
 
         // Initializes the vector containers
 
+        double val;
+        alglib::ae_int_t i=0,j=0;
+        alglib::ae_int_t I=0,J=0;
         int nLen = alglib::sparsegetnrows(K);
-        mat.row.resize(3*nLen);
-        mat.col.resize(3*nLen);
+        vector<ivector> row(3*nLen);
+
+        // Stores the non-zero indice locations per row and column
+
+        while(alglib::sparseenumerate(K,I,J,i,j,val)){
+
+            row[i].push_back(j);
+            if(i!=j){row[j].push_back(i);}
+        }
+        return row;
+    }
+/*
+    vector<ivector> sparsemap(sparse &K){
+
+        // Initializes the vector containers
+
+        double val;
+        alglib::ae_int_t i=0,j=0;
+        alglib::ae_int_t I=0,J=0;
+        int nLen = alglib::sparsegetnrows(K);
+        vector<ivector> row(3*nLen);
 
         // Stores the non-zero indice locations per row and column
 
@@ -275,11 +292,46 @@ namespace math{
             if(abs(val)<1e-16){
                 alglib::sparseset(K,i,j,0);
             }
+
+            // Stores the value if greater than the tolerance
+
             else{
-                mat.row[i].push_back(j);
-                mat.col[j].push_back(i);
+                row[i].push_back(j);
+                if(i!=j){row[j].push_back(i);}
             }
         }
-        return mat;
+        return row;
+    }
+*/
+    // ---------------------------------------------------------------|
+    // Sets the coordinate (row,col) for a symmetric sparse matrix    |
+    // ---------------------------------------------------------------|
+
+    void symset(sparse &M,int row,int col,double val){
+
+        if(row>col){alglib::sparseset(M,col,row,val);}
+        else{alglib::sparseset(M,row,col,val);}
+    }
+
+    // ------------------------------------------------------------------|
+    // Adds to the coordinate (row,col) for a symmetric sparse matrix    |
+    // ------------------------------------------------------------------|
+
+    void symadd(sparse &M,int row,int col,double val){
+
+        if(row>col){alglib::sparseadd(M,col,row,val);}
+        else{alglib::sparseadd(M,row,col,val);}
+    }
+
+    // ------------------------------------------------------------------------|
+    // gets the value at coordinate (row,col) for a symmetric sparse matrix    |
+    // ------------------------------------------------------------------------|
+
+    double symget(sparse &M,int row,int col){
+
+        double val;
+        if(row>col){val = alglib::sparseget(M,col,row);}
+        else{val = alglib::sparseget(M,row,col);}
+        return val;
     }
 }
