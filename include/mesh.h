@@ -11,7 +11,7 @@ struct meshStruct{
     // Main informations about the mesh
 
     int order;
-    std::vector<matrix> D;
+    std::vector<dvector> Ev;
     std::vector<dvector> nXYZ;
     std::vector<ivector> eNode;
     std::vector<ivector> eSurf;
@@ -47,6 +47,10 @@ class Mesh{
     matrix elemK(int idx);
     shapeStruct shape(int dim);
     matrix totalS(dvector xyz);
+    dvector stress(darray &u);
+
+    // Operations on the total stiffness matrix
+    
     void coupling(sparse&K,darray &B);
     void dirichlet(sparse&K,darray &B);
     void complete(darray &u);

@@ -12,6 +12,7 @@ using namespace std;
 dvector tovec(string input){
 
     replace(input.begin(),input.end(),':',' ');
+    replace(input.begin(),input.end(),';',' ');
     replace(input.begin(),input.end(),',',' ');
 
     // Stores the values into the vector
@@ -35,20 +36,20 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
     // Reads the order of the quadrature rule
 
-    getline(file,input,' ');
+    getline(file,input,'!');
     mesh.order = stoi(input);
     getline(file,input,'\n');
 
     // Reads the parameters of empty elements
 
-    getline(file,input,';'); read.E.push_back(stod(input));
-    getline(file,input,' '); read.v.push_back(stod(input));
+    getline(file,input,'!');
+    read.emptyEv = tovec(input);
     getline(file,input,'\n');
 
     // Reads the parameters of bulk elements
-
-    getline(file,input,';'); read.E.push_back(stod(input));
-    getline(file,input,' '); read.v.push_back(stod(input));
+        
+    getline(file,input,'!');
+    read.Ev.push_back(tovec(input));
     getline(file,input,'\n');
 
     // Reads the boundary conditions
@@ -81,6 +82,14 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
             read.boundary.push_back(pair);
         }
     }
+
+    // Stores the Young modulus and Poisson ratio of the layers
+
+    while(getline(file,input,'!')){
+
+        read.Ev.push_back(tovec(input));
+        getline(file,input,'\n');
+    }
 }
 
 // -----------------------------------------------|
@@ -91,10 +100,10 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
 
     string input;
     ifstream file;
-    mesh.coupNode.resize(3);
-    mesh.dirNode.resize(3);
-    mesh.dirVal.resize(3);
     file.open(path);
+    mesh.dirVal.resize(3);
+    mesh.dirNode.resize(3);
+    mesh.coupNode.resize(3);
 
     // Reads the size of the cubic domain
 
@@ -176,28 +185,31 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
     string input;
     ifstream file;
     file.open(path);
-
     getline(file,input,'\n');
     getline(file,input,'\n');
 
     // Initializes the filling fraction of the elements
 
     int eLen = mesh.eNode.size();
+    vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
     dvector tol = {-1e-5,1e-5};
-    dvector fraction(eLen,0);
     ivector dLen = read.dLen;
     dvector zero = read.zero;
     mesh.eSurf.resize(eLen);
-    mesh.D.resize(eLen);
+    mesh.Ev.resize(eLen);
+
+    // Reads the coodrinates of the chemical species
 
     while(getline(file,input,' ')){
-
-        // Reads the coodrinates of the chemical species
 
         unordered_set<int> set;
         getline(file,input,';');
         dvector coord = tovec(input);
         getline(file,input,';');
+
+        // Gets the layer of the chemical species
+
+        int layer = stoi(input);
         getline(file,input,'\n');
 
         for(int i=0; i<2; i++){
@@ -226,17 +238,31 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
         // Splits the filling fraction between the elements
 
-        for (int i:set){fraction[i] += stod(input)/set.size();}
+        for (int i:set){frac[i][layer] += stod(input)/set.size();}
     }
 
     for(int i=0; i<eLen; i++){
 
-        // Computes the mixed stiffness tensor of the elements
+        double E = 0;
+        double v = 0;
 
-        if(fraction[i]>1){fraction[i] = 1;}
-        double E = fraction[i]*read.E[1]+(1-fraction[i])*read.E[0];
-        double v = fraction[i]*read.v[1]+(1-fraction[i])*read.v[0];
-        mesh.D[i] = math::stiffness(E,v);
+        // Normalizes the filling fractions to maximum one
+
+        double sum = accumulate(frac[i].begin(),frac[i].end(),0.0);
+        if(sum>1){for(int j=0; j<frac[i].size(); j++){frac[i][j] /= sum;}}
+        if(sum>1){sum=1;}
+
+        // Computes the mixed Lamé parameters of the elements
+        
+        for(int j=0; j<frac[i].size(); j++){
+
+            E += frac[i][j]*read.Ev[j][0];
+            v += frac[i][j]*read.Ev[j][1];
+        }
+
+        E += (1-sum)*read.emptyEv[0];
+        v += (1-sum)*read.emptyEv[0];
+        mesh.Ev[i] = {E,v};
     }
     file.close();
 }
@@ -245,7 +271,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 // Stores the boundary conditions of system in meshStruct    |
 // ----------------------------------------------------------|
 
-void testBC(readStruct &read,meshStruct &mesh){
+void setBC(readStruct &read,meshStruct &mesh){
 
     ivector dLen = read.dLen;
     dvector zero = read.zero;
@@ -401,7 +427,6 @@ meshStruct read(string inputPath,string meshPath){
     readInput(read,mesh,inputPath);
     readMeshSize(read,mesh,meshPath);
     readSpecies(read,mesh,meshPath);
-
-    testBC(read,mesh);
+    setBC(read,mesh);
     return mesh;
 }

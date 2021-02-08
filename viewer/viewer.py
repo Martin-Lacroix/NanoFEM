@@ -4,6 +4,7 @@ import sys
 
 # %% Load Data
 
+VM = np.loadtxt(r"..\output\stress.txt")
 elem = np.loadtxt(r"..\output\elements.txt",delimiter=",")
 u = np.loadtxt(r"..\output\displacement.txt",delimiter=",")
 nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
@@ -13,8 +14,12 @@ nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
 xLen = [np.min(nXYZ[:,0]),np.max(nXYZ[:,0])]
 yLen = [np.min(nXYZ[:,1]),np.max(nXYZ[:,1])]
 zLen = [np.min(nXYZ[:,2]),np.max(nXYZ[:,2])]
+eLen = VM.shape[0]
 nLen = u.shape[0]
 
+# Stores the data for Gmsh
+
+VM = [[VM[i]] for i in range(eLen)]
 ux = [[u[i,0]] for i in range(nLen)]
 uy = [[u[i,1]] for i in range(nLen)]
 uz = [[u[i,2]] for i in range(nLen)]
@@ -86,13 +91,17 @@ gmsh.view.add("Displacement x",1)
 gmsh.view.add("Displacement y",2)
 gmsh.view.add("Displacement z",3)
 gmsh.view.add("Total Displacement",4)
+gmsh.view.add("Von Mises Stress",5)
+
+# Adds the data to the model
 
 gmsh.view.addModelData(1,0,"Nascam","NodeData",nTag,ux)
 gmsh.view.addModelData(2,0,"Nascam","NodeData",nTag,uy)
 gmsh.view.addModelData(3,0,"Nascam","NodeData",nTag,uz)
 gmsh.view.addModelData(4,0,"Nascam","NodeData",nTag,U)
+gmsh.view.addModelData(5,0,"Nascam","ElementData",eTag,VM)
 
 # Writes the solution
 
 gmsh.write(r"..\output\result.msh")
-for i in range(1,5): gmsh.view.write(i,r"..\output\result.msh",append=True)
+for i in range(1,6): gmsh.view.write(i,r"..\output\result.msh",append=True)

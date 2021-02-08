@@ -71,7 +71,6 @@ darray solve(Mesh mesh){
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
-    mesh.update(u);
 
     // Prints the computation time of the operation
 
@@ -97,7 +96,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
+    string meshPath = "input/coating.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -111,8 +110,66 @@ int main(){
 
     Mesh Mesh(mesh);
     darray u = solve(Mesh);
-    int nLen = mesh.nXYZ.size();
+    start = chrono::high_resolution_clock::now();
+    cout << "Stress extraction --- ";
+    
+    // Computes Von Mises stresses and update the nodes
 
+    int nLen = mesh.nXYZ.size();
+    int eLen = mesh.eNode.size();
+    dvector vm = Mesh.stress(u);
+    Mesh.update(u);
+
+    // Prints the computation time of the operation
+
+    stop = chrono::high_resolution_clock::now();
+    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
+    cout << "Writes the results --- ";
+
+    // Writes the results in a text file
+
+    mkdir("output");
+    ofstream stress("output/stress.txt");
+    ofstream elements("output/elements.txt");
+    ofstream coordinates("output/coordinates.txt");
+    ofstream displacement("output/displacement.txt");
+
+    // Writes the displacement field in a text file
+
+    for(int i=0; i<nLen; i++){
+        for(int j=0; j<2; j++){displacement << u[i+j*nLen] << ",";}
+        displacement << u[i+2*nLen] << "\n";
+    }
+
+    // Writes the node coordinates in a text file
+
+    for(dvector nXYZ:Mesh.mesh.nXYZ){
+        for(int j=0; j<nXYZ.size()-1; j++){coordinates << nXYZ[j] << ",";}
+        coordinates << nXYZ.back() << "\n";
+    }
+
+    // Writes the element nodes in a text file
+
+    for(ivector eNode:Mesh.mesh.eNode){
+        for(int j=0; j<eNode.size()-1; j++){elements << eNode[j] << ",";}
+        elements << eNode.back() << "\n";
+    }
+
+    // Writes the averaged Von Mises stress in a text file
+
+    for(int i=0; i<eLen; i++){
+        stress << vm[i] << "\n";
+    }
+
+    // Prints the computation time of the operation
+
+    stop = chrono::high_resolution_clock::now();
+    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << time.count()/1e6 << " sec\n\n";
+
+/*
     cout << "\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
@@ -126,38 +183,6 @@ int main(){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
     cout << "\n";
-
-    // Writes the results in a text file
-
-    mkdir("output");
-    ofstream elements("output/elements.txt");
-    ofstream coordinates("output/coordinates.txt");
-    ofstream displacement("output/displacement.txt");
-    start = chrono::high_resolution_clock::now();
-    cout << "Writes the results --- ";
-
-    for(int i=0; i<nLen; i++){
-        for(int j=0; j<2; j++){displacement << u[i+j*nLen] << ",";}
-        displacement << u[i+2*nLen] << "\n";
-    }
-
-    // Writes the node coordinates in a text file
-
-    for(dvector nXYZ:mesh.nXYZ){
-        for(int j=0; j<nXYZ.size()-1; j++){coordinates << nXYZ[j] << ",";}
-        coordinates << nXYZ.back() << "\n";
-    }
-
-    // Writes the element nodes in a text file
-
-    for(ivector eNode:mesh.eNode){
-        for(int j=0; j<eNode.size()-1; j++){elements << eNode[j] << ",";}
-        elements << eNode.back() << "\n";
-    }
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << time.count()/1e6 << " sec\n\n";
+*/
+    
 }

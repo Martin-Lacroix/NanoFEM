@@ -117,7 +117,8 @@ sparse Mesh::localK(){
 
         Elem elem(eXYZ,shape3D);
         ivector eNode = mesh.eNode[i];
-        matrix K1 = elem.selfK(quad3D,mesh.D[i]);
+        matrix D = math::stiffness(mesh.Ev[i][0],mesh.Ev[i][1]);
+        matrix K1 = elem.selfK(quad3D,D);
 
         // Inserts the elemental matrix into the global K matrix
 
@@ -423,4 +424,42 @@ void Mesh::update(darray &u){
             mesh.nXYZ[i][j] += u[i+j*nLen];
         }
     }
+}
+
+// ----------------------------------------------------------|
+// Computes the averaged Von Mises stress in each element    |
+// ----------------------------------------------------------|
+
+dvector Mesh::stress(darray &u){
+
+    int nLen = mesh.nXYZ.size();
+    int eLen = mesh.eNode.size();
+    dvector VM(eLen);
+
+    for(int i=0; i<eLen; i++){
+
+        // Coordinates of the nodes of the element
+
+        int sLen = mesh.eNode[i].size();
+        vector<dvector> eXYZ(sLen,dvector(3));
+        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+
+        // Stores the displacement of the curent element nodes
+
+        darray u1;
+        u1.setlength(3*sLen);
+
+        for(int j=0; j<sLen; j++){
+            for(int k=0; k<3; k++){
+                u1[j+k*sLen] = u(mesh.eNode[i][j]+k*nLen);
+            }
+        }
+
+        // Computes the averaged Von Mises stress
+
+        Elem elem(eXYZ,shape3D);
+        matrix D = math::stiffness(mesh.Ev[i][0],mesh.Ev[i][1]);
+        VM[i] = elem.stress(quad3D,D,u1);
+    }
+    return VM;
 }

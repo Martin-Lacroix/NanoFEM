@@ -30,6 +30,7 @@ class Elem{
     // Functions available in the elem.cpp file
 
     Elem(std::vector<dvector> nXYZ,shapeStruct shape);
+    double stress(quadStruct quad,matrix D,darray u);
     matrix selfS(quadStruct quad,dvector xyz);
     matrix selfK(quadStruct quad,matrix D);
 
@@ -40,7 +41,6 @@ class Elem{
     matrix dxN;
     matrix dyN;
     matrix dzN;
-    matrix N;
     int nLen;
 };
 

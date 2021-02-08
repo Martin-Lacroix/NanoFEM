@@ -64,6 +64,10 @@ namespace math{
     double symget(sparse &M,int row,int col);
     void symset(sparse &M,int row,int col,double val);
     void symadd(sparse &M,int row,int col,double val);
+
+
+
+    void lagrange(double val);
 }
 
 #endif

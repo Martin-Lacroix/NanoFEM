@@ -334,4 +334,40 @@ namespace math{
         else{val = alglib::sparseget(M,row,col);}
         return val;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    void lagrange(double val){
+
+        int order = 1;
+
+        double L = 0;
+
+        for(int i=0; i<order; i++){
+
+            
+        }
+
+
+
+
+
+    }
 }

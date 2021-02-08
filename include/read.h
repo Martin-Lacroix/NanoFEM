@@ -9,9 +9,9 @@
 struct readStruct{
 
     // Young modulus and Poisson ratio of each type of element
-
-    dvector E;
-    dvector v;
+    
+    dvector emptyEv;
+    std::vector<dvector> Ev;
 
     // Number of elements and size of the domain in each dimension
 
@@ -36,12 +36,9 @@ meshStruct read(std::string inputPath,std::string meshPath);
 
 // Functions to read the different input files
 
-void nodeBC(readStruct &read,meshStruct &mesh,ivector loop);
-void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);
+void setBC(readStruct &read,meshStruct &mesh);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);
+void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);
 void readSpecies(readStruct &read,meshStruct &mesh,std::string path);
-
-
-void testBC(readStruct &read,meshStruct &mesh);
 
 #endif

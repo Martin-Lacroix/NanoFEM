@@ -120,6 +120,47 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     return K;
 }
 
+// -------------------------------------------------------|
+// Computes the averaged Von Mises stress in the element  |
+// -------------------------------------------------------|
+
+double Elem::stress(quadStruct quad,matrix D,darray u){
+
+    matrix B;
+    B.setlength(3*nLen,6);
+    int gLen = quad.weight.size();
+    double VM=0,volume=0;
+    math::zero(B);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions derivative matrix B
+            
+            B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = dxN(j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = dyN(j,i);
+            B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = dzN(j,i);
+        }
+
+        // Computes the stress field at Gauss points
+
+        darray strain = math::prod(1,B,u,1);
+        darray sigma = math::prod(1,D,strain,0);
+
+        // Integrates the Von Mises stress in the element and the volume
+
+        double VM1 = 3*(sigma[3]*sigma[3]+sigma[4]*sigma[4]+sigma[5]*sigma[5]);
+        VM1 += (pow(sigma[0]-sigma[1],2)+pow(sigma[1]-sigma[2],2)+pow(sigma[2]-sigma[0],2))/2;
+        VM += quad.weight[i]*sqrt(VM1)*detJ[i];
+        volume += quad.weight[i]*detJ[i];
+    }
+
+    VM /= volume;
+    return VM;
+}
+
 // ---------------------------------------------------|
 // Computes the elemental S matrix for non-local FEM  |
 // ---------------------------------------------------|
