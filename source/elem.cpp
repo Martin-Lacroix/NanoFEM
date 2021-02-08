@@ -123,7 +123,7 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 // ---------------------------------------------------|
 // Computes the elemental S matrix for non-local FEM  |
 // ---------------------------------------------------|
-
+/*
 matrix Elem::selfS(quadStruct quad,dvector xyz){
 
     matrix S;
@@ -147,7 +147,7 @@ matrix Elem::selfS(quadStruct quad,dvector xyz){
     }
     return S;
 }
-
+*/
 // --------------------------------------------------|
 // Class of 4-node quadrangle linear element in 2D   |
 // --------------------------------------------------|

@@ -97,7 +97,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/single Cu.xyz";
+    string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -111,7 +111,8 @@ int main(){
 
     Mesh Mesh(mesh);
     darray u = solve(Mesh);
-/*
+    int nLen = mesh.nXYZ.size();
+
     cout << "\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
@@ -125,7 +126,7 @@ int main(){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
     cout << "\n";
-*/
+
     // Writes the results in a text file
 
     mkdir("output");
@@ -135,18 +136,21 @@ int main(){
     start = chrono::high_resolution_clock::now();
     cout << "Writes the results --- ";
 
-    for(int i=0; i<u.length(); i++){displacement << u[i] << "\n";}
+    for(int i=0; i<nLen; i++){
+        for(int j=0; j<2; j++){displacement << u[i+j*nLen] << ",";}
+        displacement << u[i+2*nLen] << "\n";
+    }
 
     // Writes the node coordinates in a text file
 
-    for(dvector nXYZ:Mesh.mesh.nXYZ){
+    for(dvector nXYZ:mesh.nXYZ){
         for(int j=0; j<nXYZ.size()-1; j++){coordinates << nXYZ[j] << ",";}
         coordinates << nXYZ.back() << "\n";
     }
 
     // Writes the element nodes in a text file
 
-    for(ivector eNode:Mesh.mesh.eNode){
+    for(ivector eNode:mesh.eNode){
         for(int j=0; j<eNode.size()-1; j++){elements << eNode[j] << ",";}
         elements << eNode.back() << "\n";
     }

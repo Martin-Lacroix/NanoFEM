@@ -4,21 +4,21 @@ import sys
 
 # %% Load Data
 
-u = np.loadtxt(r"..\output\displacement.txt")
 elem = np.loadtxt(r"..\output\elements.txt",delimiter=",")
+u = np.loadtxt(r"..\output\displacement.txt",delimiter=",")
 nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
-nLen = u.shape[0]//3
 
 # Cubic domain size
 
 xLen = [np.min(nXYZ[:,0]),np.max(nXYZ[:,0])]
 yLen = [np.min(nXYZ[:,1]),np.max(nXYZ[:,1])]
 zLen = [np.min(nXYZ[:,2]),np.max(nXYZ[:,2])]
+nLen = u.shape[0]
 
-ux = [[u[i+0*nLen]] for i in range(nLen)]
-uy = [[u[i+1*nLen]] for i in range(nLen)]
-uz = [[u[i+2*nLen]] for i in range(nLen)]
-U = [[u[i+2],u[i+nLen],u[i+2*nLen]] for i in range(nLen)]
+ux = [[u[i,0]] for i in range(nLen)]
+uy = [[u[i,1]] for i in range(nLen)]
+uz = [[u[i,2]] for i in range(nLen)]
+U = [[np.linalg.norm(u[i])] for i in range(nLen)]
 
 # %% Domain Geometry
 
