@@ -273,7 +273,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         }
 
         E += (1-sum)*read.emptyEv[0];
-        v += (1-sum)*read.emptyEv[0];
+        v += (1-sum)*read.emptyEv[1];
         mesh.Ev[i] = {E,v};
     }
     file.close();
