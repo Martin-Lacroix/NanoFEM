@@ -96,7 +96,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/coating.xyz";
+    string meshPath = "input/single Cu.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation

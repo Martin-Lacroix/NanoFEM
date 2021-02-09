@@ -38,6 +38,7 @@ meshStruct read(std::string inputPath,std::string meshPath);
 
 void setBC(readStruct &read,meshStruct &mesh);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);
+std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
 void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);
 void readSpecies(readStruct &read,meshStruct &mesh,std::string path);
 

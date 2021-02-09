@@ -176,6 +176,43 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     file.close();
 }
 
+// -------------------------------------------------------|
+// Localizes the chemical species in the mesh elements    |
+// -------------------------------------------------------|
+
+unordered_set<int> locSpecies(readStruct &read, dvector coord){
+
+    unordered_set<int> eList;
+    ivector dLen = read.dLen;
+    dvector zero = read.zero;
+    dvector tol = {-1e-5,1e-5};
+
+    for(int i=0; i<2; i++){
+
+        // Slightly moves the species along y axis
+
+        int dx = dLen[0]*(coord[0]-zero[0])/read.dSize[0]+tol[i];
+        if(dx>=dLen[0]){continue;}
+
+        // Slightly moves the species along y axis
+
+        for(int j=0; j<2; j++){
+
+            int dy = dLen[1]*(coord[1]-zero[1])/read.dSize[1]+tol[j];
+            if(dy>=dLen[1]){continue;}
+
+            // Slightly moves the species along z axis
+
+            for(int k=0; k<2; k++){
+                        
+                int dz = dLen[2]*(coord[2]-zero[2])/read.dSize[2]+tol[k];
+                if(dz<dLen[2]){eList.insert(dx*dLen[1]*dLen[2]+dy*dLen[2]+dz);}
+            }
+        }
+    }
+    return eList;
+}
+
 // ---------------------------------------------------------|
 // Computes the stiffness tensor from the input.xyz file    |
 // ---------------------------------------------------------|
@@ -192,9 +229,6 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
     int eLen = mesh.eNode.size();
     vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
-    dvector tol = {-1e-5,1e-5};
-    ivector dLen = read.dLen;
-    dvector zero = read.zero;
     mesh.eSurf.resize(eLen);
     mesh.Ev.resize(eLen);
 
@@ -202,7 +236,6 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
     while(getline(file,input,' ')){
 
-        unordered_set<int> set;
         getline(file,input,';');
         dvector coord = tovec(input);
         getline(file,input,';');
@@ -212,34 +245,13 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         int layer = stoi(input);
         getline(file,input,'\n');
 
-        for(int i=0; i<2; i++){
-
-            // Slightly moves the species along y axis
-
-            int dx = dLen[0]*(coord[0]-zero[0])/read.dSize[0]+tol[i];
-            if(dx>=dLen[0]){continue;}
-
-            // Slightly moves the species along y axis
-
-            for(int j=0; j<2; j++){
-
-                int dy = dLen[1]*(coord[1]-zero[1])/read.dSize[1]+tol[j];
-                if(dy>=dLen[1]){continue;}
-
-                // Slightly moves the species along z axis
-
-                for(int k=0; k<2; k++){
-                            
-                    int dz = dLen[2]*(coord[2]-zero[2])/read.dSize[2]+tol[k];
-                    if(dz<dLen[2]){set.insert(dx*dLen[1]*dLen[2]+dy*dLen[2]+dz);}
-                }
-            }
-        }
-
         // Splits the filling fraction between the elements
 
-        for (int i:set){frac[i][layer] += stod(input)/set.size();}
+        unordered_set<int> eList = locSpecies(read,coord);
+        for (int i:eList){frac[i][layer] += stod(input)/eList.size();}
     }
+
+    // Stores the mixed Lamé parameters of the elements
 
     for(int i=0; i<eLen; i++){
 
@@ -252,7 +264,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         if(sum>1){for(int j=0; j<frac[i].size(); j++){frac[i][j] /= sum;}}
         if(sum>1){sum=1;}
 
-        // Computes the mixed Lamé parameters of the elements
+        // Computes the mixed Young modulus and Poisson ratio
         
         for(int j=0; j<frac[i].size(); j++){
 
