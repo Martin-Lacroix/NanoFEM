@@ -32,7 +32,8 @@ struct quadStruct{
 namespace math{
     
     quadStruct legendre(int dim,int order);
-    std::vector<dvector> to2D(std::vector<dvector> &nXYZ);
+    dvector lagrange(int var,dvector node,dvector va);
+    std::vector<dvector> to2D(std::vector<dvector> nXYZ);
 
     // Sparse or dense matrix-matrix addition
 
@@ -52,7 +53,7 @@ namespace math{
     // Non-zero indices of a sparse matrix and vector cross product
 
     std::vector<ivector> sparsemap(sparse &K);
-    darray cross(darray &V1,darray &V2);
+    dvector cross(dvector &V1,dvector &V2);
 
     // Kernel function and stiffness tensor in Voigh notation
 
@@ -64,10 +65,6 @@ namespace math{
     double symget(sparse &M,int row,int col);
     void symset(sparse &M,int row,int col,double val);
     void symadd(sparse &M,int row,int col,double val);
-
-
-
-    void lagrange(double val);
 }
 
 #endif

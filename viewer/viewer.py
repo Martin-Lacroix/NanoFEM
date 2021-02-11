@@ -76,6 +76,12 @@ gmsh.model.geo.addVolume([1])
 coord = nXYZ.flatten()
 nTag = np.arange(nXYZ.shape[0])+1
 eTag = np.arange(elem.shape[0])+1
+
+for i in range(elem.shape[0]):
+    
+    n = elem[i]
+    elem[i] = [n[0],n[4],n[6],n[2],n[1],n[5],n[7],n[3]]
+    
 eNode = elem.flatten()+1
 
 # Adds the nodes to the mesh
@@ -104,3 +110,4 @@ gmsh.view.addModelData(5,0,"Nascam","ElementData",eTag,VM)
 
 gmsh.write(r"..\output\result.msh")
 for i in range(1,6): gmsh.view.write(i,r"..\output\result.msh",append=True)
+        

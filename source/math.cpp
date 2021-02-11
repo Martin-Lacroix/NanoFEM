@@ -89,62 +89,13 @@ namespace math{
         return quad;
     }
 
-    // ----------------------------------------------------------|
-    // Converts a 4-node quadrangle from 3D space to 2D space    |
-    // ----------------------------------------------------------|
+    // -------------------------------------------------|
+    // Standard 3D vector cross product V3 = V1 × V2    |
+    // -------------------------------------------------|
 
-    vector<dvector> to2D(vector<dvector> &nXYZ){
+    dvector cross(dvector &V1,dvector &V2){
 
-        dvector n{0,0,0};
-        darray v1; v1.setlength(3);
-        darray v2; v2.setlength(3);
-        darray v3; v3.setlength(3);
-        double n21=0, dot2=0;
-        double n31=0, dot3=0;
-
-        // Stores the basis vectors of the face and their norm
-
-        for(int i=0; i<3; i++){
-
-            v1[i] = nXYZ[1][i]-nXYZ[0][i];
-            v2[i] = nXYZ[2][i]-nXYZ[0][i];
-            v3[i] = nXYZ[3][i]-nXYZ[0][i];
-            
-            n[0] += v1[i]*v1[i];
-            n[1] += v2[i]*v2[i];
-            n[2] += v3[i]*v3[i];
-        }
-
-        // Computes the cross product of the basis vectors
-
-        darray v21 = cross(v2,v1);
-        darray v31 = cross(v3,v1);
-
-        // Dot product of the cross vectors and their norm
-
-        for(int i=0; i<3; i++){
-            
-            n21 += v21[i]*v21[i];
-            n31 += v31[i]*v31[i];
-            dot2 += v2[i]*v1[i];
-            dot3 += v3[i]*v1[i];
-        }
-
-        // Coordinates in the 2D space of the quadrangle
-
-        double l2 = copysign(sqrt(abs(n[1]-n21/n[0])),dot2);
-        double l3 = copysign(sqrt(abs(n[2]-n31/n[0])),dot3);
-        vector<dvector> nXY = {{0,0},{sqrt(n[0]),0},{l2,sqrt(n21/n[0])},{l3,sqrt(n31/n[0])}};
-        return nXY;
-    }
-
-    // ----------------------------------------------|
-    // Standard vector cross product V3 = V1 × V2    |
-    // ----------------------------------------------|
-
-    darray cross(darray &V1,darray &V2){
-
-        darray V3; V3.setlength(3);
+        dvector V3(3);
         V3[0] = V1[1]*V2[2]-V1[2]*V2[1];
         V3[1] = V1[0]*V2[2]-V1[2]*V2[0];
         V3[2] = V1[0]*V2[1]-V1[1]*V2[0];
@@ -274,35 +225,7 @@ namespace math{
         }
         return row;
     }
-/*
-    vector<ivector> sparsemap(sparse &K){
 
-        // Initializes the vector containers
-
-        double val;
-        alglib::ae_int_t i=0,j=0;
-        alglib::ae_int_t I=0,J=0;
-        int nLen = alglib::sparsegetnrows(K);
-        vector<ivector> row(3*nLen);
-
-        // Stores the non-zero indice locations per row and column
-
-        while(alglib::sparseenumerate(K,I,J,i,j,val)){
-
-            if(abs(val)<1e-16){
-                alglib::sparseset(K,i,j,0);
-            }
-
-            // Stores the value if greater than the tolerance
-
-            else{
-                row[i].push_back(j);
-                if(i!=j){row[j].push_back(i);}
-            }
-        }
-        return row;
-    }
-*/
     // ---------------------------------------------------------------|
     // Sets the coordinate (row,col) for a symmetric sparse matrix    |
     // ---------------------------------------------------------------|
@@ -335,39 +258,82 @@ namespace math{
         return val;
     }
 
+    // ---------------------------------------------------------------------|
+    // Evaluates the shape functions for Lagrange isoparametric elements    |
+    // ---------------------------------------------------------------------|
 
+    dvector lagrange(int var,dvector node,dvector val){
 
+        int dim = val.size();
+        int nLen = pow(node.size(),dim);
+        int sLen = node.size();
+        dvector N(nLen,1);
 
+        // Var is the index of the variable we want to derivate
 
+        for(int n=0; n<dim; n++){
+            dvector N1;
 
+            // Computes the derivative of Lagrange polynomial for this variable
 
+            if(n==var){
+                N1.resize(sLen,0);
 
+                for(int j=0; j<sLen; j++){
+                    for(int l=0; l<sLen; l++){
 
+                        // Computes the first term of the summ of products
 
+                        if(l!=j){
+                            double La = 1/(node[j]-node[l]);
 
+                            for(int m=0; m<sLen; m++){
+                                if(m!=j && m!=l){La *= (val[n]-node[m])/(node[j]-node[m]);}
+                            }
+                            N1[j] += La;
+                        }
+                    }
+                }
+            }
+   
+            // Computes the Lagrange polynomial for other variables
 
+            else{
+                N1.resize(sLen,1);
 
+                for(int i=0; i<sLen; i++){
+                    for(int j=0; j<sLen; j++){
+                        if(i!=j){N1[j] *= (val[n]-node[i])/(node[j]-node[i]);}
+                    }
+                }
+            }
 
+            // Product of the Lagrange polynomials in the 2D case
 
+            if(dim==2){
+                for(int i=0; i<sLen; i++){
+                    for(int j=0; j<sLen; j++){
+                            
+                        ivector loop = {i,j};
+                        N[i*sLen+j] *= N1[loop[n]];
+                    }
+                }
+            }
 
+            // Product of the Lagrange polynomials in the 3D case
 
-
-
-
-    void lagrange(double val){
-
-        int order = 1;
-
-        double L = 0;
-
-        for(int i=0; i<order; i++){
-
-            
+            if(dim==3){
+                for(int i=0; i<sLen; i++){
+                    for(int j=0; j<sLen; j++){
+                        for(int k=0; k<sLen; k++){
+                            
+                            ivector loop = {i,j,k};
+                            N[i*sLen*sLen+j*sLen+k] *= N1[loop[n]];
+                        }
+                    }
+                }
+            }
         }
-
-
-
-
-
+        return N;
     }
 }

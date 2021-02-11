@@ -8,9 +8,6 @@
 
 struct shapeStruct{
 
-    int nLen;
-    int gLen;
-
     // Local derivatives of the shape functions at Gauss nodes
 
     matrix N;
@@ -55,13 +52,11 @@ class Face{
     // Functions available in the elem.cpp file
 
     Face(std::vector<dvector> nXYZ,shapeStruct shape);
-    matrix selfN(shapeStruct shape,quadStruct quad);
+    matrix selfM(shapeStruct shape,quadStruct quad);
 
     // Parameters specific to each face
 
-    darray detJ;
-    matrix dxN;
-    matrix dyN;
+    darray dJ2D;
     int nLen;
 };
 

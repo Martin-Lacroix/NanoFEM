@@ -11,10 +11,13 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
     matrix invJ;
     matrix coord;
 
+    // Number of nodes and Gauss points
+
+    nLen = shape.N.rows();
+    int gLen = shape.N.cols();
+
     // Memory allocation and initialization
 
-    nLen = shape.nLen;
-    int gLen = shape.gLen;
     dxN.setlength(nLen,gLen);
     dyN.setlength(nLen,gLen);
     dzN.setlength(nLen,gLen);
@@ -38,11 +41,11 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
         coord(i,1) = nXYZ[i][1];
         coord(i,2) = nXYZ[i][2];
 
-        for(int j=0; j<gLen; j++){
+        for(int k=0; k<3; k++){
 
             // Jacobian matrix at Gauss points
 
-            for(int k=0; k<3; k++){
+            for(int j=0; j<gLen; j++){
                 
                 J(k,j) += shape.drN(i,j)*nXYZ[i][k];
                 J(k+3,j) += shape.dsN(i,j)*nXYZ[i][k];
@@ -195,55 +198,33 @@ matrix Elem::selfS(quadStruct quad,dvector xyz){
 
 Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
-    matrix J,invJ;
-    vector<dvector> nXY = math::to2D(nXYZ);
+    int gLen = shape.N.cols();
+    nLen = shape.N.rows();
+    dJ2D.setlength(gLen);
+    math::zero(dJ2D);
 
-    // Memory allocation and initialization
+    // Performs a loop over the Gauss points
 
-    nLen = shape.nLen;
-    int gLen = shape.gLen;
-    dxN.setlength(nLen,gLen);
-    dyN.setlength(nLen,gLen);
-    invJ.setlength(4,gLen);
-    detJ.setlength(gLen);
-    J.setlength(4,gLen);
+    for(int j=0; j<gLen; j++){
 
-    // Fills the matrices with zeros
+        dvector J2Dr(3,0);
+        dvector J2Ds(3,0);
 
-    math::zero(J);
-    math::zero(dxN);
-    math::zero(dyN);
-    
-    // Builds the Jacobian matrix at Gauss points
+        // Computes the partial Jacobian vectors for 3D to 2D mapping
 
-    for(int i=0; i<nLen; i++){
-        for(int j=0; j<gLen; j++){
-            for(int k=0; k<2; k++){
-
-                J(k,j) += shape.drN(i,j)*nXY[i][k];
-                J(k+2,j) += shape.dsN(i,j)*nXY[i][k];
+        for(int k=0; k<3; k++){
+            for(int i=0; i<nLen; i++){
+            
+                J2Dr[k] += shape.drN(i,j)*nXYZ[i][k];
+                J2Ds[k] += shape.dsN(i,j)*nXYZ[i][k];
             }
         }
-    }
 
-    for(int i=0; i<gLen; i++){
+        // Computes the cross product and takes the norm
 
-        // Determinant and inverse of the Jacobian matrix
-
-        detJ(i) = J[0][i]*J[3][i]-J[1][i]*J[2][i];
-
-        invJ(1,i) = -J[1][i]/detJ(i);
-        invJ(2,i) = -J[2][i]/detJ(i);
-        invJ(0,i) = J[3][i]/detJ(i);
-        invJ(3,i) = J[0][i]/detJ(i);
-
-        // Global derivatives of shape functions
-
-        for(int j=0; j<nLen; j++){
-
-            dxN(j,i) += shape.drN(j,i)*invJ(0,i)+shape.dsN(j,i)*invJ(1,i);
-            dyN(j,i) += shape.drN(j,i)*invJ(2,i)+shape.dsN(j,i)*invJ(3,i);
-        }
+        dvector dJ = math::cross(J2Dr,J2Ds);
+        for(int i=0; i<3; i++){dJ2D(j) += dJ[i]*dJ[i];}
+        dJ2D(j) = sqrt(dJ2D[j]);
     }
 }
 
@@ -251,21 +232,21 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 // Integrates the matrix of shape functions N over the element   |
 // --------------------------------------------------------------|
 
-matrix Face::selfN(shapeStruct shape,quadStruct quad){
+matrix Face::selfM(shapeStruct shape,quadStruct quad){
 
-    matrix N; N.setlength(3*nLen,3);
-    int gLen = quad.weight.size();
-    math::zero(N);
+    matrix M; M.setlength(3*nLen,3);
+    int gLen = shape.N.cols();
+    math::zero(M);
 
     // Integrates the matrix of local shape functions
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<gLen; j++){
             
-            N(i,0) += shape.N(i,j)*quad.weight[j]*detJ(j);
-            N(4+i,1) += shape.N(i,j)*quad.weight[j]*detJ(j);
-            N(8+i,2) += shape.N(i,j)*quad.weight[j]*detJ(j);
+            M(i,0) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
+            M(4+i,1) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
+            M(8+i,2) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
         }
     }
-    return N;
+    return M;
 }

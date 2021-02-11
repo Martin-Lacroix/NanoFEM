@@ -96,7 +96,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/single Cu.xyz";
+    string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -169,7 +169,7 @@ int main(){
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << time.count()/1e6 << " sec\n\n";
 
-/*
+
     cout << "\n";
     for(int i=0; i<u.length()/3; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
@@ -183,6 +183,6 @@ int main(){
         cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
     }
     cout << "\n";
-*/
+
     
 }

@@ -15,80 +15,64 @@ Mesh::Mesh(meshStruct &input){
 
     quad3D = math::legendre(3,mesh.order);
     quad2D = math::legendre(2,mesh.order);
-    shape3D = shape(3);
-    shape2D = shape(2);
+    shape3D = shape(3,1);
+    shape2D = shape(2,1);
 }
 
 // -------------------------------------------------------------|
 // Returns the structure of 2D and 3D linear shape functions    |
 // -------------------------------------------------------------|
 
-shapeStruct Mesh::shape(int dim){
+shapeStruct Mesh::shape(int dim,int order){
 
+    dvector val;
     int nLen,gLen;
     shapeStruct shape;
-    if(dim==3){gLen = quad3D.gRST.size(); nLen = 8;}
-    if(dim==2){gLen = quad2D.gRST.size(); nLen = 4;}
-    vector<ivector> n(nLen,ivector(dim));
-    shape.gLen = gLen;
-    shape.nLen = nLen;
+    dvector node(order+1);
+    double step = 2.0/order;
 
-    // Performs the memory allocation
+    // Length of the node list and Gauss points
 
+    if(dim==3){
+        gLen = quad3D.gRST.size();
+        nLen = 0.1+pow(order+1,3);
+    }
+    if(dim==2){
+        gLen = quad2D.gRST.size();
+        nLen = 0.1+pow(order+1,2);
+    }
+
+    // Memory allocation and 1D node list
+
+    shape.N.setlength(nLen,gLen);
     shape.drN.setlength(nLen,gLen);
     shape.dsN.setlength(nLen,gLen);
     shape.dtN.setlength(nLen,gLen);
-    shape.N.setlength(nLen,gLen);
 
-    if(dim==3){
+    for(int i=0; i<=order; i++){node[i] = i*step-1;}
 
-        // Sets the coordinates of the 3D nodes
+    // Sets the coordinates of the Gauss points
 
-        n[0]={-1,-1,-1}; n[1]={1,-1,-1}; n[2]={1,1,-1}; n[3]={-1,1,-1};
-        n[4]={-1,-1,1}; n[5]={1,-1,1}; n[6]={1,1,1}; n[7]={-1,1,1};
+    for(int i=0; i<gLen; i++){
 
-        for(int i=0; i<gLen; i++){
+        if(dim==2){val = {quad2D.gRST[i][0],quad2D.gRST[i][1]};}
+        if(dim==3){val = {quad3D.gRST[i][0],quad3D.gRST[i][1],quad3D.gRST[i][2]};}
 
-            // Extracts the 3D coordinates of the Gauss points
+        // Computes the Lagrange shape functions at Gauss points
 
-            double r = quad3D.gRST[i][0];
-            double s = quad3D.gRST[i][1];
-            double t = quad3D.gRST[i][2];
+        dvector drN = math::lagrange(0,node,val);
+        dvector dsN = math::lagrange(1,node,val);
+        dvector dtN = math::lagrange(2,node,val);
+        dvector N = math::lagrange(-1,node,val);
 
-            for(int j=0; j<nLen; j++){
+        for(int j=0; j<nLen; j++){
 
-                // Stores the shape functions evaluated at the Gauss points
-
-                shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
-                shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)*(1+n[j][2]*t)/8;
-                shape.dsN(j,i) = n[j][1]*(1+n[j][0]*r)*(1+n[j][2]*t)/8;
-                shape.dtN(j,i) = n[j][2]*(1+n[j][0]*r)*(1+n[j][1]*s)/8;
-            }
-        }
-    }
-
-    if(dim==2){
-
-        // Sets the coordinates of the 2D nodes
-
-        n[0]={-1,-1}; n[1]={1,-1};
-        n[2]={1,1}; n[3]={-1,1};
-
-        for(int i=0; i<gLen; i++){
-
-            // Extracts the 2D coordinates of the Gauss points
-
-            double r = quad2D.gRST[i][0];
-            double s = quad2D.gRST[i][1];
-
-            for(int j=0; j<nLen; j++){
-
-                // Stores the shape functions evaluated at the Gauss pojnts
-
-                shape.N(j,i) = (1+n[j][0]*r)*(1+n[j][1]*s)/4;
-                shape.drN(j,i) = n[j][0]*(1+n[j][1]*s)/4;
-                shape.dsN(j,i) = n[j][1]*(1+n[j][0]*r)/4;
-            }
+            // Stores the shape functions evaluated at the Gauss points
+            
+            shape.N(j,i) = N[j];
+            shape.drN(j,i) = drN[j];
+            shape.dsN(j,i) = dsN[j];
+            shape.dtN(j,i) = dtN[j];
         }
     }
     return shape;
@@ -273,8 +257,8 @@ darray Mesh::neumann(){
         // Computes the elemental B vectors
 
         Face face(eXYZ,shape2D);
-        matrix N = face.selfN(shape2D,quad2D);
-        darray B1 = math::prod(1,N,mesh.neuVal[i]);
+        matrix M = face.selfM(shape2D,quad2D);
+        darray B1 = math::prod(1,M,mesh.neuVal[i]);
 
         // Inserts the elemental vectors into the global B vector
 

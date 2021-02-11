@@ -45,9 +45,9 @@ class Mesh{
     darray neumann();
     sparse nonLocalK();
     matrix elemK(int idx);
-    shapeStruct shape(int dim);
-    matrix totalS(dvector xyz);
     dvector stress(darray &u);
+    matrix totalS(dvector xyz);
+    shapeStruct shape(int dim,int order);
 
     // Operations on the total stiffness matrix
     

@@ -130,7 +130,7 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     read.row.resize(3,ivector(nLen,-1));
     ivector dLen = read.dLen;
 
-    // Stores the node coordinates and the BC in the meshStruct
+    // Stores the node coordinates and the BC in the mesh
 
     for(int i=0; i<=dLen[0]; i++){
         for(int j=0; j<=dLen[1]; j++){
@@ -153,11 +153,16 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
                 read.neighbour.push_back({-1,-1,-1,-1,-1,-1});
                 int idx = i*(dLen[1]+1)*(dLen[2]+1)+j*(dLen[2]+1)+k;
 
-                // Stores the nodes of each element in meshStruct
+                // Stores the nodes of each element in the mesh
 
                 node = {idx,(dLen[1]+1)*(dLen[2]+1)+idx,(dLen[1]+2)*(dLen[2]+1)+idx,dLen[2]+idx+1};
                 node.insert(node.end(),{node[0]+1,node[1]+1,node[2]+1,node[3]+1});
-                mesh.eNode.push_back(node);
+                //mesh.eNode.push_back(node);
+
+                ivector node2;
+                node2 = {idx,node[0]+1,dLen[2]+idx+1,node[3]+1};
+                node2.insert(node2.end(),{(dLen[1]+1)*(dLen[2]+1)+idx,node[1]+1,(dLen[1]+2)*(dLen[2]+1)+idx,node[2]+1});
+                mesh.eNode.push_back(node2);
 
                 // Stores the list of neightbour elements on 3 bottom faces
 
@@ -400,17 +405,17 @@ void setBC(readStruct &read,meshStruct &mesh){
         for(int j=0; j<3; j++){
             if(read.boundary[j].first=="axial stress"){
 
-                // Neumann BC applied to the top face perpendicular to the j-th dimension
+                // Neumann BC on the face perpendicular to the j-th dimension
                     
                 ivector node = mesh.eNode[i];
                 vector<ivector> face(3,ivector(4));
                 double val = read.boundary[j].second;
 
-                // Computes the faces of the 8-node element
+                // Computes the right faces of the 8-node element
 
-                face[0] = {node[1],node[2],node[6],node[5]};
-                face[1] = {node[2],node[6],node[7],node[3]};
-                face[2] = {node[4],node[5],node[6],node[7]};
+                face[0] = {node[4],node[5],node[6],node[7]};
+                face[1] = {node[2],node[6],node[3],node[7]};
+                face[2] = {node[1],node[3],node[5],node[7]};
 
                 if(read.neighbour[i][2*j+1]==-1){
 
