@@ -10,7 +10,7 @@
 
 	<requiredFiles>
 		<file type="OUTPUT">
-			<name>deposited_layer.xyz</name>
+			<name>coating.xyz</name>
 		</file>
 	</requiredFiles>
 	
@@ -19,20 +19,25 @@
 			<param type="INT">
 				<name>Quadrature order</name>
 				<default>1</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Smoothing depth</name>
+				<default>0</default>
+				<unit>lattice unit</unit>
 			</param>
 		</group>
 
 		<group name="Hole Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
-				<default>1e-9</default>
-				<unit>?</unit>
+				<default>1e-5</default>
+				<unit>user defined</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
 				<default>0</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
 			</param>
 		</group>
 
@@ -40,12 +45,12 @@
 			<param type="DOUBLE">
 				<name>Young modulus</name>
 				<default>1</default>
-				<unit>?</unit>
+				<unit>user defined</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
 				<default>0.3</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
 			</param>
 		</group>
 		
@@ -64,14 +69,14 @@
 			<param type="DOUBLE">
 				<name>Total strain</name>
 				<default>0</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
 			</param>
 		</group>
 		<group displayIf="X:axial stress">
 			<param type="DOUBLE">
 				<name>Total stress</name>
 				<default>0</default>
-				<unit>?</unit>
+				<unit>same as Young modulus</unit>
 			</param>
 		</group>
 
@@ -90,14 +95,14 @@
 			<param type="DOUBLE">
 				<name>Total strain</name>
 				<default>0</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
 			</param>
 		</group>
 		<group displayIf="Y:axial stress">
 			<param type="DOUBLE">
 				<name>Total stress</name>
 				<default>0</default>
-				<unit>?</unit>
+				<unit>same as Young modulus</unit>
 			</param>
 		</group>
 
@@ -116,25 +121,24 @@
 			<param type="DOUBLE">
 				<name>Total strain</name>
 				<default>0</default>
-				<unit>-</unit>
+				<unit>unitless</unit>
 			</param>
 		</group>
 		<group displayIf="Z:axial stress">
 			<param type="DOUBLE">
 				<name>Total stress</name>
 				<default>0</default>
-				<unit>?</unit>
+				<unit>same as Young modulus</unit>
 			</param>
 		</group>
 
 		<group name="Layer Parameters" type="LAYER_TABLE">
 			<param type="DOUBLE" >
-				<name>Young modulus (?)</name>
+				<name>Young modulus (user defined)</name>
 				<default>1</default>
-				<unit>?</unit>
 			</param>
 			<param type="DOUBLE" >
-				<name>Poisson ratio (-)</name>
+				<name>Poisson ratio (unitless)</name>
 				<default>0.3</default>
 			</param>
 		</group>

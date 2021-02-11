@@ -109,5 +109,4 @@ gmsh.view.addModelData(5,0,"Nascam","ElementData",eTag,VM)
 # Writes the solution
 
 gmsh.write(r"..\output\result.msh")
-for i in range(1,6): gmsh.view.write(i,r"..\output\result.msh",append=True)
-        
+for i in range(1,6): gmsh.view.write(i,r"..\output\result.msh",append=True)    

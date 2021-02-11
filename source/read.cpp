@@ -36,8 +36,10 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
     // Reads the order of the quadrature rule
 
-    getline(file,input,'!');
+    getline(file,input,';');
     mesh.order = stoi(input);
+    getline(file,input,'!');
+    read.cropZ = stod(input);
     getline(file,input,'\n');
 
     // Reads the parameters of empty elements
@@ -101,9 +103,6 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     string input;
     ifstream file;
     file.open(path);
-    mesh.dirVal.resize(3);
-    mesh.dirNode.resize(3);
-    mesh.coupNode.resize(3);
 
     // Reads the size of the cubic domain
 
@@ -123,6 +122,9 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     read.eSize = tovec(input.substr(8));
     dvector eSize = read.eSize;
 
+    read.cropZ += eSize[2]-fmod(read.cropZ,eSize[2]);
+    read.dSize[2] -= read.cropZ;
+
     // Number of elements and initialization of the BC tracker
 
     for(int i=0; i<3; i++){read.dLen.push_back(0.1+read.dSize[i]/eSize[i]);}
@@ -136,7 +138,6 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<=dLen[1]; j++){
             for(int k=0; k<=dLen[2]; k++){
 
-                ivector loop = {i,j,k};
                 mesh.nXYZ.push_back({zero[0]+i*eSize[0],zero[1]+j*eSize[1],zero[2]+k*eSize[2]});
             }
         }
@@ -148,21 +149,15 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<dLen[1]; j++){
             for(int k=0; k<dLen[2]; k++){
                 
-                ivector node;
                 int eLen = mesh.eNode.size();
-                read.neighbour.push_back({-1,-1,-1,-1,-1,-1});
+                read.neighbour.push_back(ivector (6,-1));
                 int idx = i*(dLen[1]+1)*(dLen[2]+1)+j*(dLen[2]+1)+k;
 
                 // Stores the nodes of each element in the mesh
 
-                node = {idx,(dLen[1]+1)*(dLen[2]+1)+idx,(dLen[1]+2)*(dLen[2]+1)+idx,dLen[2]+idx+1};
-                node.insert(node.end(),{node[0]+1,node[1]+1,node[2]+1,node[3]+1});
-                //mesh.eNode.push_back(node);
-
-                ivector node2;
-                node2 = {idx,node[0]+1,dLen[2]+idx+1,node[3]+1};
-                node2.insert(node2.end(),{(dLen[1]+1)*(dLen[2]+1)+idx,node[1]+1,(dLen[1]+2)*(dLen[2]+1)+idx,node[2]+1});
-                mesh.eNode.push_back(node2);
+                mesh.eNode.push_back({idx,idx+1,dLen[2]+idx+1,dLen[2]+idx+2,
+                (dLen[1]+1)*(dLen[2]+1)+idx,(dLen[1]+1)*(dLen[2]+1)+idx+1,
+                (dLen[1]+2)*(dLen[2]+1)+idx,(dLen[1]+2)*(dLen[2]+1)+idx+1});
 
                 // Stores the list of neightbour elements on 3 bottom faces
 
@@ -290,9 +285,10 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
 void setBC(readStruct &read,meshStruct &mesh){
 
+    mesh.dirVal.resize(3);
+    mesh.dirNode.resize(3);
+    mesh.coupNode.resize(3);
     ivector dLen = read.dLen;
-    dvector zero = read.zero;
-    dvector dSize = read.dSize;
     int eLen = mesh.eNode.size();
     dvector tol = {read.eSize[0]/2,read.eSize[1]/2,read.eSize[2]/2};
     ivector add = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
@@ -312,22 +308,17 @@ void setBC(readStruct &read,meshStruct &mesh){
         // Check node position for the 3 indices
 
         for(int j=0; j<3; j++){
+
             string bc = read.boundary[j].first;
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
 
-            // If the curent node is at the bottom
-
-            if(abs(mesh.nXYZ[i][j]-zero[j])<tol[j]){
-
-                // If the bottom face is fixed
+                // If the curent node is at the bottom
 
                 if(bc=="clamped"){
 
                     mesh.dirNode[j].push_back(i);
                     mesh.dirVal[j].push_back(0);
                 }
-
-                // If the bottom face is fixed and top face is flat
-
                 else if(bc=="axial stress" || bc=="periodic"){
 
                     mesh.dirNode[j].push_back(i);
@@ -360,23 +351,19 @@ void setBC(readStruct &read,meshStruct &mesh){
                         int loc1 = read.row[k][i];
                         int loc2 = read.row[k][i+add[j]];
 
-                        if(loc1>=0 && loc2<0){
+                        // Check whether the first or second node is already in the list
 
-                            // If the first node of the pair is already in the list
+                        if(loc1>=0 && loc2<0){
 
                             mesh.coupNode[k][loc1].push_back(i+add[j]);
                             read.row[k][i+add[j]] = loc1;
                         }
                         else if(loc1<0 && loc2>=0){
 
-                            // If the second node of the pair is already in the list
-
                             mesh.coupNode[k][loc2].push_back(i);
                             read.row[k][i] = loc2;
                         }
                         else if(loc1<0 && loc2<0){
-
-                            // If no of the nodes of the pair are already in the list
 
                             mesh.coupNode[k].push_back({i,i+add[j]});
                             read.row[k][i+add[j]] = mesh.coupNode[k].size()-1;
@@ -386,12 +373,12 @@ void setBC(readStruct &read,meshStruct &mesh){
                 }
             }
             
-            // If the curent node is at the top and imposed strain
+            // If the curent node is at the top of the mesh
 
-            else if(abs(mesh.nXYZ[i][j]-zero[j]-dSize[j])<tol[j]){
+            else if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
                 if(bc=="axial strain"){
 
-                    double val = read.boundary[j].second*dSize[j];
+                    double val = read.boundary[j].second*read.dSize[j];
                     mesh.dirVal[j].push_back(val);
                     mesh.dirNode[j].push_back(i);
                 }

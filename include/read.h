@@ -19,6 +19,7 @@ struct readStruct{
     dvector dSize;
     ivector dLen;
     dvector zero;
+    double cropZ;
 
     // BC and keeps track of the row of each node in each dimension in perNode
 
