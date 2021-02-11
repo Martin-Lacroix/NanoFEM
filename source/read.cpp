@@ -33,11 +33,12 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     string input;
     ifstream file;
     file.open(path);
+    mesh.ordElem = 1;
 
     // Reads the order of the quadrature rule
 
     getline(file,input,';');
-    mesh.order = stoi(input);
+    mesh.ordQuad = stoi(input);
     getline(file,input,'!');
     read.cropZ = stod(input);
     getline(file,input,'\n');
@@ -122,8 +123,14 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     read.eSize = tovec(input.substr(8));
     dvector eSize = read.eSize;
 
-    read.cropZ += eSize[2]-fmod(read.cropZ,eSize[2]);
-    read.dSize[2] -= read.cropZ;
+    // Truncates the height of the domain to the closest element
+
+    if(read.cropZ>eSize[0]/2){
+        
+        read.cropZ -= eSize[2]/2;
+        read.cropZ += eSize[2]-fmod(read.cropZ,eSize[2]);
+        read.dSize[2] -= read.cropZ;
+    }
 
     // Number of elements and initialization of the BC tracker
 

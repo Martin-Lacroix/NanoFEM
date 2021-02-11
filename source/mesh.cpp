@@ -13,10 +13,10 @@ Mesh::Mesh(meshStruct &input){
 
     // Stores the quadrature rules and shape functions
 
-    quad3D = math::legendre(3,mesh.order);
-    quad2D = math::legendre(2,mesh.order);
-    shape3D = shape(3,1);
-    shape2D = shape(2,1);
+    quad3D = math::legendre(3,mesh.ordQuad);
+    quad2D = math::legendre(2,mesh.ordQuad);
+    shape3D = shape(3,mesh.ordElem);
+    shape2D = shape(2,mesh.ordElem);
 }
 
 // -------------------------------------------------------------|

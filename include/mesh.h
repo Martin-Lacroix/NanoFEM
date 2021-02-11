@@ -8,9 +8,11 @@
 
 struct meshStruct{
 
+    int ordElem;
+    int ordQuad;
+
     // Main informations about the mesh
 
-    int order;
     std::vector<dvector> Ev;
     std::vector<dvector> nXYZ;
     std::vector<ivector> eNode;
