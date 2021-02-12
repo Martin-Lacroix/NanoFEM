@@ -117,7 +117,7 @@ int main(){
 
     int nLen = mesh.nXYZ.size();
     int eLen = mesh.eNode.size();
-    dvector vm = Mesh.stress(u);
+    vector<darray> sigma = Mesh.stress(u);
     Mesh.update(u);
 
     // Prints the computation time of the operation
@@ -146,7 +146,7 @@ int main(){
     // Writes the node coordinates in a text file
 
     for(dvector nXYZ:Mesh.mesh.nXYZ){
-        for(int j=0; j<nXYZ.size()-1; j++){coordinates << nXYZ[j] << ",";}
+        for(int j=0; j<2; j++){coordinates << nXYZ[j] << ",";}
         coordinates << nXYZ.back() << "\n";
     }
 
@@ -157,10 +157,11 @@ int main(){
         elements << eNode.back() << "\n";
     }
 
-    // Writes the averaged Von Mises stress in a text file
+    // Writes the averaged elemental stress in a text file
 
     for(int i=0; i<eLen; i++){
-        stress << vm[i] << "\n";
+        for(int j=0; j<5; j++){stress << sigma[i][j] << ",";}
+        stress << sigma[i][5] << "\n";
     }
 
     // Prints the computation time of the operation

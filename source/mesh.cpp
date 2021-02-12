@@ -400,11 +400,10 @@ void Mesh::update(darray &u){
 
     int nLen = mesh.nXYZ.size();
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
+    // Adds the displacement to the corresponding node
+
+    for(int i=0; i<nLen; i++){
         for(int j=0; j<3; j++){
-
-            // Adds the displacement to the corresponding node
-
             mesh.nXYZ[i][j] += u[i+j*nLen];
         }
     }
@@ -414,11 +413,11 @@ void Mesh::update(darray &u){
 // Computes the averaged Von Mises stress in each element    |
 // ----------------------------------------------------------|
 
-dvector Mesh::stress(darray &u){
+vector<darray> Mesh::stress(darray &u){
 
-    int nLen = mesh.nXYZ.size();
     int eLen = mesh.eNode.size();
-    dvector VM(eLen);
+    int nLen = mesh.nXYZ.size();
+    vector<darray> sigma(eLen);
 
     for(int i=0; i<eLen; i++){
 
@@ -443,7 +442,7 @@ dvector Mesh::stress(darray &u){
 
         Elem elem(eXYZ,shape3D);
         matrix D = math::stiffness(mesh.Ev[i][0],mesh.Ev[i][1]);
-        VM[i] = elem.stress(quad3D,D,u1);
+        sigma[i] = elem.stress(quad3D,D,u1);
     }
-    return VM;
+    return sigma;
 }

@@ -16,9 +16,9 @@ namespace math{
         return k;
     }
 
-    // --------------------------------------------------------------------------|
-    // Computes the stiffness tensor D for linear elasticity in Voigh notation   |
-    // --------------------------------------------------------------------------|
+    // -----------------------------------------------------------------------|
+    // Stiffness tensor D for isotropic linear elasticity in Voigh notation   |
+    // -----------------------------------------------------------------------|
 
     matrix stiffness(double E,double v){
 
@@ -86,6 +86,8 @@ namespace math{
                 }
             }
         }
+
+        quad.gLen = quad.weight.size();
         return quad;
     }
 
@@ -111,6 +113,17 @@ namespace math{
         int m = M1.rows();
         int n = M1.cols();
         alglib::rmatrixgencopy(m,n,k1,M1,0,0,k2,M2,0,0);
+    }
+
+    // ------------------------------------------------------|
+    // Standard vector-vector addition V2 = k1 V1 + k2 V2    |
+    // ------------------------------------------------------|
+
+    void add(double k1,double k2,darray &V1,darray &V2){
+
+        for(int i=0; i<V1.length(); i++){
+            V2(i) = k1*V1(i) + k2*V2(i);
+        }
     }
 
     // --------------------------------------------------------------------------|
@@ -262,7 +275,7 @@ namespace math{
     // Evaluates the shape functions for Lagrange isoparametric elements    |
     // ---------------------------------------------------------------------|
 
-    dvector lagrange(int var,dvector node,dvector val){
+    dvector lagrange(int dvar,dvector node,dvector val){
 
         int dim = val.size();
         int nLen = pow(node.size(),dim);
@@ -276,7 +289,7 @@ namespace math{
 
             // Computes the derivative of Lagrange polynomial for this variable
 
-            if(n==var){
+            if(n==dvar){
                 N1.resize(sLen,0);
 
                 for(int j=0; j<sLen; j++){

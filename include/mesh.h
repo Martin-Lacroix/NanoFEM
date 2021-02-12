@@ -47,7 +47,7 @@ class Mesh{
     darray neumann();
     sparse nonLocalK();
     matrix elemK(int idx);
-    dvector stress(darray &u);
+    std::vector<darray> stress(darray &u);
     matrix totalS(dvector xyz);
     shapeStruct shape(int dim,int order);
 

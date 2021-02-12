@@ -98,13 +98,12 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     matrix B,K;
     B.setlength(3*nLen,6);
     K.setlength(3*nLen,3*nLen);
-    int gLen = quad.weight.size();
     math::zero(B);
     math::zero(K);
 
     // Performs the numerical integration
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<quad.gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
@@ -127,17 +126,19 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 // Computes the averaged Von Mises stress in the element  |
 // -------------------------------------------------------|
 
-double Elem::stress(quadStruct quad,matrix D,darray u){
+darray Elem::stress(quadStruct quad,matrix D,darray u){
 
     matrix B;
+    darray sigma;
+    double volume = 0;
+    sigma.setlength(6);
     B.setlength(3*nLen,6);
-    int gLen = quad.weight.size();
-    double VM=0,volume=0;
+    math::zero(sigma);
     math::zero(B);
 
     // Performs the numerical integration
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<quad.gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
@@ -150,18 +151,16 @@ double Elem::stress(quadStruct quad,matrix D,darray u){
         // Computes the stress field at Gauss points
 
         darray strain = math::prod(1,B,u,1);
-        darray sigma = math::prod(1,D,strain,0);
+        darray stress = math::prod(1,D,strain,0);
 
         // Integrates the Von Mises stress in the element and the volume
 
-        double VM1 = 3*(sigma[3]*sigma[3]+sigma[4]*sigma[4]+sigma[5]*sigma[5]);
-        VM1 += (pow(sigma[0]-sigma[1],2)+pow(sigma[1]-sigma[2],2)+pow(sigma[2]-sigma[0],2))/2;
-        VM += quad.weight[i]*sqrt(VM1)*detJ[i];
+        math::add(quad.weight[i]*detJ[i],1,stress,sigma);
         volume += quad.weight[i]*detJ[i];
     }
 
-    VM /= volume;
-    return VM;
+    for(int i=0; i<6; i++){sigma[i] /= volume;}
+    return sigma;
 }
 
 // ---------------------------------------------------|
@@ -234,14 +233,14 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
 matrix Face::selfM(shapeStruct shape,quadStruct quad){
 
-    matrix M; M.setlength(3*nLen,3);
-    int gLen = shape.N.cols();
+    matrix M;
+    M.setlength(3*nLen,3);
     math::zero(M);
 
     // Integrates the matrix of local shape functions
 
     for(int i=0; i<nLen; i++){
-        for(int j=0; j<gLen; j++){
+        for(int j=0; j<quad.gLen; j++){
             
             M(i,0) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
             M(4+i,1) += shape.N(i,j)*quad.weight[j]*dJ2D(j);

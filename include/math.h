@@ -21,6 +21,7 @@ typedef std::pair<std::string,double> sdpair;
 
 struct quadStruct{
 
+    int gLen;
     dvector weight;
     std::vector<dvector> gRST;
 };
@@ -35,10 +36,11 @@ namespace math{
     dvector lagrange(int var,dvector node,dvector va);
     std::vector<dvector> to2D(std::vector<dvector> nXYZ);
 
-    // Sparse or dense matrix-matrix addition
+    // Sparse or dense matrix-matrix or vector-vector addition
 
     void add(double k1,double k2,matrix &M1,matrix &M2);
     void add(double k1,double k2,sparse &M1,sparse &M2);
+    void add(double k1,double k2,darray &V1,darray &V2);
 
     // Matrix-matrix or matrix-array product
 
