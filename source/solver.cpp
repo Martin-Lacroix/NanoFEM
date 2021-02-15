@@ -33,7 +33,6 @@ darray solve(Mesh mesh){
 
     darray B = mesh.neumann();
     int nLen = B.length();
-
 /*
     ofstream Kfile("output/K.txt");
     ofstream Bfile("output/B.txt");
@@ -48,7 +47,7 @@ darray solve(Mesh mesh){
         Bfile << B[i] << "\n";
     }
 */
-
+    mesh.delta(K,B);
     mesh.coupling(K,B);
     mesh.dirichlet(K,B);
     sparseconverttocrs(K);
@@ -96,7 +95,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
+    string meshPath = "input/coating.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -169,21 +168,19 @@ int main(){
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << time.count()/1e6 << " sec\n\n";
-
-
+/*
     cout << "\n";
-    for(int i=0; i<u.length()/3; i++){
+    for(int i=0; i<nLen; i++){
         cout << "Node " << i << " -- ux = " << u[i] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<u.length()/3; i++){
-        cout << "Node " << i << " -- uy = " << u[i+u.length()/3] << "\n";
+    for(int i=0; i<nLen; i++){
+        cout << "Node " << i << " -- uy = " << u[i+nLen] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<u.length()/3; i++){
-        cout << "Node " << i << " -- uz = " << u[i+2*u.length()/3] << "\n";
+    for(int i=0; i<nLen; i++){
+        cout << "Node " << i << " -- uz = " << u[i+2*nLen] << "\n";
     }
     cout << "\n";
-
-    
+*/
 }

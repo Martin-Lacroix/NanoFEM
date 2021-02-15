@@ -20,17 +20,19 @@ struct meshStruct{
 
     // Neumann boundary conditions
     
-    std::vector<ivector> neuNode;
+    std::vector<ivector> neuFace;
     std::vector<darray> neuVal;
 
     // Dirichlet boundary conditions
 
-    std::vector<ivector> dirNode;
-    std::vector<dvector> dirVal;
+    ivector dirNode[3];
+    dvector dirVal[3];
 
-    // Periodic and coupled boundary conditions
+    // Nodes with the same displacement or Δu
 
-    std::vector<std::vector<ivector>> coupNode;
+    std::vector<ivector> coupNode[3];
+    std::vector<std::pair<int,int>> deltaNode[3];
+
 };
 
 // -------------------------------|
@@ -47,17 +49,18 @@ class Mesh{
     darray neumann();
     sparse nonLocalK();
     matrix elemK(int idx);
-    std::vector<darray> stress(darray &u);
     matrix totalS(dvector xyz);
     shapeStruct shape(int dim,int order);
+    std::vector<darray> stress(darray &u);
 
     // Operations on the total stiffness matrix
     
+    Mesh(meshStruct &mesh);
+    void update(darray &u);
+    void complete(darray &u);
+    void delta(sparse &K,darray &B);
     void coupling(sparse&K,darray &B);
     void dirichlet(sparse&K,darray &B);
-    void complete(darray &u);
-    void update(darray &u);
-    Mesh(meshStruct &mesh);
 
     // Internal variables of the system
 
@@ -66,6 +69,12 @@ class Mesh{
     quadStruct quad2D;
     shapeStruct shape3D;
     shapeStruct shape2D;
+
+    // Number of nodes, elements and faces
+
+    int nLen;
+    int eLen;
+    int fLen;
 };
 
 #endif

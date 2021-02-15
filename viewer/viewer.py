@@ -8,6 +8,9 @@ elem = np.loadtxt(r"..\output\elements.txt",delimiter=",")
 u = np.loadtxt(r"..\output\displacement.txt",delimiter=",")
 nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
 
+s = np.atleast_2d(s)
+elem = np.atleast_2d(elem)
+
 # Cubic domain size
 
 xLen = [np.min(nXYZ[:,0]),np.max(nXYZ[:,0])]

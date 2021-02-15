@@ -21,11 +21,28 @@ struct readStruct{
     dvector zero;
     double cropZ;
 
-    // BC and keeps track of the row of each node in each dimension in perNode
+    // Face index, axis of the applied stress and its value
+
+    ivector axis[2];
+    double value;
+
+    // Index of the clamped and flat surfaces
+
+    ivector flat;
+    ivector clamped;
+
+    // Type and axis of the applied stress
+    
+    std::string type;
+    std::string load;
+
+    // Lis of neightbour elements
 
     std::vector<ivector> neighbour;
-    std::vector<sdpair> boundary;
-    std::vector<ivector> row;
+
+    // list of coupled displacement as (face,axis)
+
+    std::vector<std::pair<int,int>> coupled;
 };
 
 // -------------------------------------------|
@@ -35,9 +52,17 @@ struct readStruct{
 dvector tovec(std::string input);
 meshStruct read(std::string inputPath,std::string meshPath);
 
+// Functions to set the boundary conditions
+
+void neumann(readStruct &read,meshStruct &mesh);
+void dirShear(readStruct &read,meshStruct &mesh);
+void dirTensile(readStruct &read,meshStruct &mesh);
+
+
+void dirichlet(readStruct &read,meshStruct &mesh);
+
 // Functions to read the different input files
 
-void setBC(readStruct &read,meshStruct &mesh);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);
 std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
 void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);

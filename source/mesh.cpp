@@ -8,8 +8,9 @@ using namespace std;
 Mesh::Mesh(meshStruct &input){
     
     mesh = input;
-    int fLen = mesh.neuNode.size();
-    int eLen = mesh.eNode.size();
+    nLen = mesh.nXYZ.size();
+    eLen = mesh.eNode.size();
+    fLen = mesh.neuFace.size();
 
     // Stores the quadrature rules and shape functions
 
@@ -26,7 +27,6 @@ Mesh::Mesh(meshStruct &input){
 shapeStruct Mesh::shape(int dim,int order){
 
     dvector val;
-    int nLen,gLen;
     shapeStruct shape;
     dvector node(order+1);
     double step = 2.0/order;
@@ -34,26 +34,26 @@ shapeStruct Mesh::shape(int dim,int order){
     // Length of the node list and Gauss points
 
     if(dim==3){
-        gLen = quad3D.gRST.size();
-        nLen = 0.1+pow(order+1,3);
+        shape.gLen = quad3D.gRST.size();
+        shape.nLen = 0.1+pow(order+1,3);
     }
     if(dim==2){
-        gLen = quad2D.gRST.size();
-        nLen = 0.1+pow(order+1,2);
+        shape.gLen = quad2D.gRST.size();
+        shape.nLen = 0.1+pow(order+1,2);
     }
 
     // Memory allocation and 1D node list
 
-    shape.N.setlength(nLen,gLen);
-    shape.drN.setlength(nLen,gLen);
-    shape.dsN.setlength(nLen,gLen);
-    shape.dtN.setlength(nLen,gLen);
+    shape.N.setlength(shape.nLen,shape.gLen);
+    shape.drN.setlength(shape.nLen,shape.gLen);
+    shape.dsN.setlength(shape.nLen,shape.gLen);
+    shape.dtN.setlength(shape.nLen,shape.gLen);
 
     for(int i=0; i<=order; i++){node[i] = i*step-1;}
 
     // Sets the coordinates of the Gauss points
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<shape.gLen; i++){
 
         if(dim==2){val = {quad2D.gRST[i][0],quad2D.gRST[i][1]};}
         if(dim==3){val = {quad3D.gRST[i][0],quad3D.gRST[i][1],quad3D.gRST[i][2]};}
@@ -65,7 +65,7 @@ shapeStruct Mesh::shape(int dim,int order){
         dvector dtN = math::lagrange(2,node,val);
         dvector N = math::lagrange(-1,node,val);
 
-        for(int j=0; j<nLen; j++){
+        for(int j=0; j<shape.nLen; j++){
 
             // Stores the shape functions evaluated at the Gauss points
             
@@ -85,8 +85,6 @@ shapeStruct Mesh::shape(int dim,int order){
 sparse Mesh::localK(){
 
     sparse K;
-    int nLen = mesh.nXYZ.size();
-    int eLen = mesh.eNode.size();
     alglib::sparsecreate(3*nLen,3*nLen,K);
 
     for(int i=0; i<eLen; i++){
@@ -239,8 +237,6 @@ matrix Mesh::elemK(int idx){
 darray Mesh::neumann(){
 
     darray B;
-    int nLen = mesh.nXYZ.size();
-    int fLen = mesh.neuNode.size();
     B.setlength(3*nLen);
     math::zero(B);
 
@@ -250,9 +246,9 @@ darray Mesh::neumann(){
 
         // Coordinates of the nodes of the faces
 
-        int sLen = mesh.neuNode[i].size();
+        int sLen = mesh.neuFace[i].size();
         vector<dvector> eXYZ(sLen,dvector(3));
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.neuNode[i][j]];}
+        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.neuFace[i][j]];}
 
         // Computes the elemental B vectors
 
@@ -264,20 +260,19 @@ darray Mesh::neumann(){
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
-                B(mesh.neuNode[i][j]+k*nLen) += B1(j+k*sLen);
+                B(mesh.neuFace[i][j]+k*nLen) += B1(j+k*sLen);
             }
         }
     }
     return B;
 }
 
-// ----------------------------------------------------|
-// Edits the matrix K and vector B for Dirichlet BC    |
-// ----------------------------------------------------|
+// ----------------------------------------------------------------|
+// Edits the matrix K and vector B for fixed nodal displacement    |
+// ----------------------------------------------------------------|
 
 void Mesh::dirichlet(sparse &K,darray &B){
 
-    int nLen = mesh.nXYZ.size();
     vector<ivector> row = math::sparsemap(K);
 
     // Gets the number of nodes in the dirichlet list
@@ -304,28 +299,27 @@ void Mesh::dirichlet(sparse &K,darray &B){
     // Places the dirichlet value the B vector and 1 in the diagonal of K
 
     for(int n=0; n<3; n++){
-        for(int m=0; m<mesh.dirNode[n].size(); m++){
+        for(int i=0; i<mesh.dirNode[n].size(); i++){
             
-            int idx = mesh.dirNode[n][m]+n*nLen;
+            int idx = mesh.dirNode[n][i]+n*nLen;
             alglib::sparseset(K,idx,idx,1);
-            B(idx) = mesh.dirVal[n][m];
+            B(idx) = mesh.dirVal[n][i];
         }
     }
 }
 
-// ------------------------------------------------------------|
-// Edits the matrix K and vector B for periodic and flat BC    |
-// ------------------------------------------------------------|
+// ------------------------------------------------------------------|
+// Edits the matrix K and vector B for coupled nodal displacement    |
+// ------------------------------------------------------------------|
 
 void Mesh::coupling(sparse &K,darray &B){
 
-    double val;
-    int nLen = mesh.nXYZ.size();
     vector<ivector> row = math::sparsemap(K);
 
-    // Gets the number of nodes in the periodic list
-
     for(int n=0; n<3; n++){
+
+        // Gets the number of nodes in the periodic list
+
         for(int i=0; i<mesh.coupNode[n].size(); i++){
             int dLen = mesh.coupNode[n][i].size();
 
@@ -339,18 +333,20 @@ void Mesh::coupling(sparse &K,darray &B){
 
                 // Adds the current row to the final row of K if non-zero
 
-                for(int k:row[idx1]){
-                    val = math::symget(K,idx1,k);
+                for(int k=0; k<row[idx1].size(); k++){
+
+                    int n = row[idx1][k];
+                    double val = math::symget(K,idx1,n);
 
                     // Updates the mapStruct only if an element is added to K
 
                     if(val!=0){
-                        if(math::symget(K,idx2,k)==0){
-                            
-                            row[k].push_back(idx2);
-                            row[idx2].push_back(k);
+                        if(math::symget(K,idx2,n)==0){
+
+                            row[n].push_back(idx2);
+                            row[idx2].push_back(n);
                         }
-                        math::symadd(K,idx2,k,val);
+                        math::symadd(K,idx2,n,val);
                     }
                 }
 
@@ -370,37 +366,90 @@ void Mesh::coupling(sparse &K,darray &B){
     }
 }
 
-// ----------------------------------------------------|
-// Completes the solution with periodic and flat BC    |
-// ----------------------------------------------------|
+// -------------------------------------------------------------------|
+// Edits the matrix K and vector B for a change of variable u = Δu    |
+// -------------------------------------------------------------------|
+
+void Mesh::delta(sparse &K,darray &B){
+
+    vector<ivector> row = math::sparsemap(K);
+
+    // Gets the number of nodes in the periodic list
+
+    for(int n=0; n<3; n++){
+        for(int i=0; i<mesh.deltaNode[n].size(); i++){
+
+            // Gets the index of the curent and final coupled nodes
+
+            int idx1 = mesh.deltaNode[n][i].first+n*nLen;
+            int idx2 = mesh.deltaNode[n][i].second+n*nLen;
+            double fix = math::symget(K,idx2,idx2)+math::symget(K,idx1,idx1)+2*math::symget(K,idx1,idx2);
+
+            // Adds the current row to the final row of K if non-zero
+
+            for(int k=0; k<row[idx1].size(); k++){
+
+                int n = row[idx1][k];
+                double val = math::symget(K,idx1,n);
+
+                // Updates the mapStruct only if an element is added to K
+
+                if(val!=0){
+                    if(math::symget(K,idx2,n)==0){
+
+                        row[n].push_back(idx2);
+                        row[idx2].push_back(n);
+                    }
+                    math::symadd(K,idx2,n,val);
+                }
+            }
+
+            // Corrects the diagonal elements in K and edits B
+
+            alglib::sparseset(K,idx2,idx2,fix);
+            B(idx2) += B(idx1);
+        }
+    }
+}
+
+// -----------------------------------------------------|
+// Completes the solution for coupled or delta nodes    |
+// -----------------------------------------------------|
 
 void Mesh::complete(darray &u){
 
-    int nLen = mesh.nXYZ.size();
-
     for(int n=0; n<3; n++){
+
+        // Copy the value of the last node into the coupled ones
+
         for(int i=0; i<mesh.coupNode[n].size(); i++){
             for(int j=0; j<mesh.coupNode[n][i].size(); j++){
-
-                // Copy the value of the last node into the coupled ones
 
                 int idx1 = mesh.coupNode[n][i][j]+n*nLen;
                 int idx2 = mesh.coupNode[n][i].back()+n*nLen;
                 u[idx1] = u[idx2];
             }
         }
+
+        // Comes back from the difference Δu to the actual displacement
+
+        for(int i=0; i<mesh.deltaNode[n].size(); i++){
+
+            int idx1 = mesh.deltaNode[n][i].first+n*nLen;
+            int idx2 = mesh.deltaNode[n][i].second+n*nLen;
+            u[idx1] += u[idx2];
+        }
     }
+    
 }
 
-// -------------------------------------|
-// Updates the position of the nodes    |
-// -------------------------------------|
+// ---------------------------------------------------------|
+// Updates the coordinates of the node with the solution    |
+// ---------------------------------------------------------|
 
 void Mesh::update(darray &u){
 
-    int nLen = mesh.nXYZ.size();
-
-    // Adds the displacement to the corresponding node
+    // Adds the displacement to the corresponding node coordinate
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<3; j++){
@@ -415,10 +464,7 @@ void Mesh::update(darray &u){
 
 vector<darray> Mesh::stress(darray &u){
 
-    int eLen = mesh.eNode.size();
-    int nLen = mesh.nXYZ.size();
     vector<darray> sigma(eLen);
-
     for(int i=0; i<eLen; i++){
 
         // Coordinates of the nodes of the element

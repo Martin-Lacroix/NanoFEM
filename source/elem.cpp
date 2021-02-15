@@ -13,8 +13,8 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 
     // Number of nodes and Gauss points
 
-    nLen = shape.N.rows();
-    int gLen = shape.N.cols();
+    nLen = shape.nLen;
+    gLen = shape.gLen;
 
     // Memory allocation and initialization
 
@@ -103,7 +103,7 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 
     // Performs the numerical integration
 
-    for(int i=0; i<quad.gLen; i++){
+    for(int i=0; i<gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
@@ -138,7 +138,7 @@ darray Elem::stress(quadStruct quad,matrix D,darray u){
 
     // Performs the numerical integration
 
-    for(int i=0; i<quad.gLen; i++){
+    for(int i=0; i<gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
@@ -197,8 +197,8 @@ matrix Elem::selfS(quadStruct quad,dvector xyz){
 
 Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 
-    int gLen = shape.N.cols();
-    nLen = shape.N.rows();
+    gLen = shape.gLen;
+    nLen = shape.nLen;
     dJ2D.setlength(gLen);
     math::zero(dJ2D);
 

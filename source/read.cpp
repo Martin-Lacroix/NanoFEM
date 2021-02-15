@@ -55,36 +55,29 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     read.Ev.push_back(tovec(input));
     getline(file,input,'\n');
 
-    // Reads the boundary conditions
+    // Reads the type of applied stress
 
-    for(int i=0; i<3; i++){
-        getline(file,input,'\n');
+    getline(file,input,'\n');
+    read.type = input;
 
-        // Imposed strain along the i-th dimension
+    // Reads the axis of applied stress
 
-        if(input=="axial strain"){
+    getline(file,input,';');
+    read.load = input;
 
-            getline(file,input,'\n');
-            sdpair pair = make_pair("axial strain",stod(input));
-            read.boundary.push_back(pair);
-        }
+    for(int i=0; i<2; i++){
 
-        // Imposed stress at top face along the i-th dimension
-
-        else if(input=="axial stress"){
-
-            getline(file,input,'\n');
-            sdpair pair = make_pair("axial stress",stod(input));
-            read.boundary.push_back(pair);
-        }
-
-        // If clamped bottom face or no boundary conditions
-        
-        else{
-            sdpair pair = make_pair(input,0);
-            read.boundary.push_back(pair);
-        }
+        if(input=="All"){read.axis[i] = {0,1,2};}
+        else if(input[i+1]=='X'){read.axis[i] = {0};}
+        else if(input[i+1]=='Y'){read.axis[i] = {1};}
+        else if(input[i+1]=='Z'){read.axis[i] = {2};}
     }
+
+    // Reads the value of the action
+
+    getline(file,input,'!');
+    read.value = stod(input);
+    getline(file,input,'\n');
 
     // Stores the Young modulus and Poisson ratio of the layers
 
@@ -135,8 +128,6 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     // Number of elements and initialization of the BC tracker
 
     for(int i=0; i<3; i++){read.dLen.push_back(0.1+read.dSize[i]/eSize[i]);}
-    int nLen = (read.dLen[0]+1)*(read.dLen[1]+1)*(read.dLen[2]+1);
-    read.row.resize(3,ivector(nLen,-1));
     ivector dLen = read.dLen;
 
     // Stores the node coordinates and the BC in the mesh
@@ -286,139 +277,131 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
     file.close();
 }
 
-// ----------------------------------------------------------|
-// Stores the boundary conditions of system in meshStruct    |
-// ----------------------------------------------------------|
+// --------------------------------------------------|
+// Stores the displacement constrains on the nodes   |
+// --------------------------------------------------|
 
-void setBC(readStruct &read,meshStruct &mesh){
+void dirichlet(readStruct &read,meshStruct &mesh){
 
-    mesh.dirVal.resize(3);
-    mesh.dirNode.resize(3);
-    mesh.coupNode.resize(3);
     ivector dLen = read.dLen;
-    int eLen = mesh.eNode.size();
-    dvector tol = {read.eSize[0]/2,read.eSize[1]/2,read.eSize[2]/2};
+    vector<ivector> row(3,ivector(mesh.nXYZ.size(),-1));
     ivector add = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
 
-    // Initializes the list of coupled nodes
+    // Initialization and lock the node at the origin
 
     for(int i=0; i<3; i++){
-
-        string bc = read.boundary[i].first;
-        if(bc=="axial stress" || bc=="periodic"){mesh.coupNode[i].resize(1);}
+        
+        mesh.dirNode[i].push_back(0);
+        mesh.dirVal[i].push_back(0);
+        mesh.coupNode[i].resize(1);
     }
 
-    // Stores the Dirichlet boundary conditions
+    // Locks the displacement in all directions if clamped
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
+    for(int j:read.clamped){
+        for(int i=0; i<mesh.nXYZ.size(); i++){
 
-        // Check node position for the 3 indices
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+                for(int k=0; k<3; k++){
 
-        for(int j=0; j<3; j++){
-
-            string bc = read.boundary[j].first;
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                // If the curent node is at the bottom
-
-                if(bc=="clamped"){
-
-                    mesh.dirNode[j].push_back(i);
-                    mesh.dirVal[j].push_back(0);
-                }
-                else if(bc=="axial stress" || bc=="periodic"){
-
-                    mesh.dirNode[j].push_back(i);
-                    mesh.dirVal[j].push_back(0);
-
-                    if(read.row[j][i+add[j]]<0){
-
-                        mesh.coupNode[j][0].push_back(i+add[j]);
-                        read.row[j][i+add[j]] = 0;
-                    }
-                }
-
-                // If the bottom face is fixed and imposed strain on top face
-
-                else if(bc=="axial strain"){
-                    
-                    mesh.dirNode[j].push_back(i);
-                    mesh.dirVal[j].push_back(0);
-                }
-
-                // Coupled displacement in transversal dimensions if periodic
-
-                for(int n=0; n<2; n++){
-                    int k = (j+n+1)%3;
-
-                    if(bc=="periodic"){
-
-                        // Gets location of the node pair in the list of coupled nodes
-
-                        int loc1 = read.row[k][i];
-                        int loc2 = read.row[k][i+add[j]];
-
-                        // Check whether the first or second node is already in the list
-
-                        if(loc1>=0 && loc2<0){
-
-                            mesh.coupNode[k][loc1].push_back(i+add[j]);
-                            read.row[k][i+add[j]] = loc1;
-                        }
-                        else if(loc1<0 && loc2>=0){
-
-                            mesh.coupNode[k][loc2].push_back(i);
-                            read.row[k][i] = loc2;
-                        }
-                        else if(loc1<0 && loc2<0){
-
-                            mesh.coupNode[k].push_back({i,i+add[j]});
-                            read.row[k][i+add[j]] = mesh.coupNode[k].size()-1;
-                            read.row[k][i] = mesh.coupNode[k].size()-1;
-                        }
-                    }
-                }
-            }
-            
-            // If the curent node is at the top of the mesh
-
-            else if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
-                if(bc=="axial strain"){
-
-                    double val = read.boundary[j].second*read.dSize[j];
-                    mesh.dirVal[j].push_back(val);
-                    mesh.dirNode[j].push_back(i);
+                    mesh.dirNode[k].push_back(i);
+                    mesh.dirVal[k].push_back(0);
                 }
             }
         }
     }
 
-    // Stores the Neumann boundary conditions
+    // Stores the Dirichlet boundary conditions
 
-    for(int i=0; i<eLen; i++){
-        for(int j=0; j<3; j++){
-            if(read.boundary[j].first=="axial stress"){
+    for(int j:read.flat){
+        for(int i=0; i<mesh.nXYZ.size(); i++){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
 
-                // Neumann BC on the face perpendicular to the j-th dimension
-                    
-                ivector node = mesh.eNode[i];
-                vector<ivector> face(3,ivector(4));
-                double val = read.boundary[j].second;
+                // Lock the axis if the current node is at the bottom
 
-                // Computes the right faces of the 8-node element
+                mesh.dirNode[j].push_back(i);
+                mesh.dirVal[j].push_back(0);
 
-                face[0] = {node[4],node[5],node[6],node[7]};
-                face[1] = {node[2],node[6],node[3],node[7]};
-                face[2] = {node[1],node[3],node[5],node[7]};
+                // Coupled displacement in the axial dimension
 
-                if(read.neighbour[i][2*j+1]==-1){
+                if(row[j][i+add[j]]<0){
 
-                    // Stores the applied stress on the face without neighbour
-                                    
-                    mesh.neuNode.push_back(face[j]);
-                    mesh.neuVal.push_back("[0,0,0]");
-                    mesh.neuVal.back()[j] = val;
+                    mesh.coupNode[j][0].push_back(i+add[j]);
+                    row[j][i+add[j]] = 0;
                 }
+            }
+        }
+    }
+                
+    // Coupled displacement in 2 transversal dimensions
+
+    for(int i=0; i<mesh.nXYZ.size(); i++){
+        for(pair<int,int> pair:read.coupled){
+
+            int j = pair.first;
+            int k = pair.second;
+            int loc1 = row[k][i];
+            int loc2 = row[k][i+add[j]];
+
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+
+                // Check whether the first or second node is already in the list
+
+                if(loc1>=0 && loc2<0){
+
+                    mesh.coupNode[k][loc1].push_back(i+add[j]);
+                    row[k][i+add[j]] = loc1;
+                }
+                else if(loc1<0 && loc2>=0){
+
+                    mesh.coupNode[k][loc2].push_back(i);
+                    row[k][i] = loc2;
+                }
+                else if(loc1<0 && loc2<0){
+
+                    mesh.coupNode[k].push_back({i,i+add[j]});
+                    row[k][i+add[j]] = mesh.coupNode[k].size()-1;
+                    row[k][i] = mesh.coupNode[k].size()-1;
+                }
+            }
+        }
+    }
+}
+
+// ------------------------------------------|
+// Stores the Neumann boundary conditions    |
+// ------------------------------------------|
+
+void neumann(readStruct &read,meshStruct &mesh){
+
+    int idx;
+    int order = mesh.ordElem;
+    int sLen = mesh.ordElem+1;
+
+    // Neumann BC on the face perpendicular to the j-th dimension
+
+    for(int n=0; n<read.axis[0].size(); n++){
+        for(int i=0; i<mesh.eNode.size(); i++){
+            if(read.neighbour[i][2*read.axis[0][n]+1]==-1){
+                ivector face;
+
+                // Computes the nodes of the face without neighbour
+
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
+
+                        if(read.axis[0][n]==0){idx = j*sLen+k+order*sLen*sLen;}
+                        else if(read.axis[0][n]==1){idx = j+k*sLen*sLen+order*sLen;}
+                        else if(read.axis[0][n]==2){idx = j*sLen*sLen+k*sLen+order;}
+                        face.push_back(mesh.eNode[i][idx]);
+                    }
+                }
+
+                // Stores the applied axial stress on the right face
+                                
+                mesh.neuFace.push_back(face);
+                mesh.neuVal.push_back("[0,0,0]");
+                mesh.neuVal.back()[read.axis[1][n]] = read.value;
             }
         }
     }
@@ -438,6 +421,80 @@ meshStruct read(string inputPath,string meshPath){
     readInput(read,mesh,inputPath);
     readMeshSize(read,mesh,meshPath);
     readSpecies(read,mesh,meshPath);
-    setBC(read,mesh);
+
+    // Sets the boundary conditions
+
+    if(read.type=="Axial stress"){
+        
+        read.flat = {0,1,2};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+    else if(read.load=="eXY"){
+        
+        read.flat = {0,2};
+        read.clamped = {0};
+        read.coupled = {make_pair(0,2),make_pair(1,0),make_pair(1,1),make_pair(1,2)};
+    }
+    else if(read.load=="eYX"){
+        
+        read.flat = {1,2};
+        read.clamped = {1};
+        read.coupled = {make_pair(1,2),make_pair(0,0),make_pair(0,1),make_pair(0,2)};
+    }
+    else if(read.load=="eZY"){
+        
+        read.flat = {0,2};
+        read.clamped = {2};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+    else if(read.load=="eZX"){
+        
+        read.flat = {1,2};
+        read.clamped = {2};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+
+    else if(read.type=="Hydrostatic"){
+        
+        read.flat = {0,1,2};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+
+    dirichlet(read,mesh);
+    neumann(read,mesh);
+
+/*
+
+    cout << "\n\ndirNode\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<mesh.dirNode[i].size(); j++){
+            cout << mesh.dirNode[i][j] << ",";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ndirVal\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<mesh.dirVal[i].size(); j++){
+            cout << mesh.dirVal[i][j] << ",";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ncoupNode\n";
+    for(int i=0; i<3; i++){
+        for(int j=0; j<mesh.coupNode[i].size(); j++){
+            cout << "dim " << i << " -- ";
+            for(int k=0; k<mesh.coupNode[i][j].size(); k++){
+                cout << mesh.coupNode[i][j][k] << ",";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+    }
+*/
+    
     return mesh;
 }

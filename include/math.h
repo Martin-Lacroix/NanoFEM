@@ -11,9 +11,6 @@ typedef std::vector<double> dvector;
 typedef alglib::sparsematrix sparse;
 typedef alglib::real_2d_array matrix;
 typedef alglib::real_1d_array darray;
-typedef alglib::integer_1d_array iarray;
-typedef std::vector<std::string> svector;
-typedef std::pair<std::string,double> sdpair;
 
 // ----------------------------------------|
 // Structure storing the quadrature rule   |
@@ -34,7 +31,6 @@ namespace math{
     
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector va);
-    std::vector<dvector> to2D(std::vector<dvector> nXYZ);
 
     // Sparse or dense matrix-matrix or vector-vector addition
 

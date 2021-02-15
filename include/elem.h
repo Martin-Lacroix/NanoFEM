@@ -10,10 +10,15 @@ struct shapeStruct{
 
     // Local derivatives of the shape functions at Gauss nodes
 
-    matrix N;
     matrix drN;
     matrix dsN;
     matrix dtN;
+    matrix N;
+
+    // Number of nodes and Gauss points
+
+    int gLen;
+    int nLen;
 };
 
 // --------------------------------------------------|
@@ -38,6 +43,10 @@ class Elem{
     matrix dxN;
     matrix dyN;
     matrix dzN;
+
+    // Number of nodes and Gauss points
+
+    int gLen;
     int nLen;
 };
 
@@ -57,6 +66,7 @@ class Face{
     // Parameters specific to each face
 
     darray dJ2D;
+    int gLen;
     int nLen;
 };
 
