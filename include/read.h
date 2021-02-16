@@ -42,8 +42,8 @@ struct readStruct{
 
     // list of coupled and delta displacement (face,axis)
 
+    std::pair<int,int> deltaZero;
     std::vector<std::pair<int,int>> coupled;
-    std::vector<std::pair<int,int>> deltaZero;
 };
 
 // -------------------------------------------|

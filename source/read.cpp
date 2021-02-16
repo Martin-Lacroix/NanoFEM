@@ -299,27 +299,24 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
    // Prevents the elongation of the sheared face
 
-    for(int i=0; i<read.deltaZero.size(); i++){
+    int f = read.deltaZero.first;
+    int d = read.deltaZero.second;
+    double fLen = read.zero[f]+read.dSize[f];
 
-        int f = read.deltaZero[i].first;
-        int d = read.deltaZero[i].second;
-        double fLen = read.zero[f]+read.dSize[f];
+    // Selects the nodes at the edge of the conatrained face
 
-        // Selects the nodes at the edge of the conatrained face
+    for(int i=0; i<mesh.nXYZ.size(); i++){
 
-        for(int i=0; i<mesh.nXYZ.size(); i++){
+        if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
+            if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
 
-            if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
-                if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
+                // Change of variable u => Δu = 0 for the other nodes of the face
 
-                    // Change of variable u => Δu = 0 for the other nodes of the face
+                for(int j=1; j<=read.dLen[d]; j++){
 
-                    for(int j=1; j<=read.dLen[d]; j++){
-
-                        mesh.deltaNode[d].push_back(make_pair(i+j*add1[d],i));
-                        mesh.dirNode[d].push_back(i+j*add1[d]);
-                        mesh.dirVal[d].push_back(0);
-                    }
+                    mesh.deltaNode[d].push_back(make_pair(i+j*add1[d],i));
+                    mesh.dirNode[d].push_back(i+j*add1[d]);
+                    mesh.dirVal[d].push_back(0);
                 }
             }
         }
@@ -373,6 +370,14 @@ void dirichlet(readStruct &read,meshStruct &mesh){
             int loc2 = row[k][i+add2[j]];
 
             if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+
+                // Do not add the nodes with change of variable
+
+                if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
+                    if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
+                        continue;
+                    }
+                }
 
                 // Check whether the first or second node is already in the list
 
@@ -462,28 +467,28 @@ meshStruct read(string inputPath,string meshPath){
         
         read.flat = {0,2};
         read.clamped = {0};
-        read.deltaZero = {make_pair(0,1)};
+        read.deltaZero = make_pair(0,1);
         read.coupled = {make_pair(0,2),make_pair(1,0),make_pair(1,1),make_pair(1,2)};
     }
     else if(read.load=="eYX"){
         
         read.flat = {1,2};
         read.clamped = {1};
-        read.deltaZero = {make_pair(1,0)};
+        read.deltaZero = make_pair(1,0);
         read.coupled = {make_pair(1,2),make_pair(0,0),make_pair(0,1),make_pair(0,2)};
     }
     else if(read.load=="eZY"){
         
         read.flat = {0,2};
         read.clamped = {2};
-        read.deltaZero = {make_pair(2,1)};
+        read.deltaZero = make_pair(2,1);
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
     else if(read.load=="eZX"){
         
         read.flat = {1,2};
         read.clamped = {2};
-        read.deltaZero = {make_pair(2,0)};
+        read.deltaZero = make_pair(2,0);
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
 
