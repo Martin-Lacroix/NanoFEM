@@ -103,8 +103,8 @@ gmsh.view.add("Stress xx",4)
 gmsh.view.add("Stress yy",5)
 gmsh.view.add("Stress zz",6)
 gmsh.view.add("Stress xy",7)
-gmsh.view.add("Stress yz",8)
-gmsh.view.add("Stress zx",9)
+gmsh.view.add("Stress Zx",8)
+gmsh.view.add("Stress yz",9)
 
 # Adds the data to the model
 

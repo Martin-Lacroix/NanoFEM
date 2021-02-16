@@ -40,9 +40,10 @@ struct readStruct{
 
     std::vector<ivector> neighbour;
 
-    // list of coupled displacement as (face,axis)
+    // list of coupled and delta displacement (face,axis)
 
     std::vector<std::pair<int,int>> coupled;
+    std::vector<std::pair<int,int>> deltaZero;
 };
 
 // -------------------------------------------|

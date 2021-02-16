@@ -285,7 +285,8 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
     ivector dLen = read.dLen;
     vector<ivector> row(3,ivector(mesh.nXYZ.size(),-1));
-    ivector add = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
+    ivector add1 = {(dLen[1]+1)*(dLen[2]+1),(dLen[2]+1),1};
+    ivector add2 = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
 
     // Initialization and lock the node at the origin
 
@@ -296,6 +297,34 @@ void dirichlet(readStruct &read,meshStruct &mesh){
         mesh.coupNode[i].resize(1);
     }
 
+   // Prevents the elongation of the sheared face
+
+    for(int i=0; i<read.deltaZero.size(); i++){
+
+        int f = read.deltaZero[i].first;
+        int d = read.deltaZero[i].second;
+        double fLen = read.zero[f]+read.dSize[f];
+
+        // Selects the nodes at the edge of the conatrained face
+
+        for(int i=0; i<mesh.nXYZ.size(); i++){
+
+            if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
+                if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
+
+                    // Change of variable u => Δu = 0 for the other nodes of the face
+
+                    for(int j=1; j<=read.dLen[d]; j++){
+
+                        mesh.deltaNode[d].push_back(make_pair(i+j*add1[d],i));
+                        mesh.dirNode[d].push_back(i+j*add1[d]);
+                        mesh.dirVal[d].push_back(0);
+                    }
+                }
+            }
+        }
+    }
+    
     // Locks the displacement in all directions if clamped
 
     for(int j:read.clamped){
@@ -324,10 +353,10 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
                 // Coupled displacement in the axial dimension
 
-                if(row[j][i+add[j]]<0){
+                if(row[j][i+add2[j]]<0){
 
-                    mesh.coupNode[j][0].push_back(i+add[j]);
-                    row[j][i+add[j]] = 0;
+                    mesh.coupNode[j][0].push_back(i+add2[j]);
+                    row[j][i+add2[j]] = 0;
                 }
             }
         }
@@ -341,7 +370,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
             int j = pair.first;
             int k = pair.second;
             int loc1 = row[k][i];
-            int loc2 = row[k][i+add[j]];
+            int loc2 = row[k][i+add2[j]];
 
             if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
 
@@ -349,8 +378,8 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
                 if(loc1>=0 && loc2<0){
 
-                    mesh.coupNode[k][loc1].push_back(i+add[j]);
-                    row[k][i+add[j]] = loc1;
+                    mesh.coupNode[k][loc1].push_back(i+add2[j]);
+                    row[k][i+add2[j]] = loc1;
                 }
                 else if(loc1<0 && loc2>=0){
 
@@ -359,8 +388,8 @@ void dirichlet(readStruct &read,meshStruct &mesh){
                 }
                 else if(loc1<0 && loc2<0){
 
-                    mesh.coupNode[k].push_back({i,i+add[j]});
-                    row[k][i+add[j]] = mesh.coupNode[k].size()-1;
+                    mesh.coupNode[k].push_back({i,i+add2[j]});
+                    row[k][i+add2[j]] = mesh.coupNode[k].size()-1;
                     row[k][i] = mesh.coupNode[k].size()-1;
                 }
             }
@@ -433,24 +462,28 @@ meshStruct read(string inputPath,string meshPath){
         
         read.flat = {0,2};
         read.clamped = {0};
+        read.deltaZero = {make_pair(0,1)};
         read.coupled = {make_pair(0,2),make_pair(1,0),make_pair(1,1),make_pair(1,2)};
     }
     else if(read.load=="eYX"){
         
         read.flat = {1,2};
         read.clamped = {1};
+        read.deltaZero = {make_pair(1,0)};
         read.coupled = {make_pair(1,2),make_pair(0,0),make_pair(0,1),make_pair(0,2)};
     }
     else if(read.load=="eZY"){
         
         read.flat = {0,2};
         read.clamped = {2};
+        read.deltaZero = {make_pair(2,1)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
     else if(read.load=="eZX"){
         
         read.flat = {1,2};
         read.clamped = {2};
+        read.deltaZero = {make_pair(2,0)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
 
@@ -462,9 +495,7 @@ meshStruct read(string inputPath,string meshPath){
 
     dirichlet(read,mesh);
     neumann(read,mesh);
-
 /*
-
     cout << "\n\ndirNode\n";
     for(int i=0; i<3; i++){
         cout << "dim " << i << " -- ";
@@ -495,6 +526,5 @@ meshStruct read(string inputPath,string meshPath){
         cout << "\n";
     }
 */
-    
     return mesh;
 }

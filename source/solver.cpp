@@ -95,7 +95,7 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/coating.xyz";
+    string meshPath = "input/single Cu.xyz";
     meshStruct mesh = read(inputPath,meshPath);
 
     // Prints the computation time of the operation
@@ -142,7 +142,7 @@ int main(){
         displacement << u[i+2*nLen] << "\n";
     }
 
-    // Writes the node coordinates in a text file
+    // Writes the node coordinates (x,y,z) in a text file
 
     for(dvector nXYZ:Mesh.mesh.nXYZ){
         for(int j=0; j<2; j++){coordinates << nXYZ[j] << ",";}
@@ -156,7 +156,7 @@ int main(){
         elements << eNode.back() << "\n";
     }
 
-    // Writes the averaged elemental stress in a text file
+    // Writes the elemental stress (σxx,σyy,σxy,σzx,σyz) in a text file
 
     for(int i=0; i<eLen; i++){
         for(int j=0; j<5; j++){stress << sigma[i][j] << ",";}
