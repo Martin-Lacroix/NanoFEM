@@ -45,15 +45,13 @@ class Mesh{
 
     // Functions available in the mesh.cpp file
 
-    sparse localK();
+    sparse totalK();
+    sparse totalM();
     darray neumann();
-    sparse nonLocalK();
-    matrix elemK(int idx);
-    matrix totalS(dvector xyz);
     shapeStruct shape(int dim,int order);
     std::vector<darray> stress(darray &u);
 
-    // Operations on the total stiffness matrix
+    // Constructor and operations on the stiffness matrix
     
     Mesh(meshStruct &mesh);
     void update(darray &u);
@@ -71,7 +69,7 @@ class Mesh{
     shapeStruct shape2D;
 
     // Number of nodes, elements and faces
-
+    
     int nLen;
     int eLen;
     int fLen;

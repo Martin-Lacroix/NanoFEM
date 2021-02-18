@@ -1,9 +1,12 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 
 # %% Functions
 
 def fixed(K,B,dim,node,val):
+    
+    nLen = B.shape[0]//3
     
     for i in node:
         
@@ -20,6 +23,8 @@ def fixed(K,B,dim,node,val):
 
 def delta(K,B,dim,pair):
     
+    nLen = B.shape[0]//3
+    
     i = pair[0]
     j = pair[1]
     
@@ -31,8 +36,9 @@ def delta(K,B,dim,pair):
 
 def coupled(K,B,dim,coup):
     
-    i = coup[0]
+    nLen = B.shape[0]//3
     j = coup[-1]
+    i = coup[0]
     
     for i in coup:
         if(i!=j):
@@ -63,86 +69,63 @@ nXYZ = np.loadtxt("output/coordinates.txt",delimiter=",")
 nLen = U.shape[0]
 
 K = np.loadtxt("output/K.txt")
+M = np.loadtxt("output/M.txt")
 B = np.loadtxt("output/B.txt")
 
-K_old = np.loadtxt("output/K_old.txt")
-B_old = np.loadtxt("output/B_old.txt")
+# K_old = np.loadtxt("output/K_old.txt")
+# M_old = np.loadtxt("output/M_old.txt")
+# B_old = np.loadtxt("output/B_old.txt")
 
 # Re-build the full matrix
 
-K_old = makeFull(K_old)
-K = makeFull(K)
+# K_old = makeFull(K_old)
+# K = makeFull(K)
 
-sameK = np.allclose(K_old,K)
-sameB = np.allclose(B_old,B)
+# sameK = np.allclose(K_old,K)
+# sameB = np.allclose(B_old,B)
 
-# %% Old Solution
+# %% Solves
 
-u = np.zeros(3*nLen)
-for i in range(nLen):
-    u[i+2*nLen] = U[i,2]
-    u[i+nLen] = U[i,1]
-    u[i] = U[i,0]
+dt = 0.001
+nLen = B.shape[0]
+u1 = np.zeros(nLen)
+u2 = np.zeros(nLen)
+u3 = np.zeros(nLen)
 
-# %% Test Periodic
+M = M+M.T
+K = K+K.T
 
-# pair0 = np.zeros((9,2)).astype(int)
-# pair0[:,0] = [18,19,20,21,22,23,24,25,26]
-# pair0[:,1] = [0,1,2,3,4,5,6,7,8]
-# for i in range(pair0.shape[0]): Kf,B = delta(Kf,B,0,pair0[i])
+for i in range(nLen): M[i,i] /= 2
+for i in range(nLen): K[i,i] /= 2
 
-# pair1 = np.zeros((9,2)).astype(int)
-# pair1[:,0] = [2,5,8,11,14,17,20,23,26]
-# pair1[:,1] = [0,3,6,9,12,15,18,21,24]
-# for i in range(pair1.shape[0]): Kf,B = delta(Kf,B,1,pair1[i])
+dx = []
 
-# coup0 = [18,19,20,21,22,23,24,25,26]
-# Kf,B = coupled(Kf,B,0,coup0)
+for i in range(100):
+
+    M_new = M.copy()
+    RHS = dt**2*B+M.dot(2*u2-u1)-dt**2*K.dot(u2)
+    
+    u12 = 2*u2-u1
+    Mu12 = M.dot(2*u2-u1)
+    
+    fixed(M_new,RHS,0,[0,1,2,3],0)
+    fixed(M_new,RHS,1,[0,1,4,5],0)
+    fixed(M_new,RHS,2,[0,2,4,6],0)
+    
+    coupled(M_new,RHS,0,[4,5,6,7])
+    
+    u3 = np.linalg.solve(M_new,RHS)
+    u3[[4,5,6]] = u3[7]
+    u1 = u2.copy()
+    u2 = u3.copy()
+    
+    dx.append(u3[4])
 
 
-coup2 = [1,3,5,7,9,11,13,15,17]
-K,B = coupled(K,B,2,coup2)
-
-K,B = fixed(K,B,0,[0,1,2,3,4,5,6,7,8],0)
-K,B = fixed(K,B,2,[0,3,6,9,12,15,18,21,24],0)
 
 
-u = np.linalg.solve(K,B)
 
-# for i in range(len(coup0)): u[coup0[i]] = u[coup0[-1]]
-# for i in range(len(coup1)): u[coup1[i]+nLen] = u[coup1[-1]+nLen]
+plt.plot(dx)
 
-# for i in range(pair0.shape[0]): u[pair0[i,0]] += u[pair0[i,1]]
-# for i in range(pair1.shape[0]): u[pair1[i,0]+nLen] += u[pair1[i,1]+nLen]
 
-# %% Prints
-
-print("\n")
-for i in range(nLen):print("ux[",i,"] = ",round(u[i],4))
-print("\n")
-for i in range(nLen):print("uy[",i,"] = ",round(u[i+nLen],4))
-print("\n")
-for i in range(nLen):print("uz[",i,"] = ",round(u[i+2*nLen],4))
-
-file = open("output/displacement.txt", "w")
-for i in range(nLen):
-    file.write(str(u[i]))
-    file.write(",")
-    file.write(str(u[i+nLen]))
-    file.write(",")
-    file.write(str(u[i+2*nLen]))
-    file.write("\n")
-               
-file.close()
-
-file = open("output/coordinates.txt", "w")
-for i in range(nLen):
-    file.write(str(nXYZ[i,0]+u[i]))
-    file.write(",")
-    file.write(str(nXYZ[i,1]+u[i+nLen]))
-    file.write(",")
-    file.write(str(nXYZ[i,2]+u[i+2*nLen]))
-    file.write("\n")
-               
-file.close()
 

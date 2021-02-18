@@ -30,7 +30,7 @@ struct quadStruct{
 namespace math{
     
     quadStruct legendre(int dim,int order);
-    dvector lagrange(int var,dvector node,dvector va);
+    dvector lagrange(int var,dvector node,dvector val);
 
     // Sparse or dense matrix-matrix or vector-vector addition
 

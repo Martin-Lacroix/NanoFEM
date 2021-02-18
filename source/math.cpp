@@ -126,6 +126,29 @@ namespace math{
         }
     }
 
+    // ---------------------------------------------|
+    // Sparse matrix addition M2 = k1 M1 + k2 M2    |
+    // ---------------------------------------------|
+
+    void add(double k1,double k2,sparse &M1,sparse &M2){
+    
+        double val;
+        alglib::ae_int_t i=0,j=0;
+        alglib::ae_int_t I=0,J=0;
+
+        // First multiplies M2 by the scalar k2
+
+        while(alglib::sparseenumerate(M2,I,J,i,j,val)){
+            alglib::sparserewriteexisting(M2,i,j,k2*val);
+        }
+
+        // Seconds summs the product k1 M1 to M2
+
+        while(alglib::sparseenumerate(M1,I,J,i,j,val)){
+            alglib::sparseadd(M2,i,j,k1*val);
+        }
+    }
+
     // --------------------------------------------------------------------------|
     // Matrix-matrix product M3 = k M1 M2, tj = 1 means that Mj is transposed    |
     // --------------------------------------------------------------------------|
@@ -190,29 +213,6 @@ namespace math{
 
     void zero(darray &V){
         for(int i=0; i<V.length(); i++){V(i) = 0;}
-    }
-
-    // ---------------------------------------------|
-    // Sparse matrix addition M2 = k1 M1 + k2 M2    |
-    // ---------------------------------------------|
-
-    void add(double k1,double k2,sparse &M1,sparse &M2){
-    
-        double val;
-        alglib::ae_int_t i=0,j=0;
-        alglib::ae_int_t I=0,J=0;
-
-        // First multiplies M2 by the scalar k2
-
-        while(alglib::sparseenumerate(M2,I,J,i,j,val)){
-            alglib::sparserewriteexisting(M2,i,j,k2*val);
-        }
-
-        // Seconds summs the product k1 M1 to M2
-
-        while(alglib::sparseenumerate(M1,I,J,i,j,val)){
-            alglib::sparseadd(M2,i,j,k1*val);
-        }
     }
 
     // -----------------------------------------------------------------------|

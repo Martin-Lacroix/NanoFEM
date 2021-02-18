@@ -78,11 +78,11 @@ shapeStruct Mesh::shape(int dim,int order){
     return shape;
 }
 
-// -----------------------------------------------------|
-// Computes the total stiffness matrix for local FEM    |
-// -----------------------------------------------------|
+// --------------------------------------------------------|
+// Computes the total stiffness matrix K for global FEM    |
+// --------------------------------------------------------|
 
-sparse Mesh::localK(){
+sparse Mesh::totalK(){
 
     sparse K;
     alglib::sparsecreate(3*nLen,3*nLen,K);
@@ -127,109 +127,56 @@ sparse Mesh::localK(){
     return K;
 }
 
-// -----------------------------------------------------------|
-// Computes the total stiffness matrix K for non-local FEM    |
-// -----------------------------------------------------------|
-/*
-sparse Mesh::nonLocalK(){
+// ---------------------------------------------------|
+// Computes the total mass matrix M for global FEM    |
+// ---------------------------------------------------|
 
-    sparse K;
-    double eLen = eList.size();
-    double nLen = mesh.nXYZ.size();
-    alglib::sparsecreate(3*nLen,3*nLen,K);
+sparse Mesh::totalM(){
 
-    // Computes the elemental K matrices
+    sparse M;
+    alglib::sparsecreate(3*nLen,3*nLen,M);
 
     for(int i=0; i<eLen; i++){
 
-        matrix K1 = elemK(i);
-        int nbr = eList[i].nLen;
+        // Coordinates of the nodes of the element
+        
+        int sLen = mesh.eNode[i].size();
+        vector<dvector> eXYZ(sLen,dvector(3));
+        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+
+        // Computes the elemental M matrices
+
+        double rho = 1;
+
+        Elem elem(eXYZ,shape3D);
         ivector eNode = mesh.eNode[i];
+        matrix M1 = elem.selfM(shape3D,quad3D,rho);
 
-        // Inserts the elemental matrices into the global K matrix
+        // Inserts the elemental matrix into the global M matrix
 
-        for(int k=0; k<3*nLen; k++){
-            for(int j=0; j<nbr; j++){
+        for(int j=0; j<sLen; j++){
+            for(int k=0; k<sLen; k++){
                 for(int m=0; m<3; m++){
+                    for(int n=0; n<3; n++){
 
-                    double val = K1[j+m*nbr][k];
-                    alglib::sparseadd(K,eNode[j]+m*nLen,k,val);
+                        int row = eNode[j]+m*nLen;
+                        int col = eNode[k]+n*nLen;
+
+                        // Adds the element only if located in the upper triangular
+
+                        if(row<=col){
+
+                            double val = M1[j+m*sLen][k+n*sLen];
+                            alglib::sparseadd(M,eNode[j]+m*nLen,eNode[k]+n*nLen,val);
+                        }
+                    }
                 }
             }
         }
     }
-    return K;
+    return M;
 }
-*/
-// ---------------------------------------------------------------------|
-// Evaluates the total S matrix at a point (x,y,z) for non-local FEM    |
-// ---------------------------------------------------------------------|
-/*
-matrix Mesh::totalS(dvector xyz){
 
-    matrix S;
-    double eLen = eList.size();
-    double nLen = mesh.nXYZ.size();
-    S.setlength(6,3*nLen);
-    math::zero(S);
-
-    // Computes the elemental S matrices
-
-    for(int i=0; i<eLen; i++){
-
-        int nbr = eList[i].nLen;
-        matrix S1 = eList[i].selfS(quad3D,xyz);
-
-        // Inserts the elemental matrices into the global S matrix
-
-        for(int j=0; j<6; j++){
-            for(int k=0; k<nbr; k++){
-                for(int n=0; n<3; n++){
-                    S(j,mesh.eNode[i][k]+n*nLen) += S1(j,k+n*nbr);
-                }
-            }
-        }
-    }
-    return S;
-}
-*/
-// ---------------------------------------------------------------|
-// Computes the elemental stiffness matrix K for non-local FEM    |
-// ---------------------------------------------------------------|
-/*
-matrix Mesh::elemK(int idx){
-
-    matrix B,K;
-    Elem& elem = eList[idx];
-    double nLen = elem.nLen;
-    double gLen = quad3D.gRST.size();
-    K.setlength(3*nLen,3*mesh.nXYZ.size());
-    B.setlength(3*nLen,6);
-    math::zero(B);
-    math::zero(K);
-
-    // Performs the numerical integration
-
-    for(int i=0; i<gLen; i++){
-        for(int j=0; j<nLen; j++){
-
-            // Computes the shape functions derivative matrix B
-            
-            B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = elem.dxN(j,i);
-            B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = elem.dyN(j,i);
-            B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = elem.dzN(j,i);
-        }
-
-        // Computes K by Gauss-Legendre quadrature
-
-        matrix S = totalS(elem.gXYZ[i]);
-        matrix K1 = math::prod(quad3D.weight[i],B,mesh.D[idx]);
-        matrix K2 = math::prod(elem.detJ[i],K1,S);
-        math::add(1,1,K2,K);
-    }
-    return K;
-}
-*/
 // -------------------------------------------------------------|
 // Computes the vector of applied stresses B from Neumann BC    |
 // -------------------------------------------------------------|

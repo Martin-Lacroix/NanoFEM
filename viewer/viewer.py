@@ -3,28 +3,42 @@ import gmsh
 
 # %% Load Data
 
-s = np.loadtxt(r"..\output\stress.txt",delimiter=",")
-elem = np.loadtxt(r"..\output\elements.txt",delimiter=",")
-u = np.loadtxt(r"..\output\displacement.txt",delimiter=",")
 nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
+elem = np.atleast_2d(np.loadtxt(r"..\output\elements.txt",delimiter=","))
+uList = np.atleast_2d(np.loadtxt(r"..\output\displacement.txt",delimiter=","))
 
-s = np.atleast_2d(s)
-elem = np.atleast_2d(elem)
+eLen = elem.shape[0]
+nLen = nXYZ.shape[0]
 
-# Cubic domain size
+# Computes the cubic domain size
 
 xLen = [np.min(nXYZ[:,0]),np.max(nXYZ[:,0])]
 yLen = [np.min(nXYZ[:,1]),np.max(nXYZ[:,1])]
 zLen = [np.min(nXYZ[:,2]),np.max(nXYZ[:,2])]
-eLen = s.shape[0]
-nLen = u.shape[0]
-U = []
-S = []
+step = len(uList)
 
-# Stores the displacement and stress field
+# Stores the displacement field
 
-for j in range(3): U.append([[u[i,j]] for i in range(nLen)])
-for j in range(6): S.append([[s[i,j]] for i in range(eLen)])
+ux = [0]*step
+uy = [0]*step
+uz = [0]*step
+
+for k in range(step):
+    
+    ux[k] = [[uList[k][i]] for i in range(nLen)]
+    uy[k] = [[uList[k][i+nLen]] for i in range(nLen)]
+    uz[k] = [[uList[k][i+2*nLen]] for i in range(nLen)]
+    
+# Stores the stress field
+
+
+try:
+    sig = []
+    s = np.atleast_2d(np.loadtxt(r"..\output\stress.txt",delimiter=","))
+    for j in range(6): sig.append([[s[i,j]] for i in range(eLen)])
+
+except: pass
+
 
 # %% Domain Geometry
 
@@ -106,17 +120,21 @@ gmsh.view.add("Stress xy",7)
 gmsh.view.add("Stress zx",8)
 gmsh.view.add("Stress yz",9)
 
-# Adds the data to the model
+# Writes the displacement data in the model
 
-for i in range(3): gmsh.view.addModelData(i+1,0,"Nascam","NodeData",nTag,U[i])
-for i in range(6): gmsh.view.addModelData(i+4,0,"Nascam","ElementData",eTag,S[i])
+for i in range(step):
+    
+    gmsh.view.addModelData(1,i,"Nascam","NodeData",nTag,ux[i])
+    gmsh.view.addModelData(2,i,"Nascam","NodeData",nTag,uy[i])
+    gmsh.view.addModelData(3,i,"Nascam","NodeData",nTag,uz[i])
 
-# Creates the output files
-
-gmsh.write(r"..\output\stress.msh")
 gmsh.write(r"..\output\displacement.msh")
-
-# Writes the solutions
-
 for i in range(3): gmsh.view.write(i+1,r"..\output\displacement.msh",append=True)
-for i in range(6): gmsh.view.write(i+4,r"..\output\stress.msh",append=True)
+
+# Writes the stress data in the model
+
+if(len(sig)>0):
+    
+    gmsh.write(r"..\output\stress.msh")
+    for i in range(6): gmsh.view.addModelData(i+4,0,"Nascam","ElementData",eTag,sig[i])
+    for i in range(6): gmsh.view.write(i+4,r"..\output\stress.msh",append=True)

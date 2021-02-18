@@ -29,11 +29,11 @@ class Elem{
 
     public:
 
-    // Functions available in the elem.cpp file
+    // Constructor and functions available in the elem.cpp file
 
     Elem(std::vector<dvector> nXYZ,shapeStruct shape);
+    matrix selfM(shapeStruct shape,quadStruct quad,double rho);
     darray stress(quadStruct quad,matrix D,darray u);
-    matrix selfS(quadStruct quad,dvector xyz);
     matrix selfK(quadStruct quad,matrix D);
 
     // Parameters specific to each element
@@ -58,7 +58,7 @@ class Face{
 
     public:
 
-    // Functions available in the elem.cpp file
+    // Constructor and functions available in the elem.cpp file
 
     Face(std::vector<dvector> nXYZ,shapeStruct shape);
     matrix selfM(shapeStruct shape,quadStruct quad);

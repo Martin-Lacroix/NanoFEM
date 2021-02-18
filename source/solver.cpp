@@ -5,13 +5,134 @@
 #include <chrono>
 using namespace std;
 
-// ---------------------------------------------|
-// Solves the sparse symmetric linear system    |
-// ---------------------------------------------|
+// ------------------------------------------------|
+// Writes the simulation results in a text file    |
+// ------------------------------------------------|
 
-darray solve(Mesh mesh){
+void write(Mesh &mesh,vector<darray> &uList,vector<darray> &sigma){
 
-    sparse K;
+    mkdir("output");
+    ofstream elements("output/elements.txt");
+    ofstream coordinates("output/coordinates.txt");
+    ofstream displacement("output/displacement.txt");
+
+    // Writes the displacement field in a text file
+
+    for(darray u:uList){
+        for(int i=0; i<u.length()-1; i++){displacement << u[i] << ",";}
+        displacement << u[u.length()-1] << "\n";
+    }
+
+    // Writes the node coordinates as (x,y,z)
+
+    for(dvector nXYZ:mesh.mesh.nXYZ){
+        for(int i=0; i<nXYZ.size()-1; i++){coordinates << nXYZ[i] << ",";}
+        coordinates << nXYZ.back() << "\n";
+    }
+
+    // Writes the element nodes as (elem,node)
+
+    for(ivector eNode:mesh.mesh.eNode){
+        for(int i=0; i<eNode.size()-1; i++){elements << eNode[i] << ",";}
+        elements << eNode.back() << "\n";
+    }
+
+    // Writes the averaged elemental stress in a text file
+
+    if(sigma.size()>0){
+        ofstream stress("output/stress.txt");
+
+        for(darray s:sigma){
+            for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
+            stress << s[s.length()-1] << "\n";
+        }
+    }
+}
+
+// --------------------------------------------------|
+// Solves the linear system with wave propagation    |
+// --------------------------------------------------|
+
+vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
+
+    auto stop = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();
+    auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << "\nBuilds the matrix --- ";
+
+    // Builds the full K and M matrices of the system
+
+    sparse M1;
+    int nLen = 3*mesh.nLen;
+    sparse M = mesh.totalM();
+    sparse K = mesh.totalK();
+    darray B = mesh.neumann();
+    double dt = pow(wave.dt,2);
+
+    alglib::sparseconverttocrs(K);
+    alglib::sparsecopytocrs(M,M1);
+
+    // Initializes the solution vector
+
+    vector<darray> u;
+    darray u1 = wave.u0;
+    darray x,y,u2 = u1;
+    u.push_back(wave.u0);
+
+    // Prints the computation time of the operation
+
+    stop = chrono::high_resolution_clock::now();
+    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
+    cout << "Time iterations --- ";
+
+    // Applies boundary conditions to M1 and B
+
+    for(int i=0; i<wave.nSteps; i++){
+
+        alglib::sparsecopytohashbuf(M1,M);
+
+        math::add(2,-1,u2,u1);
+        alglib::sparsesmv(M1,1,u1,x);
+        alglib::sparsesmv(K,1,u2,y);
+        math::add(1,-1,B,y);
+        math::add(1,dt,x,y);
+        u1 = u2;
+
+        // Sets the boundary conditions
+
+        mesh.delta(M,y);
+        mesh.coupling(M,y);
+        mesh.dirichlet(M,y);
+        alglib::sparseconverttocrs(M);
+
+        // Solves the symmetric linear system with Alglib
+
+        alglib::lincgreport rep;
+        alglib::lincgstate state;
+        alglib::lincgcreate(nLen,state);
+        alglib::lincgsolvesparse(state,M,1,y);
+        alglib::lincgresults(state,u2,rep);
+        mesh.complete(u2);
+        u.push_back(u2);
+    }
+
+    // Prints the computation time of the operation
+
+    stop = chrono::high_resolution_clock::now();
+    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    start = chrono::high_resolution_clock::now();
+    cout << time.count()/1e6 << " sec\n";
+    return u;
+}
+
+// -------------------------------------------------------|
+// Solves the linear system in quasistatic equilibrium    |
+// -------------------------------------------------------|
+
+darray solveStatic(Mesh &mesh){
+
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
     auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -19,7 +140,9 @@ darray solve(Mesh mesh){
 
     // Builds the full K matrix of the system
 
-    K = mesh.localK();
+    int nLen = 3*mesh.nLen;
+    sparse K = mesh.totalK();
+    darray B = mesh.neumann();
 
     // Prints the computation time of the operation
 
@@ -30,9 +153,6 @@ darray solve(Mesh mesh){
     cout << "Boundary conditions --- ";
 
     // Applies boundary conditions to K and B
-
-    darray B = mesh.neumann();
-    int nLen = B.length();
 /*
     ofstream Kfile("output/K.txt");
     ofstream Bfile("output/B.txt");
@@ -50,7 +170,7 @@ darray solve(Mesh mesh){
     mesh.delta(K,B);
     mesh.coupling(K,B);
     mesh.dirichlet(K,B);
-    sparseconverttocrs(K);
+    alglib::sparseconverttocrs(K);
 
     // Prints the computation time of the operation
 
@@ -95,8 +215,9 @@ int main(){
     // Reads the input files from Nascam
 
     string inputPath = "input.txt";
-    string meshPath = "input/single Cu.xyz";
+    string meshPath = "input/test.xyz";
     meshStruct mesh = read(inputPath,meshPath);
+    timeStruct wave;
 
     // Prints the computation time of the operation
 
@@ -108,79 +229,59 @@ int main(){
     // Creates the mesh class and solves with conjugate gradient
 
     Mesh Mesh(mesh);
-    darray u = solve(Mesh);
-    start = chrono::high_resolution_clock::now();
-    cout << "Stress extraction --- ";
+    vector<darray> uList;
+    vector<darray> sigma;
     
-    // Computes Von Mises stresses and update the nodes
+    // Computes the wave propagation
 
-    int nLen = mesh.nXYZ.size();
-    int eLen = mesh.eNode.size();
-    vector<darray> sigma = Mesh.stress(u);
-    Mesh.update(u);
+    if(wave.u0.length()>0){
+        uList = solveWave(Mesh,wave);}
 
-    // Prints the computation time of the operation
+    else{
 
-    stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
-    cout << "Writes the results --- ";
+        // Or computes the quasitatic solution
+
+        darray u = solveStatic(Mesh);
+        uList.push_back(u);
+
+        // Computes Von Mises stresses and update the nodes
+
+        start = chrono::high_resolution_clock::now();
+        cout << "Stress extraction --- ";
+        sigma = Mesh.stress(u);
+        Mesh.update(u);
+
+        // Prints the computation time of the operation
+
+        stop = chrono::high_resolution_clock::now();
+        time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+        start = chrono::high_resolution_clock::now();
+        cout << time.count()/1e6 << " sec\n";
+    }
 
     // Writes the results in a text file
 
-    mkdir("output");
-    ofstream stress("output/stress.txt");
-    ofstream elements("output/elements.txt");
-    ofstream coordinates("output/coordinates.txt");
-    ofstream displacement("output/displacement.txt");
-
-    // Writes the displacement field in a text file
-
-    for(int i=0; i<nLen; i++){
-        for(int j=0; j<2; j++){displacement << u[i+j*nLen] << ",";}
-        displacement << u[i+2*nLen] << "\n";
-    }
-
-    // Writes the node coordinates (x,y,z) in a text file
-
-    for(dvector nXYZ:Mesh.mesh.nXYZ){
-        for(int j=0; j<2; j++){coordinates << nXYZ[j] << ",";}
-        coordinates << nXYZ.back() << "\n";
-    }
-
-    // Writes the element nodes in a text file
-
-    for(ivector eNode:Mesh.mesh.eNode){
-        for(int j=0; j<eNode.size()-1; j++){elements << eNode[j] << ",";}
-        elements << eNode.back() << "\n";
-    }
-
-    // Writes the elemental stress (σxx,σyy,σxy,σzx,σyz) in a text file
-
-    for(int i=0; i<eLen; i++){
-        for(int j=0; j<5; j++){stress << sigma[i][j] << ",";}
-        stress << sigma[i][5] << "\n";
-    }
+    start = chrono::high_resolution_clock::now();
+    cout << "Writes the results --- ";
+    write(Mesh,uList,sigma);
 
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
     time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << time.count()/1e6 << " sec\n\n";
-/*
+
     cout << "\n";
-    for(int i=0; i<nLen; i++){
-        cout << "Node " << i << " -- ux = " << u[i] << "\n";
+    for(int i=0; i<Mesh.nLen; i++){
+        cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<nLen; i++){
-        cout << "Node " << i << " -- uy = " << u[i+nLen] << "\n";
+    for(int i=0; i<Mesh.nLen; i++){
+        cout << "Node " << i << " -- uy = " << uList.back()[i+Mesh.nLen] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<nLen; i++){
-        cout << "Node " << i << " -- uz = " << u[i+2*nLen] << "\n";
+    for(int i=0; i<Mesh.nLen; i++){
+        cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
     }
     cout << "\n";
-*/
 }

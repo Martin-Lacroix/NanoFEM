@@ -2,6 +2,17 @@
 #ifndef READ_H
 #define READ_H
 
+// ---------------------------------------------------------|
+// Structure storing the time data and initial conditions   |
+// ---------------------------------------------------------|
+
+struct timeStruct{
+
+    double dt;
+    double nSteps;
+    darray u0;
+};
+
 // --------------------------------------------------------------|
 // Structure storing temporary parameters from the input files   |
 // --------------------------------------------------------------|

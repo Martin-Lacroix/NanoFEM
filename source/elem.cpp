@@ -122,6 +122,34 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     return K;
 }
 
+// ----------------------------------------------------|
+// Computes the elemental mass matrix M for local FEM  |
+// ----------------------------------------------------|
+
+matrix Elem::selfM(shapeStruct shape,quadStruct quad,double rho){
+
+    matrix N,M;
+    N.setlength(3*nLen,3);
+    M.setlength(3*nLen,3*nLen);
+    math::zero(N);
+    math::zero(M);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<gLen; i++){
+        for(int j=0; j<nLen; j++){
+            N(j,0) = N(j+nLen,1) = N(j+2*nLen,2) = shape.N(j,i);
+        }
+
+        // Computes M by Gauss-Legendre quadrature
+
+        double wRdetJ = quad.weight[i]*rho*detJ[i];
+        matrix M1 = math::prod(wRdetJ,N,N,0,1);
+        math::add(1,1,M1,M);
+    }
+    return M;
+}
+
 // -------------------------------------------------------|
 // Computes the averaged Von Mises stress in the element  |
 // -------------------------------------------------------|
@@ -163,34 +191,6 @@ darray Elem::stress(quadStruct quad,matrix D,darray u){
     return sigma;
 }
 
-// ---------------------------------------------------|
-// Computes the elemental S matrix for non-local FEM  |
-// ---------------------------------------------------|
-/*
-matrix Elem::selfS(quadStruct quad,dvector xyz){
-
-    matrix S;
-    S.setlength(6,3*nLen);
-    int gLen = quad.weight.size();
-    math::zero(S);
-
-    // Performs the numerical integration
-
-    for(int i=0; i<gLen; i++){
-        double k = math::kernel(xyz,gXYZ[i])*quad.weight[i]*detJ[i];
-
-        for(int j=0; j<nLen; j++){
-
-            // Computes the non-local S matrix
-
-            S(0,j) = S(3,j+nLen) = S(4,j+2*nLen) += k*dxN(j,i);
-            S(3,j) = S(1,j+nLen) = S(5,j+2*nLen) += k*dyN(j,i);
-            S(4,j) = S(5,j+nLen) = S(2,j+2*nLen) += k*dzN(j,i);
-        }   
-    }
-    return S;
-}
-*/
 // --------------------------------------------------|
 // Class of 4-node quadrangle linear element in 2D   |
 // --------------------------------------------------|
