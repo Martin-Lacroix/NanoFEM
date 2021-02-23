@@ -337,6 +337,19 @@ void dirichlet(readStruct &read,meshStruct &mesh){
         }
     }
 
+    // Imposes the axial displacement on a top face
+
+    for(pair<int,double> j:read.axial){
+        for(int i=0; i<mesh.nXYZ.size(); i++){
+
+            if(abs(mesh.nXYZ[i][j.first]-read.zero[j.first])<read.eSize[j.first]/2){
+
+                mesh.dirNode[j.first].push_back(i+add2[j.first]);
+                mesh.dirVal[j.first].push_back(j.second);
+            }
+        }
+    }
+
     // Stores the Dirichlet boundary conditions
 
     for(int j:read.flat){
@@ -441,20 +454,16 @@ void neumann(readStruct &read,meshStruct &mesh){
     }
 }
 
-// ------------------------------------------------------------|
-// Reads the Nascam input files and returns the meshStruct     |
-// ------------------------------------------------------------|
+// -------------------------------------------------------|
+// Reads the Nascam input files to build the mesh data    |
+// -------------------------------------------------------|
 
-meshStruct read(string inputPath,string meshPath){
+void read(string path[2],meshStruct &mesh, timeStruct &time){
 
-    meshStruct mesh;
     readStruct read;
-
-    // Calls the two mesh reading and building functions
-
-    readInput(read,mesh,inputPath);
-    readMeshSize(read,mesh,meshPath);
-    readSpecies(read,mesh,meshPath);
+    readInput(read,mesh,path[0]);
+    readMeshSize(read,mesh,path[1]);
+    readSpecies(read,mesh,path[1]);
 
     // Sets the boundary conditions
 
@@ -531,5 +540,4 @@ meshStruct read(string inputPath,string meshPath){
         cout << "\n";
     }
 */
-    return mesh;
 }

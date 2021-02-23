@@ -8,8 +8,14 @@
 
 struct timeStruct{
 
+    // Saving frequency and total number of time steps
+
     double dt;
-    double nSteps;
+    int nSave;
+    int nSteps;
+
+    // Initial solution in displacement
+
     darray u0;
 };
 
@@ -41,6 +47,7 @@ struct readStruct{
 
     ivector flat;
     ivector clamped;
+    std::vector<std::pair<int,double>> axial;
 
     // Type and axis of the applied stress
     
@@ -62,15 +69,11 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-meshStruct read(std::string inputPath,std::string meshPath);
+void read(std::string path[2],meshStruct &mesh,timeStruct &time);
 
 // Functions to set the boundary conditions
 
 void neumann(readStruct &read,meshStruct &mesh);
-void dirShear(readStruct &read,meshStruct &mesh);
-void dirTensile(readStruct &read,meshStruct &mesh);
-
-
 void dirichlet(readStruct &read,meshStruct &mesh);
 
 // Functions to read the different input files

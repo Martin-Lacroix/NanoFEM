@@ -9,7 +9,7 @@ using namespace std;
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void write(Mesh &mesh,vector<darray> &uList,vector<darray> &sigma){
+void write(Mesh &mesh,timeStruct &time,vector<darray> &uList,vector<darray> &sigma){
 
     mkdir("output");
     ofstream elements("output/elements.txt");
@@ -18,9 +18,18 @@ void write(Mesh &mesh,vector<darray> &uList,vector<darray> &sigma){
 
     // Writes the displacement field in a text file
 
-    for(darray u:uList){
-        for(int i=0; i<u.length()-1; i++){displacement << u[i] << ",";}
-        displacement << u[u.length()-1] << "\n";
+    if(time.u0.length()>0){
+        for(int i=0; i<uList.size(); i+=time.nSave){
+
+            for(int j=0; j<uList[i].length()-1; j++){displacement << uList[i][j] << ",";}
+            displacement << uList[i][uList[i].length()-1] << "\n";
+        }
+    }
+    else{
+        for(darray u:uList){
+            for(int i=0; i<u.length()-1; i++){displacement << u[i] << ",";}
+            displacement << u[u.length()-1] << "\n";
+        }
     }
 
     // Writes the node coordinates as (x,y,z)
@@ -57,7 +66,7 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
-    auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nBuilds the matrix --- ";
 
     // Builds the full K and M matrices of the system
@@ -82,9 +91,9 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
+    cout << clock.count()/1e6 << " sec\n";
     cout << "Time iterations --- ";
 
     // Applies boundary conditions to M1 and B
@@ -121,9 +130,9 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
+    cout << clock.count()/1e6 << " sec\n";
     return u;
 }
 
@@ -135,7 +144,7 @@ darray solveStatic(Mesh &mesh){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
-    auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nBuilds the matrix --- ";
 
     // Builds the full K matrix of the system
@@ -147,9 +156,9 @@ darray solveStatic(Mesh &mesh){
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
+    cout << clock.count()/1e6 << " sec\n";
     cout << "Boundary conditions --- ";
 
     // Applies boundary conditions to K and B
@@ -175,9 +184,9 @@ darray solveStatic(Mesh &mesh){
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
+    cout << clock.count()/1e6 << " sec\n";
     cout << "Solves the system --- ";
     
     // Solves the symmetric linear system with Alglib
@@ -194,9 +203,9 @@ darray solveStatic(Mesh &mesh){
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec\n";
+    cout << clock.count()/1e6 << " sec\n";
     return u;
 }
 
@@ -209,42 +218,37 @@ int main(){
     alglib::setglobalthreading(alglib::parallel);
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
-    auto time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nReads the files --- ";
 
     // Reads the input files from Nascam
 
-    string inputPath = "input.txt";
-    string meshPath = "input/test.xyz";
-    meshStruct mesh = read(inputPath,meshPath);
-    timeStruct wave;
+    meshStruct mesh;
+    timeStruct time;
+    string path[2] = {"input.txt","input/single Cu.xyz"};
+    read(path,mesh,time);
 
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     start = chrono::high_resolution_clock::now();
-    cout << time.count()/1e6 << " sec";
+    cout << clock.count()/1e6 << " sec";
 
     // Creates the mesh class and solves with conjugate gradient
 
     Mesh Mesh(mesh);
     vector<darray> uList;
     vector<darray> sigma;
-    
-    // Computes the wave propagation
 
-    if(wave.u0.length()>0){
-        uList = solveWave(Mesh,wave);}
+    // Computes the quasitatic solution
 
-    else{
-
-        // Or computes the quasitatic solution
+    if(time.u0.length()==0){
 
         darray u = solveStatic(Mesh);
         uList.push_back(u);
 
-        // Computes Von Mises stresses and update the nodes
+        // Computes Von Mises stresses and updates the nodes
 
         start = chrono::high_resolution_clock::now();
         cout << "Stress extraction --- ";
@@ -254,23 +258,27 @@ int main(){
         // Prints the computation time of the operation
 
         stop = chrono::high_resolution_clock::now();
-        time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+        clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
         start = chrono::high_resolution_clock::now();
-        cout << time.count()/1e6 << " sec\n";
+        cout << clock.count()/1e6 << " sec\n";
     }
+
+    // Computes the wave propagation
+
+    else{uList = solveWave(Mesh,time);}
 
     // Writes the results in a text file
 
     start = chrono::high_resolution_clock::now();
     cout << "Writes the results --- ";
-    write(Mesh,uList,sigma);
+    write(Mesh,time,uList,sigma);
 
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
-    time = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << time.count()/1e6 << " sec\n\n";
-
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    cout << clock.count()/1e6 << " sec\n\n";
+/*
     cout << "\n";
     for(int i=0; i<Mesh.nLen; i++){
         cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
@@ -284,4 +292,5 @@ int main(){
         cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
     }
     cout << "\n";
+*/
 }

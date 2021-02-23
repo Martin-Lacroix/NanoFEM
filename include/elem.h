@@ -34,6 +34,7 @@ class Elem{
     Elem(std::vector<dvector> nXYZ,shapeStruct shape);
     matrix selfM(shapeStruct shape,quadStruct quad,double rho);
     darray stress(quadStruct quad,matrix D,darray u);
+    matrix selfKs(quadStruct quad,matrix Ds);
     matrix selfK(quadStruct quad,matrix D);
 
     // Parameters specific to each element

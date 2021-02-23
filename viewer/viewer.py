@@ -28,9 +28,8 @@ for k in range(step):
     ux[k] = [[uList[k][i]] for i in range(nLen)]
     uy[k] = [[uList[k][i+nLen]] for i in range(nLen)]
     uz[k] = [[uList[k][i+2*nLen]] for i in range(nLen)]
-    
-# Stores the stress field
 
+# Stores the stress field
 
 try:
     sig = []
@@ -116,9 +115,9 @@ gmsh.view.add("Displacement z",3)
 gmsh.view.add("Stress xx",4)
 gmsh.view.add("Stress yy",5)
 gmsh.view.add("Stress zz",6)
-gmsh.view.add("Stress xy",7)
+gmsh.view.add("Stress yz",7)
 gmsh.view.add("Stress zx",8)
-gmsh.view.add("Stress yz",9)
+gmsh.view.add("Stress xy",9)
 
 # Writes the displacement data in the model
 

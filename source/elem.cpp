@@ -108,9 +108,9 @@ matrix Elem::selfK(quadStruct quad,matrix D){
 
             // Computes the shape functions derivative matrix B
             
-            B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = dxN(j,i);
-            B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = dyN(j,i);
-            B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = dzN(j,i);
+            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
+            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
+            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
         }
 
         // Computes K by Gauss-Legendre quadrature
@@ -121,6 +121,62 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     }
     return K;
 }
+
+
+
+
+
+
+
+
+
+
+matrix Elem::selfKs(quadStruct quad,matrix Ds){
+
+    matrix B,K;
+    B.setlength(3*nLen,6);
+    K.setlength(3*nLen,3*nLen);
+    math::zero(B);
+    math::zero(K);
+
+
+
+
+
+
+
+    // Performs the numerical integration
+
+    for(int i=0; i<gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions derivative matrix B
+            
+            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
+            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
+            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
+        }
+
+        // Computes K by Gauss-Legendre quadrature
+
+        matrix K1 = math::prod(quad.weight[i],B,Ds);
+        matrix K2 = math::prod(detJ[i],K1,B,0,1);
+        math::add(1,1,K2,K);
+    }
+    return K;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ----------------------------------------------------|
 // Computes the elemental mass matrix M for local FEM  |
@@ -171,9 +227,9 @@ darray Elem::stress(quadStruct quad,matrix D,darray u){
 
             // Computes the shape functions derivative matrix B
             
-            B(j,0) = B(j+nLen,3) = B(j+2*nLen,4) = dxN(j,i);
-            B(j,3) = B(j+nLen,1) = B(j+2*nLen,5) = dyN(j,i);
-            B(j,4) = B(j+nLen,5) = B(j+2*nLen,2) = dzN(j,i);
+            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
+            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
+            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
         }
 
         // Computes the stress field at Gauss points
