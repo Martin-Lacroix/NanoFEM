@@ -5,74 +5,81 @@ using namespace std;
 // Builds the elements list, shape functions and quadratures    |
 // -------------------------------------------------------------|
 
-Mesh::Mesh(meshStruct &input){
+Mesh::Mesh(meshStruct &mesh){
     
-    mesh = input;
+    quadStruct quad;
+    this->mesh = mesh;
     nLen = mesh.nXYZ.size();
     eLen = mesh.eNode.size();
     fLen = mesh.neuFace.size();
 
     // Stores the quadrature rules and shape functions
 
-    quad3D = math::legendre(3,mesh.ordQuad);
-    quad2D = math::legendre(2,mesh.ordQuad);
-    shape3D = shape(3,mesh.ordElem);
-    shape2D = shape(2,mesh.ordElem);
+    quad = math::legendre(3,mesh.order);
+    shape3D = shape(quad);
+
+    quad = math::legendre(2,mesh.order);
+    vector<quadStruct> quadS(6,quad);
+    shape2D = shape(quad);
+
+    // Stores the quardature rules for surface FEM
+
+    for(int i=0; i<quad.gLen; i++){
+        for(int j=1; j<3; j++){
+
+            quadS[j-1].gRST[i] = {pow(-1,j),quad.gRST[i][0],quad.gRST[i][1]};
+            quadS[j+1].gRST[i] = {quad.gRST[i][0],pow(-1,j),quad.gRST[i][1]};
+            quadS[j+3].gRST[i] = {quad.gRST[i][0],quad.gRST[i][1],pow(-1,j)};
+        }
+    }
+
+    // Stores the shape functions for surface FEM
+
+    for(int i=0; i<6; i++){
+        shapeS[i] = shape(quadS[i]);
+    }
 }
 
 // -------------------------------------------------------------|
 // Returns the structure of 2D and 3D linear shape functions    |
 // -------------------------------------------------------------|
 
-shapeStruct Mesh::shape(int dim,int order){
+shapeStruct Mesh::shape(quadStruct quad){
 
-    dvector val;
     shapeStruct shape;
-    dvector node(order+1);
-    double step = 2.0/order;
+    dvector node(mesh.order+1);
+    int dim = quad.gRST[0].size();
+    int nLen = 0.1+pow(mesh.order+1,dim);
 
-    // Length of the node list and Gauss points
+    // Copies the quadrature in the shape structure
 
-    if(dim==3){
-        shape.gLen = quad3D.gRST.size();
-        shape.nLen = 0.1+pow(order+1,3);
-    }
-    if(dim==2){
-        shape.gLen = quad2D.gRST.size();
-        shape.nLen = 0.1+pow(order+1,2);
-    }
+    shape.gLen = quad.gLen;
+    shape.gRST = quad.gRST;
+    shape.weight = quad.weight;
 
     // Memory allocation and 1D node list
 
-    shape.N.setlength(shape.nLen,shape.gLen);
-    shape.drN.setlength(shape.nLen,shape.gLen);
-    shape.dsN.setlength(shape.nLen,shape.gLen);
-    shape.dtN.setlength(shape.nLen,shape.gLen);
-
-    for(int i=0; i<=order; i++){node[i] = i*step-1;}
+    shape.dN.resize(dim);
+    shape.N.setlength(nLen,quad.gLen);
+    for(int i=0; i<=mesh.order; i++){node[i] = i*2.0/mesh.order-1;}
+    for(int i=0; i<dim; i++){shape.dN[i].setlength(nLen,quad.gLen);}
 
     // Sets the coordinates of the Gauss points
 
     for(int i=0; i<shape.gLen; i++){
 
-        if(dim==2){val = {quad2D.gRST[i][0],quad2D.gRST[i][1]};}
-        if(dim==3){val = {quad3D.gRST[i][0],quad3D.gRST[i][1],quad3D.gRST[i][2]};}
+        vector<dvector> dN(dim);
+        dvector N = math::lagrange(-1,node,quad.gRST[i]);
+        for(int j=0; j<dim; j++){dN[j] = math::lagrange(j,node,quad.gRST[i]);}
 
-        // Computes the Lagrange shape functions at Gauss points
+        // Stores the shape functions evaluated at the Gauss points
 
-        dvector drN = math::lagrange(0,node,val);
-        dvector dsN = math::lagrange(1,node,val);
-        dvector dtN = math::lagrange(2,node,val);
-        dvector N = math::lagrange(-1,node,val);
-
-        for(int j=0; j<shape.nLen; j++){
-
-            // Stores the shape functions evaluated at the Gauss points
-            
+        for(int j=0; j<nLen; j++){
             shape.N(j,i) = N[j];
-            shape.drN(j,i) = drN[j];
-            shape.dsN(j,i) = dsN[j];
-            shape.dtN(j,i) = dtN[j];
+            
+            for(int k=0; k<dim; k++){
+                shape.dN[k](j,i) = dN[k][j];
+            }
         }
     }
     return shape;
@@ -85,22 +92,24 @@ shapeStruct Mesh::shape(int dim,int order){
 sparse Mesh::totalK(){
 
     sparse K;
-    alglib::sparsecreate(3*nLen,3*nLen,K);
+    int sLen = shape3D.N.cols();
+    int size = 9*eLen*pow(mesh.order+1,6)/4;
+    alglib::sparsecreate(3*nLen,3*nLen,size,K);
+
+    // Coordinates of the nodes of the element
 
     for(int i=0; i<eLen; i++){
-
-        // Coordinates of the nodes of the element
         
-        int sLen = mesh.eNode[i].size();
-        vector<dvector> eXYZ(sLen,dvector(3));
+        vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
 
         // Computes the elemental K matrices
 
-        Elem elem(eXYZ,shape3D);
-        ivector eNode = mesh.eNode[i];
-        matrix D = math::stiffness(mesh.Ev[i][0],mesh.Ev[i][1]);
-        matrix K1 = elem.selfK(quad3D,D);
+        Elem elem(eXYZ);
+        matrix D = math::stiffness(mesh.EvR[i][0],mesh.EvR[i][1]);
+        matrix K1 = elem.selfK(shape3D,D);
+        matrix K2 = elem.selfKs(shapeS,D);
+        math::add(1,1,K2,K1);
 
         // Inserts the elemental matrix into the global K matrix
 
@@ -109,15 +118,15 @@ sparse Mesh::totalK(){
                 for(int m=0; m<3; m++){
                     for(int n=0; n<3; n++){
 
-                        int row = eNode[j]+m*nLen;
-                        int col = eNode[k]+n*nLen;
+                        int row = mesh.eNode[i][j]+m*nLen;
+                        int col = mesh.eNode[i][k]+n*nLen;
 
-                        // Adds the element only if located in the upper triangular
+                        // Adds the element only in the upper triangle
 
                         if(row<=col){
 
                             double val = K1[j+m*sLen][k+n*sLen];
-                            alglib::sparseadd(K,eNode[j]+m*nLen,eNode[k]+n*nLen,val);
+                            alglib::sparseadd(K,row,col,val);
                         }
                     }
                 }
@@ -134,23 +143,21 @@ sparse Mesh::totalK(){
 sparse Mesh::totalM(){
 
     sparse M;
-    alglib::sparsecreate(3*nLen,3*nLen,M);
+    int sLen = shape3D.N.cols();
+    int size = 9*eLen*pow(mesh.order+1,6)/4;
+    alglib::sparsecreate(3*nLen,3*nLen,size,M);
+
+    // Coordinates of the nodes of the element
 
     for(int i=0; i<eLen; i++){
-
-        // Coordinates of the nodes of the element
         
-        int sLen = mesh.eNode[i].size();
-        vector<dvector> eXYZ(sLen,dvector(3));
+        vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
 
         // Computes the elemental M matrices
 
-        double rho = 1;
-
-        Elem elem(eXYZ,shape3D);
-        ivector eNode = mesh.eNode[i];
-        matrix M1 = elem.selfM(shape3D,quad3D,rho);
+        Elem elem(eXYZ);
+        matrix M1 = elem.selfM(shape3D,mesh.EvR[i][2]);
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -159,15 +166,15 @@ sparse Mesh::totalM(){
                 for(int m=0; m<3; m++){
                     for(int n=0; n<3; n++){
 
-                        int row = eNode[j]+m*nLen;
-                        int col = eNode[k]+n*nLen;
+                        int row = mesh.eNode[i][j]+m*nLen;
+                        int col = mesh.eNode[i][k]+n*nLen;
 
-                        // Adds the element only if located in the upper triangular
+                        // Adds the element only in the upper triangle
 
                         if(row<=col){
 
                             double val = M1[j+m*sLen][k+n*sLen];
-                            alglib::sparseadd(M,eNode[j]+m*nLen,eNode[k]+n*nLen,val);
+                            alglib::sparseadd(M,row,col,val);
                         }
                     }
                 }
@@ -184,24 +191,22 @@ sparse Mesh::totalM(){
 darray Mesh::neumann(){
 
     darray B;
+    int sLen = shape2D.N.cols();
     B.setlength(3*nLen);
     math::zero(B);
 
-    // Computes the applied surface tractions on the 2D elements
+    // Coordinates of the nodes composing the faces
 
     for(int i=0; i<fLen; i++){
 
-        // Coordinates of the nodes of the faces
-
-        int sLen = mesh.neuFace[i].size();
-        vector<dvector> eXYZ(sLen,dvector(3));
+        vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.neuFace[i][j]];}
 
         // Computes the elemental B vectors
 
         Face face(eXYZ,shape2D);
-        matrix M = face.selfM(shape2D,quad2D);
-        darray B1 = math::prod(1,M,mesh.neuVal[i]);
+        matrix N = face.selfN(shape2D);
+        darray B1 = math::prod(1,N,mesh.neuVal[i]);
 
         // Inserts the elemental vectors into the global B vector
 
@@ -236,7 +241,7 @@ void Mesh::dirichlet(sparse &K,darray &B){
 
             for(int j:row[idx]){
 
-                B(j) -= math::symget(K,j,idx)*mesh.dirVal[n][i];
+                B(j) -= math::get(K,j,idx)*mesh.dirVal[n][i];
                 math::symset(K,j,idx,0);
             }
             row[idx].clear();
@@ -276,19 +281,19 @@ void Mesh::coupling(sparse &K,darray &B){
 
                 int idx1 = mesh.coupNode[n][i][j]+n*nLen;
                 int idx2 = mesh.coupNode[n][i].back()+n*nLen;
-                double fix = math::symget(K,idx2,idx2)+math::symget(K,idx1,idx1)+2*math::symget(K,idx1,idx2);
+                double fix = math::get(K,idx2,idx2)+math::get(K,idx1,idx1)+2*math::get(K,idx1,idx2);
 
                 // Adds the current row to the final row of K if non-zero
 
                 for(int k=0; k<row[idx1].size(); k++){
 
                     int n = row[idx1][k];
-                    double val = math::symget(K,idx1,n);
+                    double val = math::get(K,idx1,n);
 
                     // Updates the mapStruct only if an element is added to K
 
                     if(val!=0){
-                        if(math::symget(K,idx2,n)==0){
+                        if(math::get(K,idx2,n)==0){
 
                             row[n].push_back(idx2);
                             row[idx2].push_back(n);
@@ -330,19 +335,19 @@ void Mesh::delta(sparse &K,darray &B){
 
             int idx1 = mesh.deltaNode[n][i].first+n*nLen;
             int idx2 = mesh.deltaNode[n][i].second+n*nLen;
-            double fix = math::symget(K,idx2,idx2)+math::symget(K,idx1,idx1)+2*math::symget(K,idx1,idx2);
+            double fix = math::get(K,idx2,idx2)+math::get(K,idx1,idx1)+2*math::get(K,idx1,idx2);
 
             // Adds the current row to the final row of K if non-zero
 
             for(int k=0; k<row[idx1].size(); k++){
 
                 int n = row[idx1][k];
-                double val = math::symget(K,idx1,n);
+                double val = math::get(K,idx1,n);
 
                 // Updates the mapStruct only if an element is added to K
 
                 if(val!=0){
-                    if(math::symget(K,idx2,n)==0){
+                    if(math::get(K,idx2,n)==0){
 
                         row[n].push_back(idx2);
                         row[idx2].push_back(n);
@@ -412,12 +417,13 @@ void Mesh::update(darray &u){
 vector<darray> Mesh::stress(darray &u){
 
     vector<darray> sigma(eLen);
+    int sLen = shape3D.N.cols();
+
+    // Coordinates of the nodes of the element
+
     for(int i=0; i<eLen; i++){
 
-        // Coordinates of the nodes of the element
-
-        int sLen = mesh.eNode[i].size();
-        vector<dvector> eXYZ(sLen,dvector(3));
+        vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
 
         // Stores the displacement of the curent element nodes
@@ -433,9 +439,9 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        Elem elem(eXYZ,shape3D);
-        matrix D = math::stiffness(mesh.Ev[i][0],mesh.Ev[i][1]);
-        sigma[i] = elem.stress(quad3D,D,u1);
+        Elem elem(eXYZ);
+        matrix D = math::stiffness(mesh.EvR[i][0],mesh.EvR[i][1]);
+        sigma[i] = elem.stress(shape3D,D,u1);
     }
     return sigma;
 }

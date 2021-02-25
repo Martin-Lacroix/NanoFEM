@@ -8,17 +8,14 @@
 
 struct shapeStruct{
 
+    int gLen;
+    matrix N;
+    dvector weight;
+
     // Local derivatives of the shape functions at Gauss nodes
 
-    matrix drN;
-    matrix dsN;
-    matrix dtN;
-    matrix N;
-
-    // Number of nodes and Gauss points
-
-    int gLen;
-    int nLen;
+    std::vector<matrix> dN;
+    std::vector<dvector> gRST;
 };
 
 // --------------------------------------------------|
@@ -31,23 +28,23 @@ class Elem{
 
     // Constructor and functions available in the elem.cpp file
 
-    Elem(std::vector<dvector> nXYZ,shapeStruct shape);
-    matrix selfM(shapeStruct shape,quadStruct quad,double rho);
-    darray stress(quadStruct quad,matrix D,darray u);
-    matrix selfKs(quadStruct quad,matrix Ds);
-    matrix selfK(quadStruct quad,matrix D);
+    Elem(std::vector<array3d> nXYZ);
+    std::vector<matrix> jacobian(shapeStruct shape);
+    darray stress(shapeStruct shape,matrix D,darray u);
+    void derivative(shapeStruct shape,std::vector<matrix> J);
+
+    // Functions of elemental stiffness and mass matrices
+
+    matrix selfK(shapeStruct shape,matrix D);
+    matrix selfM(shapeStruct shape,double rho);
+    matrix selfKs(shapeStruct shape[6],matrix D);
 
     // Parameters specific to each element
 
-    std::vector<dvector> gXYZ;
-    darray detJ;
-    matrix dxN;
-    matrix dyN;
-    matrix dzN;
-
-    // Number of nodes and Gauss points
-
-    int gLen;
+    std::vector<array3d> nXYZ;
+    ivector surface;
+    dvector detJ;
+    matrix dN[3];
     int nLen;
 };
 
@@ -61,13 +58,9 @@ class Face{
 
     // Constructor and functions available in the elem.cpp file
 
-    Face(std::vector<dvector> nXYZ,shapeStruct shape);
-    matrix selfM(shapeStruct shape,quadStruct quad);
-
-    // Parameters specific to each face
-
+    Face(std::vector<array3d> nXYZ,shapeStruct shape);
+    matrix selfN(shapeStruct shape);
     darray dJ2D;
-    int gLen;
     int nLen;
 };
 

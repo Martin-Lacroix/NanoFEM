@@ -33,12 +33,11 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     string input;
     ifstream file;
     file.open(path);
-    mesh.ordElem = 1;
 
     // Reads the order of the quadrature rule
 
     getline(file,input,';');
-    mesh.ordQuad = stoi(input);
+    mesh.order = stoi(input);
     getline(file,input,'!');
     read.cropZ = stod(input);
     getline(file,input,'\n');
@@ -228,7 +227,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
     int eLen = mesh.eNode.size();
     vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
     mesh.eSurf.resize(eLen);
-    mesh.Ev.resize(eLen);
+    mesh.EvR.resize(eLen);
 
     // Reads the coodrinates of the chemical species
 
@@ -272,7 +271,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
         E += (1-sum)*read.emptyEv[0];
         v += (1-sum)*read.emptyEv[1];
-        mesh.Ev[i] = {E,v};
+        mesh.EvR[i] = {E,v,0};
     }
     file.close();
 }
@@ -422,8 +421,8 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 void neumann(readStruct &read,meshStruct &mesh){
 
     int idx;
-    int order = mesh.ordElem;
-    int sLen = mesh.ordElem+1;
+    int order = mesh.order;
+    int sLen = mesh.order+1;
 
     // Neumann BC on the face perpendicular to the j-th dimension
 

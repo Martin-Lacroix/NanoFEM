@@ -1,90 +1,80 @@
 #include "..\include\elem.h"
 using namespace std;
 
-// --------------------------------------------------|
-// Class of 8-node hexahedron linear element in 3D   |
-// --------------------------------------------------|
+// -----------------------------------------------------------|
+// Class of hexahedron isoparametric lagrange element in 3D   |
+// -----------------------------------------------------------|
 
-Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
+Elem::Elem(vector<array3d> nXYZ){
 
-    matrix J;
-    matrix invJ;
-    matrix coord;
+    // Builds the Jacobian matrix and its inverse
 
-    // Number of nodes and Gauss points
+    this->nXYZ = nXYZ;
+    nLen = nXYZ.size();
+    //surface = {0,1,2,3,4,5};
+}
 
-    nLen = shape.nLen;
-    gLen = shape.gLen;
+// -------------------------------------------------------|
+// Builds the Jacobian matrix evaluated at Gauss points   |
+// -------------------------------------------------------|
 
-    // Memory allocation and initialization
+vector<matrix> Elem::jacobian(shapeStruct shape){
 
-    dxN.setlength(nLen,gLen);
-    dyN.setlength(nLen,gLen);
-    dzN.setlength(nLen,gLen);
-    coord.setlength(nLen,3);
-    invJ.setlength(9,gLen);
-    detJ.setlength(gLen);
-    J.setlength(9,gLen);
+    vector<matrix> J(shape.gLen);
 
-    // Fills the matrices with zeros
-
-    math::zero(J);
-    math::zero(dxN);
-    math::zero(dyN);
-    math::zero(dzN);
-    
     // Builds the Jacobian matrix and global coordinates
 
-    for(int i=0; i<nLen; i++){
+    for(int i=0; i<shape.gLen; i++){
 
-        coord(i,0) = nXYZ[i][0];
-        coord(i,1) = nXYZ[i][1];
-        coord(i,2) = nXYZ[i][2];
+        J[i].setlength(3,3);
+        math::zero(J[i]);
 
-        for(int k=0; k<3; k++){
+        // Computes the Jacobian matrix at this Gauss point
 
-            // Jacobian matrix at Gauss points
-
-            for(int j=0; j<gLen; j++){
-                
-                J(k,j) += shape.drN(i,j)*nXYZ[i][k];
-                J(k+3,j) += shape.dsN(i,j)*nXYZ[i][k];
-                J(k+6,j) += shape.dtN(i,j)*nXYZ[i][k];
+        for(int j=0; j<nLen; j++){
+            for(int k=0; k<3; k++){
+                for(int n=0; n<3; n++){
+                    J[i](n,k) += shape.dN[n](j,i)*nXYZ[j][k];
+                }
             }
         }
     }
+    return J;
+}
 
-    matrix v = math::prod(1,shape.N,coord,1);
-    for(int i=0; i<gLen; i++){
+// -------------------------------------------------------------|
+// Determinant of J and global derivatives of shape functions   |
+// -------------------------------------------------------------|
 
-        // Global coordinates of Gauss points
+void Elem::derivative(shapeStruct shape,vector<matrix> J){
 
-        gXYZ.push_back({v(i,0),v(i,1),v(i,2)});
+    detJ.resize(shape.gLen);
+    vector<matrix> invJ(shape.gLen);
 
-        // Determinant of the Jacobian matrix
+    // Resets the shape function derivative
 
-        detJ(i) = J[0][i]*(J[4][i]*J[8][i]-J[5][i]*J[7][i]);
-        detJ(i) += J[1][i]*(J[5][i]*J[6][i]-J[3][i]*J[8][i]);
-        detJ(i) += J[2][i]*(J[3][i]*J[7][i]-J[4][i]*J[6][i]);
+    for(int i=0; i<3; i++){
+        
+        dN[i].setlength(nLen,shape.gLen);
+        math::zero(dN[i]);
+    }
 
-        // Inverse of the Jacobian matrix
+    // Determinant and inverse of the Jacobian matrix
 
-        for(int j=0; j<3; j++){
-            for(int k=0; k<3; k++){
+    for(int i=0; i<shape.gLen; i++){
 
-                invJ(3*j+k,i) = J[(j+1)%3*3+(k+1)%3][i]*J[(j+2)%3*3+(k+2)%3][i];
-                invJ(3*j+k,i) -= J[(j+2)%3*3+(k+1)%3][i]*J[(j+1)%3*3+(k+2)%3][i];
-                invJ(3*j+k,i) /= detJ(i);
-            }
-        }
+        detJ[i] = alglib::rmatrixdet(J[i],3);
+        invJ[i] = math::invert(J[i],detJ[i]);
 
         // Global derivatives of shape functions
 
         for(int j=0; j<nLen; j++){
+            for(int k=0; k<3; k++){
+                for(int n=0; n<3; n++){
 
-            dxN(j,i) += shape.drN(j,i)*invJ(0,i)+shape.dsN(j,i)*invJ(1,i)+shape.dtN(j,i)*invJ(2,i);
-            dyN(j,i) += shape.drN(j,i)*invJ(3,i)+shape.dsN(j,i)*invJ(4,i)+shape.dtN(j,i)*invJ(5,i);
-            dzN(j,i) += shape.drN(j,i)*invJ(6,i)+shape.dsN(j,i)*invJ(7,i)+shape.dtN(j,i)*invJ(8,i);
+                    dN[k](j,i) += shape.dN[n](j,i)*invJ[i](k,n);
+                }
+            }
         }
     }
 }
@@ -93,7 +83,7 @@ Elem::Elem(vector<dvector> nXYZ,shapeStruct shape){
 // Computes the elemental stiffness matrix K for local FEM  |
 // ---------------------------------------------------------|
 
-matrix Elem::selfK(quadStruct quad,matrix D){
+matrix Elem::selfK(shapeStruct shape,matrix D){
 
     matrix B,K;
     B.setlength(3*nLen,6);
@@ -101,88 +91,37 @@ matrix Elem::selfK(quadStruct quad,matrix D){
     math::zero(B);
     math::zero(K);
 
+    // Computes the Jacobian and shape function derivatives
+
+    vector<matrix> J = jacobian(shape);
+    derivative(shape,J);
+
     // Performs the numerical integration
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<shape.gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
             
-            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
-            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
-            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
+            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dN[0](j,i);
+            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dN[1](j,i);
+            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dN[2](j,i);
         }
 
         // Computes K by Gauss-Legendre quadrature
 
-        matrix K1 = math::prod(quad.weight[i],B,D);
+        matrix K1 = math::prod(shape.weight[i],B,D);
         matrix K2 = math::prod(detJ[i],K1,B,0,1);
         math::add(1,1,K2,K);
     }
     return K;
 }
-
-
-
-
-
-
-
-
-
-
-matrix Elem::selfKs(quadStruct quad,matrix Ds){
-
-    matrix B,K;
-    B.setlength(3*nLen,6);
-    K.setlength(3*nLen,3*nLen);
-    math::zero(B);
-    math::zero(K);
-
-
-
-
-
-
-
-    // Performs the numerical integration
-
-    for(int i=0; i<gLen; i++){
-        for(int j=0; j<nLen; j++){
-
-            // Computes the shape functions derivative matrix B
-            
-            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
-            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
-            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
-        }
-
-        // Computes K by Gauss-Legendre quadrature
-
-        matrix K1 = math::prod(quad.weight[i],B,Ds);
-        matrix K2 = math::prod(detJ[i],K1,B,0,1);
-        math::add(1,1,K2,K);
-    }
-    return K;
-}
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ----------------------------------------------------|
 // Computes the elemental mass matrix M for local FEM  |
 // ----------------------------------------------------|
 
-matrix Elem::selfM(shapeStruct shape,quadStruct quad,double rho){
+matrix Elem::selfM(shapeStruct shape,double rho){
 
     matrix N,M;
     N.setlength(3*nLen,3);
@@ -190,27 +129,171 @@ matrix Elem::selfM(shapeStruct shape,quadStruct quad,double rho){
     math::zero(N);
     math::zero(M);
 
+    // Computes the Jacobian and shape function derivatives
+
+    vector<matrix> J = jacobian(shape);
+    derivative(shape,J);
+
     // Performs the numerical integration
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<shape.gLen; i++){
         for(int j=0; j<nLen; j++){
             N(j,0) = N(j+nLen,1) = N(j+2*nLen,2) = shape.N(j,i);
         }
 
         // Computes M by Gauss-Legendre quadrature
 
-        double wRdetJ = quad.weight[i]*rho*detJ[i];
+        double wRdetJ = shape.weight[i]*rho*detJ[i];
         matrix M1 = math::prod(wRdetJ,N,N,0,1);
         math::add(1,1,M1,M);
     }
     return M;
 }
 
+// ------------------------------------------------------------------|
+// Computes the elemental surface stiffness matrix Ks for local FEM  |
+// ------------------------------------------------------------------|
+
+matrix Elem::selfKs(shapeStruct shape[6],matrix D){
+
+    matrix B,K;
+    array3d norm;
+    B.setlength(3*nLen,6);
+    K.setlength(3*nLen,3*nLen);
+    math::zero(B);
+    math::zero(K);
+
+    // Computes the Jacobian and shape function derivatives
+
+
+
+
+    for(int k:surface){
+
+        vector<matrix> J = jacobian(shape[k]);
+        derivative(shape[k],J);
+
+
+        for(int i=0; i<shape[k].gLen; i++){
+            for(int j=0; j<nLen; j++){
+
+                // Computes the shape functions derivative matrix B
+                
+                B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dN[0](j,i);
+                B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dN[1](j,i);
+                B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dN[2](j,i);
+            }
+
+
+            // Computes the shape derivative vectors
+
+            array3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
+            array3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
+            array3d vt = {J[i](2,0),J[i](2,1),J[i](2,2)};
+            array3d v;
+
+
+
+            switch (k) {
+            case 0:
+                v = math::dotsub(vs,vt);
+                norm = math::cross(v,vs,1);
+                break;
+            case 1:
+                v = math::dotsub(vs,vt);
+                norm = math::cross(vs,v,1);
+                break;
+            case 2:
+                v = math::dotsub(vt,vr);
+                norm = math::cross(vt,v,1);
+                break;
+            case 3:
+                v = math::dotsub(vt,vr);
+                norm = math::cross(v,vt,1);
+                break;
+            case 4:
+                v = math::dotsub(vr,vs);
+                norm = math::cross(v,vr,1);
+                break;
+            case 5:
+                v = math::dotsub(vr,vs);
+                norm = math::cross(vr,v,1);
+                break;
+            }
+
+            matrix T,P;
+            P.setlength(3,3);
+            T.setlength(6,6);
+
+            for(int j=0; j<3; j++){
+                for(int k=0; k<3; k++){
+                    
+                    if(j==k){P(j,k) = 1-norm[j]*norm[k];}
+                    else{P(j,k) = -norm[j]*norm[k];}
+                }
+            }
+
+            T(0,0) = P(0,0)*P(0,0);
+            T(0,1) = P(0,1)*P(0,1);
+            T(0,2) = P(2,0)*P(2,0);
+            T(1,0) = P(0,1)*P(0,1);
+            T(1,1) = P(1,1)*P(1,1);
+            T(1,2) = P(1,2)*P(1,2);
+            T(2,0) = P(2,0)*P(2,0);
+            T(2,1) = P(1,2)*P(1,2);
+            T(2,2) = P(2,2)*P(2,2);
+
+            T(0,3) = P(2,0)*P(0,1);
+            T(0,4) = P(2,0)*P(0,0);
+            T(0,5) = P(0,1)*P(0,0);
+            T(1,3) = P(1,2)*P(1,1);
+            T(1,4) = P(1,2)*P(0,1);
+            T(1,5) = P(1,1)*P(0,1);
+            T(2,3) = P(1,2)*P(2,2);
+            T(2,4) = P(2,2)*P(2,0);
+            T(2,5) = P(1,2)*P(2,0);
+
+            T(3,0) = 2*P(2,0)*P(0,1);
+            T(3,1) = 2*P(1,2)*P(1,1);
+            T(3,2) = 2*P(2,2)*P(1,2);
+            T(4,0) = 2*P(2,0)*P(0,0);
+            T(4,1) = 2*P(1,2)*P(0,1);
+            T(4,2) = 2*P(1,2)*P(2,2);
+            T(5,0) = 2*P(0,1)*P(0,0);
+            T(5,1) = 2*P(1,1)*P(0,1);
+            T(5,2) = 2*P(2,0)*P(1,2);
+
+            T(3,3) = P(2,2)*P(1,1)+P(1,2)*P(1,2);
+            T(3,4) = P(2,2)*P(0,1)+P(2,0)*P(1,1);
+            T(3,5) = P(2,0)*P(1,1)+P(0,1)*P(1,2);
+            T(4,3) = P(1,2)*P(2,0)+P(2,2)*P(0,1);
+            T(4,4) = P(2,2)*P(0,0)+P(2,0)*P(2,0);
+            T(4,5) = P(2,0)*P(0,1)+P(1,2)*P(0,0);
+            T(5,3) = P(1,2)*P(0,1)+P(2,0)*P(1,1);
+            T(5,4) = P(2,0)*P(0,1)+P(0,0)*P(1,2);
+            T(5,5) = P(0,0)*P(1,1)+P(0,1)*P(0,1);
+
+            // Computes the surface stiffness tensor
+
+            matrix S = math::prod(1,T,D,1);
+            S = math::prod(1,S,T);
+
+            // Computes K by Gauss-Legendre quadrature
+
+            matrix BT = math::prod(1,B,T,0,1);
+            matrix K1 = math::prod(shape[k].weight[i],BT,S);
+            matrix K2 = math::prod(detJ[i],K1,BT,0,1);
+            math::add(1,1,K2,K);
+        }
+    }
+    return K;
+}
+
 // -------------------------------------------------------|
 // Computes the averaged Von Mises stress in the element  |
 // -------------------------------------------------------|
 
-darray Elem::stress(quadStruct quad,matrix D,darray u){
+darray Elem::stress(shapeStruct shape,matrix D,darray u){
 
     matrix B;
     darray sigma;
@@ -220,16 +303,21 @@ darray Elem::stress(quadStruct quad,matrix D,darray u){
     math::zero(sigma);
     math::zero(B);
 
+    // Computes the Jacobian and shape function derivatives
+
+    vector<matrix> J = jacobian(shape);
+    derivative(shape,J);
+
     // Performs the numerical integration
 
-    for(int i=0; i<gLen; i++){
+    for(int i=0; i<shape.gLen; i++){
         for(int j=0; j<nLen; j++){
 
             // Computes the shape functions derivative matrix B
             
-            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dxN(j,i);
-            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dyN(j,i);
-            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dzN(j,i);
+            B(j,0) = B(j+nLen,5) = B(j+2*nLen,4) = dN[0](j,i);
+            B(j,5) = B(j+nLen,1) = B(j+2*nLen,3) = dN[1](j,i);
+            B(j,4) = B(j+nLen,3) = B(j+2*nLen,2) = dN[2](j,i);
         }
 
         // Computes the stress field at Gauss points
@@ -239,45 +327,44 @@ darray Elem::stress(quadStruct quad,matrix D,darray u){
 
         // Integrates the Von Mises stress in the element and the volume
 
-        math::add(quad.weight[i]*detJ[i],1,stress,sigma);
-        volume += quad.weight[i]*detJ[i];
+        math::add(shape.weight[i]*detJ[i],1,stress,sigma);
+        volume += shape.weight[i]*detJ[i];
     }
 
     for(int i=0; i<6; i++){sigma[i] /= volume;}
     return sigma;
 }
 
-// --------------------------------------------------|
-// Class of 4-node quadrangle linear element in 2D   |
-// --------------------------------------------------|
+// -----------------------------------------------------------|
+// Class of quadrangle isoparametric lagrange element in 2D   |
+// -----------------------------------------------------------|
 
-Face::Face(vector<dvector> nXYZ,shapeStruct shape){
+Face::Face(vector<array3d> nXYZ,shapeStruct shape){
 
-    gLen = shape.gLen;
-    nLen = shape.nLen;
-    dJ2D.setlength(gLen);
+    nLen = shape.N.cols();
+    dJ2D.setlength(shape.gLen);
     math::zero(dJ2D);
 
     // Performs a loop over the Gauss points
 
-    for(int j=0; j<gLen; j++){
+    for(int j=0; j<shape.gLen; j++){
 
-        dvector J2Dr(3,0);
-        dvector J2Ds(3,0);
+        array3d J2Dr = {0,0,0};
+        array3d J2Ds = {0,0,0};
 
         // Computes the partial Jacobian vectors for 3D to 2D mapping
 
         for(int k=0; k<3; k++){
             for(int i=0; i<nLen; i++){
             
-                J2Dr[k] += shape.drN(i,j)*nXYZ[i][k];
-                J2Ds[k] += shape.dsN(i,j)*nXYZ[i][k];
+                J2Dr[k] += shape.dN[0](i,j)*nXYZ[i][k];
+                J2Ds[k] += shape.dN[1](i,j)*nXYZ[i][k];
             }
         }
 
         // Computes the cross product and takes the norm
 
-        dvector dJ = math::cross(J2Dr,J2Ds);
+        array3d dJ = math::cross(J2Dr,J2Ds);
         for(int i=0; i<3; i++){dJ2D(j) += dJ[i]*dJ[i];}
         dJ2D(j) = sqrt(dJ2D[j]);
     }
@@ -287,21 +374,20 @@ Face::Face(vector<dvector> nXYZ,shapeStruct shape){
 // Integrates the matrix of shape functions N over the element   |
 // --------------------------------------------------------------|
 
-matrix Face::selfM(shapeStruct shape,quadStruct quad){
+matrix Face::selfN(shapeStruct shape){
 
-    matrix M;
-    M.setlength(3*nLen,3);
-    math::zero(M);
+    matrix N;
+    N.setlength(3*nLen,3);
+    math::zero(N);
 
     // Integrates the matrix of local shape functions
 
     for(int i=0; i<nLen; i++){
-        for(int j=0; j<quad.gLen; j++){
-            
-            M(i,0) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
-            M(4+i,1) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
-            M(8+i,2) += shape.N(i,j)*quad.weight[j]*dJ2D(j);
+        for(int j=0; j<shape.gLen; j++){
+
+            N(i,0) += shape.N(i,j)*shape.weight[j]*dJ2D(j);
+            N(4+i,1) = N(8+i,2) = N(i,0);
         }
     }
-    return M;
+    return N;
 }

@@ -34,7 +34,7 @@ void write(Mesh &mesh,timeStruct &time,vector<darray> &uList,vector<darray> &sig
 
     // Writes the node coordinates as (x,y,z)
 
-    for(dvector nXYZ:mesh.mesh.nXYZ){
+    for(array3d nXYZ:mesh.mesh.nXYZ){
         for(int i=0; i<nXYZ.size()-1; i++){coordinates << nXYZ[i] << ",";}
         coordinates << nXYZ.back() << "\n";
     }
@@ -101,6 +101,8 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
     for(int i=0; i<wave.nSteps; i++){
 
         alglib::sparsecopytohashbuf(M1,M);
+
+        // Builds the right-hand-side of the equation
 
         math::add(2,-1,u2,u1);
         alglib::sparsesmv(M1,1,u1,x);
@@ -292,5 +294,6 @@ int main(){
         cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
     }
     cout << "\n";
-*/
+    */
+
 }

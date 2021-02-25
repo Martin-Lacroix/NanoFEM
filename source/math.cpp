@@ -3,19 +3,6 @@ using namespace std;
 
 namespace math{
 
-    // -------------------------------------------------|
-    // Computes the non-local kernel density function   |
-    // -------------------------------------------------|
-
-    double kernel(dvector x,dvector y){
-
-        double d = 0.05;
-        double norm = 1/(8*d*d*d);
-        double dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2]);
-        double k = norm*exp(-dist/d);
-        return k;
-    }
-
     // -----------------------------------------------------------------------|
     // Stiffness tensor D for isotropic linear elasticity in Voigh notation   |
     // -----------------------------------------------------------------------|
@@ -91,16 +78,37 @@ namespace math{
         return quad;
     }
 
-    // -------------------------------------------------|
-    // Standard 3D vector cross product V3 = V1 × V2    |
-    // -------------------------------------------------|
+    // --------------------------------------------------------------------|
+    // Vector cross product V3 = V1 × V2, k = 1 means that V3 is normed    |
+    // --------------------------------------------------------------------|
 
-    dvector cross(dvector &V1,dvector &V2){
+    array3d cross(array3d &V1,array3d &V2,bool k){
 
-        dvector V3(3);
+        array3d V3;
         V3[0] = V1[1]*V2[2]-V1[2]*V2[1];
         V3[1] = V1[0]*V2[2]-V1[2]*V2[0];
         V3[2] = V1[0]*V2[1]-V1[1]*V2[0];
+
+        if(k==1){
+            
+            double n = 0;
+            for(int i=0; i<3; i++){n += V3[i]*V3[i];}
+            for(int i=0; i<3; i++){V3[i] /= sqrt(n);}
+        }
+        return V3;
+    }
+
+    // ------------------------------------------------------|
+    // Computes the vector operation V3 = V2 - (V1·V2) V1    |
+    // ------------------------------------------------------|
+
+    array3d dotsub(array3d &V1,array3d &V2){
+
+        double k = 0;
+        array3d V3;
+
+        for(int i=0; i<3; i++){k += V1[i]*V2[i];}
+        for(int i=0; i<3; i++){V3[i] = V2[i]-k*V1[i];}
         return V3;
     }
 
@@ -215,23 +223,43 @@ namespace math{
         for(int i=0; i<V.length(); i++){V(i) = 0;}
     }
 
+    // ------------------------------------------------|
+    // Computes the inverse of a 3×3 general matrix    |
+    // ------------------------------------------------|
+
+    matrix invert(matrix &M,double det){
+
+        matrix invM;
+        invM.setlength(3,3);
+
+        for(int i=0; i<3; i++){
+            for(int j=0; j<3; j++){
+
+                invM(i,j) = M[(i+1)%3][(j+1)%3]*M[(i+2)%3][(j+2)%3];
+                invM(i,j) -= M[(i+2)%3][(j+1)%3]*M[(i+1)%3][(j+2)%3];
+                invM(i,j) /= det;
+            }
+        }
+        return invM;
+    }
+
     // -----------------------------------------------------------------------|
     // Cleans and stores the non-zero indices of a sparse symmetric matrix    |
     // -----------------------------------------------------------------------|
 
-    vector<ivector> sparsemap(sparse &K){
+    vector<ivector> sparsemap(sparse &M){
 
         // Initializes the vector containers
 
         double val;
         alglib::ae_int_t i=0,j=0;
         alglib::ae_int_t I=0,J=0;
-        int nLen = alglib::sparsegetnrows(K);
+        int nLen = alglib::sparsegetnrows(M);
         vector<ivector> row(3*nLen);
 
         // Stores the non-zero indice locations per row and column
 
-        while(alglib::sparseenumerate(K,I,J,i,j,val)){
+        while(alglib::sparseenumerate(M,I,J,i,j,val)){
 
             row[i].push_back(j);
             if(i!=j){row[j].push_back(i);}
@@ -263,7 +291,7 @@ namespace math{
     // gets the value at coordinate (row,col) for a symmetric sparse matrix    |
     // ------------------------------------------------------------------------|
 
-    double symget(sparse &M,int row,int col){
+    double get(sparse &M,int row,int col){
 
         double val;
         if(row>col){val = alglib::sparseget(M,col,row);}

@@ -8,13 +8,12 @@
 
 struct meshStruct{
 
-    int ordElem;
-    int ordQuad;
-
     // Main informations about the mesh
 
-    std::vector<dvector> Ev;
-    std::vector<dvector> nXYZ;
+    int order;
+    std::vector<array3d> EvR;
+    std::vector<std::array<double,2>> EvS;
+    std::vector<array3d> nXYZ;
     std::vector<ivector> eNode;
     std::vector<ivector> eSurf;
 
@@ -48,8 +47,10 @@ class Mesh{
     sparse totalK();
     sparse totalM();
     darray neumann();
-    shapeStruct shape(int dim,int order);
+    shapeStruct shape(quadStruct quad);
     std::vector<darray> stress(darray &u);
+
+    template<class type>type shape2(quadStruct quad);
 
     // Constructor and operations on the stiffness matrix
     
@@ -63,10 +64,9 @@ class Mesh{
     // Internal variables of the system
 
     meshStruct mesh;
-    quadStruct quad3D;
-    quadStruct quad2D;
     shapeStruct shape3D;
     shapeStruct shape2D;
+    shapeStruct shapeS[6];
 
     // Number of nodes, elements and faces
     

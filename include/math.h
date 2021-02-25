@@ -11,6 +11,7 @@ typedef std::vector<double> dvector;
 typedef alglib::sparsematrix sparse;
 typedef alglib::real_2d_array matrix;
 typedef alglib::real_1d_array darray;
+typedef std::array<double,3> array3d;
 
 // ----------------------------------------|
 // Structure storing the quadrature rule   |
@@ -28,7 +29,8 @@ struct quadStruct{
 // -------------------------------------------|
 
 namespace math{
-    
+
+    matrix stiffness(double E,double v);
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector val);
 
@@ -48,19 +50,16 @@ namespace math{
     void zero(darray &V);
     void zero(matrix &M);
 
-    // Non-zero indices of a sparse matrix and vector cross product
+    // Other general sparse and dense matrix functions
 
-    std::vector<ivector> sparsemap(sparse &K);
-    dvector cross(dvector &V1,dvector &V2);
-
-    // Kernel function and stiffness tensor in Voigh notation
-
-    double kernel(dvector x,dvector y);
-    matrix stiffness(double E,double v);
+    array3d cross(array3d &V1,array3d &V2,bool k=0);
+    std::vector<ivector> sparsemap(sparse &M);
+    array3d dotsub(array3d &V1,array3d &V2);
+    matrix invert(matrix &M,double det);
 
     // Symmetric sparse matrix operations only
 
-    double symget(sparse &M,int row,int col);
+    double get(sparse &M,int row,int col);
     void symset(sparse &M,int row,int col,double val);
     void symadd(sparse &M,int row,int col,double val);
 }
