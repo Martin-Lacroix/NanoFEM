@@ -38,6 +38,8 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
     getline(file,input,';');
     mesh.order = stoi(input);
+    getline(file,input,';');
+    read.Lc = stod(input);
     getline(file,input,'!');
     read.cropZ = stod(input);
     getline(file,input,'\n');
@@ -48,10 +50,11 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     read.emptyEv = tovec(input);
     getline(file,input,'\n');
 
-    // Reads the parameters of bulk elements
+    // Reads the parameters of substrate element
         
     getline(file,input,'!');
     read.Ev.push_back(tovec(input));
+    read.EvS.push_back({0,0,0});
     getline(file,input,'\n');
 
     // Reads the type of applied stress
@@ -75,14 +78,16 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     // Reads the value of the action
 
     getline(file,input,'!');
-    read.value = stod(input);
+    read.Fval = stod(input);
     getline(file,input,'\n');
 
     // Stores the Young modulus and Poisson ratio of the layers
 
     while(getline(file,input,'!')){
 
-        read.Ev.push_back(tovec(input));
+        dvector param = tovec(input);
+        read.Ev.push_back({param[0],param[1]});
+        read.EvS.push_back({param[2],param[3]});
         getline(file,input,'\n');
     }
 }
@@ -96,6 +101,7 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
     string input;
     ifstream file;
     file.open(path);
+    int order = mesh.order;
 
     // Reads the size of the cubic domain
 
@@ -131,11 +137,14 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
 
     // Stores the node coordinates and the BC in the mesh
 
-    for(int i=0; i<=dLen[0]; i++){
-        for(int j=0; j<=dLen[1]; j++){
-            for(int k=0; k<=dLen[2]; k++){
+    for(int i=0; i<=dLen[0]*order; i++){
+        for(int j=0; j<=dLen[1]*order; j++){
+            for(int k=0; k<=dLen[2]*order; k++){
 
-                mesh.nXYZ.push_back({zero[0]+i*eSize[0],zero[1]+j*eSize[1],zero[2]+k*eSize[2]});
+                mesh.nXYZ.push_back({0,0,0});
+                mesh.nXYZ.back()[0] = zero[0]+i*eSize[0]/order;
+                mesh.nXYZ.back()[1] = zero[1]+j*eSize[1]/order;
+                mesh.nXYZ.back()[2] = zero[2]+k*eSize[2]/order;
             }
         }
     }
@@ -146,15 +155,26 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<dLen[1]; j++){
             for(int k=0; k<dLen[2]; k++){
                 
+                mesh.eNode.push_back({});
                 int eLen = mesh.eNode.size();
-                read.neighbour.push_back(ivector (6,-1));
-                int idx = i*(dLen[1]+1)*(dLen[2]+1)+j*(dLen[2]+1)+k;
+                read.neighbour.push_back(ivector(6,-1));
+
+                // Computes the first index and geometrical spacing
+
+                int dy = order*dLen[2]+1;
+                int dx = (order*dLen[1]+1)*(order*dLen[2]+1);
+                int idx = i*(dLen[1]*order+1)*(dLen[2]*order+1)*order+j*(dLen[2]*order+1)*order+k*order;
 
                 // Stores the nodes of each element in the mesh
 
-                mesh.eNode.push_back({idx,idx+1,dLen[2]+idx+1,dLen[2]+idx+2,
-                (dLen[1]+1)*(dLen[2]+1)+idx,(dLen[1]+1)*(dLen[2]+1)+idx+1,
-                (dLen[1]+2)*(dLen[2]+1)+idx,(dLen[1]+2)*(dLen[2]+1)+idx+1});
+                for(int n=0; n<order+1; n++){
+                    for(int m=0; m<order+1; m++){
+                        for(int p=0; p<order+1; p++){
+
+                            mesh.eNode.back().push_back(idx+p+m*dy+n*dx);
+                        }
+                    }
+                }
 
                 // Stores the list of neightbour elements on 3 bottom faces
 
@@ -177,7 +197,7 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
 // Localizes the chemical species in the mesh elements    |
 // -------------------------------------------------------|
 
-unordered_set<int> locSpecies(readStruct &read, dvector coord){
+unordered_set<int> locSpecies(readStruct &read,dvector coord){
 
     unordered_set<int> eList;
     ivector dLen = read.dLen;
@@ -226,8 +246,9 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
     int eLen = mesh.eNode.size();
     vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
-    mesh.eSurf.resize(eLen);
+    read.empty.resize(eLen);
     mesh.EvR.resize(eLen);
+    mesh.EvS.resize(eLen);
 
     // Reads the coodrinates of the chemical species
 
@@ -248,32 +269,47 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         for (int i:eList){frac[i][layer] += stod(input)/eList.size();}
     }
 
-    // Stores the mixed Lamé parameters of the elements
+    // Stores the mixed mechanical parameters of the elements
 
     for(int i=0; i<eLen; i++){
-
-        double E = 0;
-        double v = 0;
-
-        // Normalizes the filling fractions to maximum one
-
         double sum = accumulate(frac[i].begin(),frac[i].end(),0.0);
-        if(sum>1){for(int j=0; j<frac[i].size(); j++){frac[i][j] /= sum;}}
-        if(sum>1){sum=1;}
 
-        // Computes the mixed Young modulus and Poisson ratio
-        
-        for(int j=0; j<frac[i].size(); j++){
-
-            E += frac[i][j]*read.Ev[j][0];
-            v += frac[i][j]*read.Ev[j][1];
+        if(sum<0.5){
+            mesh.EvS[i] = {0,0,0};
+            mesh.EvR[i] = {read.emptyEv[0],read.emptyEv[1],0};
+            read.empty[i] = 1;
         }
-
-        E += (1-sum)*read.emptyEv[0];
-        v += (1-sum)*read.emptyEv[1];
-        mesh.EvR[i] = {E,v,0};
+        else{
+            int max = max_element(frac[i].begin(),frac[i].end())-frac[i].begin();
+            mesh.EvS[i] = {read.EvS[max][0],read.EvS[max][1],0};
+            mesh.EvR[i] = {read.Ev[max][0],read.Ev[max][1],0};
+            read.empty[i] = 0;
+        }
     }
     file.close();
+}
+
+// ----------------------------------------------|
+// Sets the free surface list of the elements    |
+// ----------------------------------------------|
+
+void surface(readStruct &read,meshStruct &mesh){
+
+    int eLen = mesh.eNode.size();
+    mesh.eSurf.resize(eLen);
+
+    for(int i=0; i<eLen; i++){
+        if(read.empty[i]==1){continue;}
+
+        else{
+            for(int j=0; j<read.neighbour[i].size(); j++){
+                
+                int idx = read.neighbour[i][j];
+                if(j==3 && idx==-1){mesh.eSurf[i].push_back(j);}
+                else if(idx!=-1 && read.empty[idx]==1){mesh.eSurf[i].push_back(j);}
+            }
+        }
+    }
 }
 
 // --------------------------------------------------|
@@ -283,6 +319,18 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 void dirichlet(readStruct &read,meshStruct &mesh){
 
     ivector dLen = read.dLen;
+    dvector tol = read.eSize;
+
+    // Tolerance to check if a node is at a boundary
+
+    for(int i=0; i<3; i++){
+
+        dLen[i] *= mesh.order;
+        tol[i] = read.eSize[i]/(mesh.order+1);
+    }
+
+    // Computes some repeatitly needed values
+
     vector<ivector> row(3,ivector(mesh.nXYZ.size(),-1));
     ivector add1 = {(dLen[1]+1)*(dLen[2]+1),(dLen[2]+1),1};
     ivector add2 = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
@@ -306,8 +354,8 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
     for(int i=0; i<mesh.nXYZ.size(); i++){
 
-        if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
-            if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
+        if(abs(mesh.nXYZ[i][f]-fLen)<tol[f]){
+            if(abs(mesh.nXYZ[i][d]-read.zero[d])<tol[d]){
 
                 // Change of variable u => Δu = 0 for the other nodes of the face
 
@@ -326,7 +374,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
     for(int j:read.clamped){
         for(int i=0; i<mesh.nXYZ.size(); i++){
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
                 for(int k=0; k<3; k++){
 
                     mesh.dirNode[k].push_back(i);
@@ -341,7 +389,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
     for(pair<int,double> j:read.axial){
         for(int i=0; i<mesh.nXYZ.size(); i++){
 
-            if(abs(mesh.nXYZ[i][j.first]-read.zero[j.first])<read.eSize[j.first]/2){
+            if(abs(mesh.nXYZ[i][j.first]-read.zero[j.first])<tol[j.first]){
 
                 mesh.dirNode[j.first].push_back(i+add2[j.first]);
                 mesh.dirVal[j.first].push_back(j.second);
@@ -353,7 +401,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
     for(int j:read.flat){
         for(int i=0; i<mesh.nXYZ.size(); i++){
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
 
                 // Lock the axis if the current node is at the bottom
 
@@ -381,12 +429,12 @@ void dirichlet(readStruct &read,meshStruct &mesh){
             int loc1 = row[k][i];
             int loc2 = row[k][i+add2[j]];
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<read.eSize[j]/2){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
 
                 // Do not add the nodes with change of variable
 
-                if(abs(mesh.nXYZ[i][f]-fLen)<read.eSize[f]/2){
-                    if(abs(mesh.nXYZ[i][d]-read.zero[d])<read.eSize[d]/2){
+                if(abs(mesh.nXYZ[i][f]-fLen)<tol[f]){
+                    if(abs(mesh.nXYZ[i][d]-read.zero[d])<tol[d]){
                         continue;
                     }
                 }
@@ -429,9 +477,10 @@ void neumann(readStruct &read,meshStruct &mesh){
     for(int n=0; n<read.axis[0].size(); n++){
         for(int i=0; i<mesh.eNode.size(); i++){
             if(read.neighbour[i][2*read.axis[0][n]+1]==-1){
-                ivector face;
 
                 // Computes the nodes of the face without neighbour
+
+                ivector face;
 
                 for(int j=0; j<sLen; j++){
                     for(int k=0; k<sLen; k++){
@@ -447,7 +496,7 @@ void neumann(readStruct &read,meshStruct &mesh){
                                 
                 mesh.neuFace.push_back(face);
                 mesh.neuVal.push_back("[0,0,0]");
-                mesh.neuVal.back()[read.axis[1][n]] = read.value;
+                mesh.neuVal.back()[read.axis[1][n]] = read.Fval;
             }
         }
     }
@@ -464,7 +513,7 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     readMeshSize(read,mesh,path[1]);
     readSpecies(read,mesh,path[1]);
 
-    // Sets the boundary conditions
+    // Sets the boundary conditions parameters
 
     if(read.type=="Axial stress"){
         
@@ -506,9 +555,43 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
 
+    // Sets the boundary conditions in the mesh
+
     dirichlet(read,mesh);
     neumann(read,mesh);
+    surface(read,mesh);
+
+    // Rescales the mesh from lattice constant to nanometer
+
+    for(int i=0; i<mesh.nXYZ.size(); i++){
+        for(double &n:mesh.nXYZ[i]){n *= read.Lc;}
+    }
+
 /*
+    cout << "\n\nNodes\n";
+    for(int i=0; i<mesh.nXYZ.size(); i++){
+        for(int j=0; j<mesh.nXYZ[i].size(); j++){
+            cout << mesh.nXYZ[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+    
+    cout << "\n\nElements\n";
+    for(int i=0; i<mesh.eNode.size(); i++){
+        for(int j=0; j<mesh.eNode[i].size(); j++){
+            cout << mesh.eNode[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nFaces\n";
+    for(int i=0; i<mesh.neuFace.size(); i++){
+        for(int j=0; j<mesh.neuFace[i].size(); j++){
+            cout << mesh.neuFace[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
     cout << "\n\ndirNode\n";
     for(int i=0; i<3; i++){
         cout << "dim " << i << " -- ";
@@ -538,5 +621,6 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
         }
         cout << "\n";
     }
-*/
+    */
+
 }

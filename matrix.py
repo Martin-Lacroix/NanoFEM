@@ -68,8 +68,8 @@ nXYZ = np.loadtxt("output/coordinates.txt",delimiter=",")
 nLen = U.shape[0]
 
 K = np.loadtxt("output/K.txt")
-M = np.loadtxt("output/M.txt")
 B = np.loadtxt("output/B.txt")
+# M = np.loadtxt("output/M.txt")
 
 # K_old = np.loadtxt("output/K_old.txt")
 # M_old = np.loadtxt("output/M_old.txt")
@@ -82,49 +82,3 @@ B = np.loadtxt("output/B.txt")
 
 # sameK = np.allclose(K_old,K)
 # sameB = np.allclose(B_old,B)
-
-# %% Solves
-
-dt = 0.001
-nLen = B.shape[0]
-u1 = np.zeros(nLen)
-u2 = np.zeros(nLen)
-u3 = np.zeros(nLen)
-
-M = M+M.T
-K = K+K.T
-
-for i in range(nLen): M[i,i] /= 2
-for i in range(nLen): K[i,i] /= 2
-
-dx = []
-
-for i in range(100):
-
-    M_new = M.copy()
-    RHS = dt**2*B+M.dot(2*u2-u1)-dt**2*K.dot(u2)
-    
-    u12 = 2*u2-u1
-    Mu12 = M.dot(2*u2-u1)
-    
-    fixed(M_new,RHS,0,[0,1,2,3],0)
-    fixed(M_new,RHS,1,[0,1,4,5],0)
-    fixed(M_new,RHS,2,[0,2,4,6],0)
-    
-    coupled(M_new,RHS,0,[4,5,6,7])
-    
-    u3 = np.linalg.solve(M_new,RHS)
-    u3[[4,5,6]] = u3[7]
-    u1 = u2.copy()
-    u2 = u3.copy()
-    
-    dx.append(u3[4])
-
-
-
-
-
-plt.plot(dx)
-
-
-

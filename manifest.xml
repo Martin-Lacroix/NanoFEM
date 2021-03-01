@@ -17,27 +17,32 @@
 	<userInput>
 		<group name="General Parameters">
 			<param type="INT">
-				<name>Quadrature order</name>
+				<name>Element order</name>
 				<default>1</default>
-				<unit>unitless</unit>
+				<unit>-</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Lattice constant</name>
+				<default>1</default>
+				<unit>nm</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Smoothing depth</name>
 				<default>0</default>
-				<unit>lattice unit</unit>
+				<unit>Lc</unit>
 			</param>
 		</group>
 
 		<group name="Hole Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
-				<default>1e-5</default>
-				<unit>user defined</unit>
+				<default>0</default>
+				<unit>GPa</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
 				<default>0</default>
-				<unit>unitless</unit>
+				<unit>-</unit>
 			</param>
 		</group>
 
@@ -45,12 +50,12 @@
 			<param type="DOUBLE">
 				<name>Young modulus</name>
 				<default>1</default>
-				<unit>user defined</unit>
+				<unit>GPa</unit>
 			</param>
 			<param type="DOUBLE">
 				<name>Poisson ratio</name>
 				<default>0.3</default>
-				<unit>unitless</unit>
+				<unit>-</unit>
 			</param>
 		</group>
 		
@@ -74,7 +79,7 @@
 			<param type="DOUBLE">
 				<name>Axial stress</name>
 				<default>1</default>
-				<unit>same as Young</unit>
+				<unit>GPa</unit>
 			</param>
 		</group>
 		<group name="Load Parameters" displayIf="Type:Shear stress">
@@ -89,7 +94,7 @@
 			<param type="DOUBLE">
 				<name>Shear stress</name>
 				<default>1</default>
-				<unit>same as Young</unit>
+				<unit>GPa</unit>
 			</param>
 		</group>
 		<group name="Load Parameters" displayIf="Type:Hydrostatic">
@@ -101,18 +106,26 @@
 			<param type="DOUBLE">
 				<name>Normal stress</name>
 				<default>1</default>
-				<unit>same as Young</unit>
+				<unit>GPa</unit>
 			</param>
 		</group>
 
 		<group name="Layer Parameters" type="LAYER_TABLE">
 			<param type="DOUBLE" >
-				<name>Young modulus (user defined)</name>
+				<name>Young modulus</name>
 				<default>1</default>
 			</param>
 			<param type="DOUBLE" >
-				<name>Poisson ratio (unitless)</name>
+				<name>Poisson ratio</name>
 				<default>0.3</default>
+			</param>
+			<param type="DOUBLE" >
+				<name>Surface modulus</name>
+				<default>0</default>
+			</param>
+			<param type="DOUBLE" >
+				<name>Surface ratio</name>
+				<default>0</default>
 			</param>
 		</group>
 	</userInput>

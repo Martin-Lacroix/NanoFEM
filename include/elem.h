@@ -28,13 +28,15 @@ class Elem{
 
     // Constructor and functions available in the elem.cpp file
 
-    Elem(std::vector<array3d> nXYZ);
+    Elem(std::vector<array3d> nXYZ,ivector surface);
     std::vector<matrix> jacobian(shapeStruct shape);
     darray stress(shapeStruct shape,matrix D,darray u);
     void derivative(shapeStruct shape,std::vector<matrix> J);
 
     // Functions of elemental stiffness and mass matrices
 
+    matrix selfG(shapeStruct shape);
+    matrix selfS(shapeStruct shape);
     matrix selfK(shapeStruct shape,matrix D);
     matrix selfM(shapeStruct shape,double rho);
     matrix selfKs(shapeStruct shape[6],matrix D);
@@ -59,7 +61,7 @@ class Face{
     // Constructor and functions available in the elem.cpp file
 
     Face(std::vector<array3d> nXYZ,shapeStruct shape);
-    matrix selfN(shapeStruct shape);
+    darray selfB(shapeStruct shape,darray F);
     darray dJ2D;
     int nLen;
 };

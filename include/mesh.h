@@ -11,8 +11,6 @@ struct meshStruct{
     // Main informations about the mesh
 
     int order;
-    std::vector<array3d> EvR;
-    std::vector<std::array<double,2>> EvS;
     std::vector<array3d> nXYZ;
     std::vector<ivector> eNode;
     std::vector<ivector> eSurf;
@@ -32,6 +30,10 @@ struct meshStruct{
     std::vector<ivector> coupNode[3];
     std::vector<std::pair<int,int>> deltaNode[3];
 
+    // Volume Young-Poisson-density and Surface Young-Poisson
+
+    std::vector<array3d> EvR;
+    std::vector<array3d> EvS;
 };
 
 // -------------------------------|
@@ -50,7 +52,7 @@ class Mesh{
     shapeStruct shape(quadStruct quad);
     std::vector<darray> stress(darray &u);
 
-    template<class type>type shape2(quadStruct quad);
+    sparse totalK2();
 
     // Constructor and operations on the stiffness matrix
     

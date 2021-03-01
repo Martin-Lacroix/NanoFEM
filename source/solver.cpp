@@ -155,6 +155,22 @@ darray solveStatic(Mesh &mesh){
     sparse K = mesh.totalK();
     darray B = mesh.neumann();
 
+/*
+    sparse K2 = mesh.totalK2();
+    darray B2;
+    B2.setlength(3*nLen);
+
+    for(int i=0; i<nLen; i++){
+
+        B2(i) = B(i);
+        B2(i+nLen) = 0;
+    }
+
+    K = K2;
+    B = B2;
+    nLen = 3*nLen;
+    */
+    
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
@@ -164,12 +180,17 @@ darray solveStatic(Mesh &mesh){
     cout << "Boundary conditions --- ";
 
     // Applies boundary conditions to K and B
+
+    mesh.delta(K,B);
+    mesh.coupling(K,B);
+    mesh.dirichlet(K,B);
+
 /*
     ofstream Kfile("output/K.txt");
     ofstream Bfile("output/B.txt");
 
-    for(int i=0; i<B.length(); i++){
-        for(int j=0; j<B.length(); j++){
+    for(int i=0; i<nLen; i++){
+        for(int j=0; j<nLen; j++){
             
             double val = alglib::sparseget(K,i,j);
             Kfile << val << " ";
@@ -178,9 +199,9 @@ darray solveStatic(Mesh &mesh){
         Bfile << B[i] << "\n";
     }
 */
-    mesh.delta(K,B);
-    mesh.coupling(K,B);
-    mesh.dirichlet(K,B);
+
+
+
     alglib::sparseconverttocrs(K);
 
     // Prints the computation time of the operation
@@ -227,7 +248,7 @@ int main(){
 
     meshStruct mesh;
     timeStruct time;
-    string path[2] = {"input.txt","input/single Cu.xyz"};
+    string path[2] = {"input.txt","input/test.xyz"};
     read(path,mesh,time);
 
     // Prints the computation time of the operation

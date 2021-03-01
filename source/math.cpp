@@ -3,11 +3,11 @@ using namespace std;
 
 namespace math{
 
-    // -----------------------------------------------------------------------|
-    // Stiffness tensor D for isotropic linear elasticity in Voigh notation   |
-    // -----------------------------------------------------------------------|
+    // -----------------------------------------------------|
+    // Stiffness tensor D for isotropic linear elasticity   |
+    // -----------------------------------------------------|
 
-    matrix stiffness(double E,double v){
+    matrix stiffness(array3d EvR){
 
         matrix D;
         D.setlength(6,6);
@@ -15,8 +15,8 @@ namespace math{
 
         // Computes the Lamé parameters
 
-        double mu = E/(2*(1+v));
-        double lam = E*v/((1+v)*(1-2*v));
+        double mu = EvR[0]/(2*(1+EvR[1]));
+        double lam = EvR[0]*EvR[1]/((1+EvR[1])*(1-2*EvR[1]));
         D(0,1) = D(0,2) = D(1,2) = lam;
         D(1,0) = D(2,0) = D(2,1) = lam;
 
@@ -26,6 +26,27 @@ namespace math{
 
             D(i,i) = 2*mu+lam;
             D(i+3,i+3) = mu;
+        }
+        return D;
+    }
+
+    // --------------------------------------------------------|
+    // Couple-stress tensor D for isotropic linear elasticity  |
+    // --------------------------------------------------------|
+
+    matrix couple(double E,double v,double l){
+
+        matrix D;
+        D.setlength(6,6);
+        double mu = E/(2*(1+v));
+        math::zero(D);
+
+        // Fills the diagonal elements of the matrix
+
+        for(int i=0; i<3; i++){
+
+            D(i,i) = 2*mu*l*l;
+            D(i+3,i+3) = mu*l*l;
         }
         return D;
     }
@@ -104,8 +125,8 @@ namespace math{
 
     array3d dotsub(array3d &V1,array3d &V2){
 
-        double k = 0;
         array3d V3;
+        double k = 0;
 
         for(int i=0; i<3; i++){k += V1[i]*V2[i];}
         for(int i=0; i<3; i++){V3[i] = V2[i]-k*V1[i];}
@@ -248,8 +269,6 @@ namespace math{
     // -----------------------------------------------------------------------|
 
     vector<ivector> sparsemap(sparse &M){
-
-        // Initializes the vector containers
 
         double val;
         alglib::ae_int_t i=0,j=0;

@@ -28,7 +28,9 @@ struct readStruct{
     // Young modulus and Poisson ratio of each type of element
     
     dvector emptyEv;
+    std::vector<bool> empty;
     std::vector<dvector> Ev;
+    std::vector<dvector> EvS;
 
     // Number of elements and size of the domain in each dimension
 
@@ -37,11 +39,12 @@ struct readStruct{
     ivector dLen;
     dvector zero;
     double cropZ;
+    double Lc;
 
     // Face index, axis of the applied stress and its value
 
     ivector axis[2];
-    double value;
+    double Fval;
 
     // Index of the clamped and flat surfaces
 
@@ -78,6 +81,7 @@ void dirichlet(readStruct &read,meshStruct &mesh);
 
 // Functions to read the different input files
 
+void setSurface(readStruct &read,meshStruct &mesh);
 void readInput(readStruct &read,meshStruct &mesh,std::string path);
 std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
 void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);

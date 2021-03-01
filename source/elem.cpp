@@ -5,13 +5,13 @@ using namespace std;
 // Class of hexahedron isoparametric lagrange element in 3D   |
 // -----------------------------------------------------------|
 
-Elem::Elem(vector<array3d> nXYZ){
+Elem::Elem(vector<array3d> nXYZ,ivector surface){
 
     // Builds the Jacobian matrix and its inverse
 
     this->nXYZ = nXYZ;
     nLen = nXYZ.size();
-    //surface = {0,1,2,3,4,5};
+    this->surface = surface;
 }
 
 // -------------------------------------------------------|
@@ -143,11 +143,52 @@ matrix Elem::selfM(shapeStruct shape,double rho){
 
         // Computes M by Gauss-Legendre quadrature
 
-        double wRdetJ = shape.weight[i]*rho*detJ[i];
-        matrix M1 = math::prod(wRdetJ,N,N,0,1);
-        math::add(1,1,M1,M);
+        double wdetJ = shape.weight[i]*detJ[i];
+        matrix Me = math::prod(wdetJ,N,N,0,1);
+        math::add(rho,1,Me,M);
     }
     return M;
+}
+
+// ----------------------------------------------------------------|
+// Computes the elemental curl-displacemen matrix K for local FEM  |
+// ----------------------------------------------------------------|
+
+matrix Elem::selfG(shapeStruct shape){
+
+    matrix B,K,N;
+    N.setlength(3*nLen,3);
+    B.setlength(3*nLen,3);
+    K.setlength(3*nLen,3*nLen);
+    math::zero(N);
+    math::zero(B);
+    math::zero(K);
+
+    // Computes the Jacobian and shape function derivatives
+
+    vector<matrix> J = jacobian(shape);
+    derivative(shape,J);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions and derivative matrices
+            
+            B(j,1) = dN[2](j,i); B(j+nLen,0) = -dN[2](j,i);
+            B(j,2) = -dN[1](j,i); B(j+2*nLen,0) = dN[1](j,i);
+            B(j+nLen,2) = dN[0](j,i); B(j+2*nLen,1) = -dN[0](j,i);
+            N(j,0) = N(j+nLen,1) = N(j+2*nLen,2) = shape.N(j,i);
+        }
+
+        // Computes K by Gauss-Legendre quadrature
+
+        double wdetJ = shape.weight[i]*detJ[i];
+        matrix Ke = math::prod(wdetJ,B,N,0,1);
+        math::add(-0.5,1,Ke,K);
+    }
+    return K;
 }
 
 // ------------------------------------------------------------------|
@@ -374,20 +415,27 @@ Face::Face(vector<array3d> nXYZ,shapeStruct shape){
 // Integrates the matrix of shape functions N over the element   |
 // --------------------------------------------------------------|
 
-matrix Face::selfN(shapeStruct shape){
+darray Face::selfB(shapeStruct shape,darray F){
 
     matrix N;
+    darray B;
+    B.setlength(3*nLen);
     N.setlength(3*nLen,3);
     math::zero(N);
+    math::zero(B);
 
     // Integrates the matrix of local shape functions
 
-    for(int i=0; i<nLen; i++){
-        for(int j=0; j<shape.gLen; j++){
-
-            N(i,0) += shape.N(i,j)*shape.weight[j]*dJ2D(j);
-            N(4+i,1) = N(8+i,2) = N(i,0);
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+            N(j,0) = N(j+nLen,1) = N(j+2*nLen,2) = shape.N(j,i);
         }
+
+        // Computes M by Gauss-Legendre quadrature
+
+        double wdetJ = shape.weight[i]*dJ2D(i);
+        darray Be = math::prod(wdetJ,N,F,0);
+        math::add(1,1,Be,B);
     }
-    return N;
+    return B;
 }

@@ -90,8 +90,9 @@ gmsh.model.geo.addVolume([1])
 
 for i in range(elem.shape[0]):
     
-    n = elem[i]
-    elem[i] = [n[0],n[4],n[6],n[2],n[1],n[5],n[7],n[3]]
+    if(elem.shape[1]==8): elem[i] = elem[i][[0,4,6,2,1,5,7,3]]
+    else: elem[i] = elem[i][[0,18,20,2,6,24,26,8,9,1,3,19,21,11,23,5,15,7,25,17,10,12,4,22,14,16,13]]
+    
     
 coord = nXYZ.flatten()
 eNode = elem.flatten()+1
@@ -102,7 +103,9 @@ eTag = np.arange(elem.shape[0])+1
 
 gmsh.model.geo.synchronize()
 gmsh.model.mesh.addNodes(3,1,nTag,coord)
-gmsh.model.mesh.addElements(3,1,[5],[eTag],[eNode])
+
+if(elem.shape[1]==8): gmsh.model.mesh.addElements(3,1,[5],[eTag],[eNode])
+else: gmsh.model.mesh.addElements(3,1,[12],[eTag],[eNode])
 
 # %% Plots the solution
 

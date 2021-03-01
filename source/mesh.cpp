@@ -105,11 +105,12 @@ sparse Mesh::totalK(){
 
         // Computes the elemental K matrices
 
-        Elem elem(eXYZ);
-        matrix D = math::stiffness(mesh.EvR[i][0],mesh.EvR[i][1]);
+        Elem elem(eXYZ,mesh.eSurf[i]);
+        matrix D = math::stiffness(mesh.EvR[i]);
+        //matrix Ds = math::stiffness(mesh.EvS[i]);
+        //matrix K2 = elem.selfKs(shapeS,Ds);
         matrix K1 = elem.selfK(shape3D,D);
-        matrix K2 = elem.selfKs(shapeS,D);
-        math::add(1,1,K2,K1);
+        //math::add(1,1,K2,K1);
 
         // Inserts the elemental matrix into the global K matrix
 
@@ -136,6 +137,76 @@ sparse Mesh::totalK(){
     return K;
 }
 
+
+
+
+
+
+sparse Mesh::totalK2(){
+
+    sparse K;
+    int sLen = shape3D.N.cols();
+    int size = 9*eLen*pow(mesh.order+1,6)/4;
+    alglib::sparsecreate(9*nLen,9*nLen,size,K);
+
+    // Coordinates of the nodes of the element
+
+    for(int i=0; i<eLen; i++){
+        
+        vector<array3d> eXYZ(sLen);
+        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+
+        // Computes the elemental K matrices
+
+        Elem elem(eXYZ,mesh.eSurf[i]);
+        matrix D = math::stiffness(mesh.EvR[i]);
+        matrix Ka = elem.selfK(shape3D,D);
+
+
+
+        D = math::couple(mesh.EvR[i][0],mesh.EvR[i][1],0);
+        matrix Kb = elem.selfK(shape3D,D);
+        matrix Ks = elem.selfM(shape3D,1);
+        matrix Kg = elem.selfG(shape3D);
+
+        // Inserts the elemental matrix into the global K matrix
+
+        for(int j=0; j<sLen; j++){
+            for(int k=0; k<sLen; k++){
+                for(int m=0; m<3; m++){
+                    for(int n=0; n<3; n++){
+
+                        int row = mesh.eNode[i][j]+m*nLen;
+                        int col = mesh.eNode[i][k]+n*nLen;
+
+                        double val = Kg[j+m*sLen][k+n*sLen];
+                        alglib::sparseadd(K,row,col+6*nLen,val); 
+
+                        val = Ks[j+m*sLen][k+n*sLen];
+                        alglib::sparseadd(K,row+3*nLen,col+6*nLen,val);
+
+                        // Adds the element only in the upper triangle
+
+                        if(row<=col){
+
+                            val = Ka[j+m*sLen][k+n*sLen];
+                            alglib::sparseadd(K,row,col,val);
+
+                            val = Kb[j+m*sLen][k+n*sLen];
+                            alglib::sparseadd(K,row+3*nLen,col+3*nLen,val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return K;
+}
+
+
+
+
+
 // ---------------------------------------------------|
 // Computes the total mass matrix M for global FEM    |
 // ---------------------------------------------------|
@@ -156,7 +227,7 @@ sparse Mesh::totalM(){
 
         // Computes the elemental M matrices
 
-        Elem elem(eXYZ);
+        Elem elem(eXYZ,mesh.eSurf[i]);
         matrix M1 = elem.selfM(shape3D,mesh.EvR[i][2]);
 
         // Inserts the elemental matrix into the global M matrix
@@ -205,8 +276,7 @@ darray Mesh::neumann(){
         // Computes the elemental B vectors
 
         Face face(eXYZ,shape2D);
-        matrix N = face.selfN(shape2D);
-        darray B1 = math::prod(1,N,mesh.neuVal[i]);
+        darray B1 = face.selfB(shape2D,mesh.neuVal[i]);
 
         // Inserts the elemental vectors into the global B vector
 
@@ -439,8 +509,8 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        Elem elem(eXYZ);
-        matrix D = math::stiffness(mesh.EvR[i][0],mesh.EvR[i][1]);
+        Elem elem(eXYZ,mesh.eSurf[i]);
+        matrix D = math::stiffness(mesh.EvR[i]);
         sigma[i] = elem.stress(shape3D,D,u1);
     }
     return sigma;

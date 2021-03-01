@@ -6,6 +6,8 @@
 #ifndef MATH_H
 #define MATH_H
 
+// Definition of usual variable types
+
 typedef std::vector<int> ivector;
 typedef std::vector<double> dvector;
 typedef alglib::sparsematrix sparse;
@@ -30,8 +32,9 @@ struct quadStruct{
 
 namespace math{
 
-    matrix stiffness(double E,double v);
+    matrix stiffness(array3d EvR);
     quadStruct legendre(int dim,int order);
+    matrix couple(double E,double v,double l);
     dvector lagrange(int var,dvector node,dvector val);
 
     // Sparse or dense matrix-matrix or vector-vector addition
