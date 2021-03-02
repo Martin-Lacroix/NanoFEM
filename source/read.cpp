@@ -359,7 +359,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
                 // Change of variable u => Δu = 0 for the other nodes of the face
 
-                for(int j=1; j<=read.dLen[d]; j++){
+                for(int j=1; j<=dLen[d]; j++){
 
                     mesh.deltaNode[d].push_back(make_pair(i+j*add1[d],i));
                     mesh.dirNode[d].push_back(i+j*add1[d]);

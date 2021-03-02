@@ -301,7 +301,7 @@ int main(){
     stop = chrono::high_resolution_clock::now();
     clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << clock.count()/1e6 << " sec\n\n";
-/*
+
     cout << "\n";
     for(int i=0; i<Mesh.nLen; i++){
         cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
@@ -315,6 +315,6 @@ int main(){
         cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
     }
     cout << "\n";
-    */
+    
 
 }
