@@ -6,7 +6,7 @@
 // Structure storing the mesh parameters   |
 // ----------------------------------------|
 
-struct meshStruct{
+struct dataStruct{
 
     // Main informations about the mesh
 
@@ -46,7 +46,7 @@ class Mesh{
 
     // Functions available in the mesh.cpp file
 
-    Mesh(meshStruct &mesh);
+    Mesh(dataStruct &data);
     void totalB(darray &B);
     void totalM(sparse &M);
     void totalKB(sparse &K,darray &B);
@@ -64,7 +64,7 @@ class Mesh{
 
     // Internal variables of the system
 
-    meshStruct mesh;
+    dataStruct data;
     shapeStruct shape3D;
     shapeStruct shape2D;
     shapeStruct shapeS[6];

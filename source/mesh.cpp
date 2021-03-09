@@ -5,20 +5,20 @@ using namespace std;
 // Builds the elements list, shape functions and quadratures    |
 // -------------------------------------------------------------|
 
-Mesh::Mesh(meshStruct &mesh){
+Mesh::Mesh(dataStruct &data){
     
     quadStruct quad;
-    this->mesh = mesh;
-    nLen = mesh.nXYZ.size();
-    eLen = mesh.eNode.size();
-    fLen = mesh.neuFace.size();
+    this->data = data;
+    nLen = data.nXYZ.size();
+    eLen = data.eNode.size();
+    fLen = data.neuFace.size();
 
     // Stores the quadrature rules and shape functions
 
-    quad = math::legendre(3,mesh.order);
+    quad = math::legendre(3,data.order);
     shape3D = shape(quad);
 
-    quad = math::legendre(2,mesh.order);
+    quad = math::legendre(2,data.order);
     vector<quadStruct> quadS(6,quad);
     shape2D = shape(quad);
 
@@ -47,9 +47,9 @@ Mesh::Mesh(meshStruct &mesh){
 shapeStruct Mesh::shape(quadStruct &quad){
 
     shapeStruct shape;
-    dvector node(mesh.order+1);
+    dvector node(data.order+1);
     int dim = quad.gRST[0].size();
-    int nLen = 0.1+pow(mesh.order+1,dim);
+    int nLen = 0.1+pow(data.order+1,dim);
 
     // Copies the quadrature in the shape structure
 
@@ -61,7 +61,7 @@ shapeStruct Mesh::shape(quadStruct &quad){
 
     shape.dN.resize(dim);
     shape.N.setlength(nLen,quad.gLen);
-    for(int i=0; i<=mesh.order; i++){node[i] = i*2.0/mesh.order-1;}
+    for(int i=0; i<=data.order; i++){node[i] = i*2.0/data.order-1;}
     for(int i=0; i<dim; i++){shape.dN[i].setlength(nLen,quad.gLen);}
 
     // Sets the coordinates of the Gauss points
@@ -97,19 +97,19 @@ void Mesh::totalKB(sparse &K,darray &B){
         // Coordinates of the nodes of the element
         
         vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
 
         // Computes the elemental matrices
 
-        Elem elem(eXYZ,mesh.eSurf[i]);
-        matrix Ke = elem.selfK(shape3D,mesh.EvR[i]);
-        pair<matrix,darray> Kb = elem.selfKB(shape2D,shapeS,mesh.EvS[i]);
+        Elem elem(eXYZ,data.eSurf[i]);
+        matrix Ke = elem.selfK(shape3D,data.EvR[i]);
+        pair<matrix,darray> Kb = elem.selfKB(shape2D,shapeS,data.EvS[i]);
 
         // Inserts the elemental vector into the global B vector
 
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
-                B(mesh.eNode[i][j]+k*nLen) += Kb.second(j+k*sLen);
+                B(data.eNode[i][j]+k*nLen) += Kb.second(j+k*sLen);
             }
         }
         
@@ -120,8 +120,8 @@ void Mesh::totalKB(sparse &K,darray &B){
                 for(int j=0; j<sLen; j++){
                     for(int k=0; k<sLen; k++){
 
-                        int row = mesh.eNode[i][j]+m*nLen;
-                        int col = mesh.eNode[i][k]+n*nLen;
+                        int row = data.eNode[i][j]+m*nLen;
+                        int col = data.eNode[i][k]+n*nLen;
 
                         // Adds the element only in the upper triangle
 
@@ -150,12 +150,12 @@ void Mesh::totalM(sparse &M){
     // Coordinates of the nodes of the element
         
         vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
 
         // Computes the elemental M matrices
 
-        Elem elem(eXYZ,mesh.eSurf[i]);
-        matrix M1 = elem.selfM(shape3D,mesh.EvR[i][2]);
+        Elem elem(eXYZ,data.eSurf[i]);
+        matrix M1 = elem.selfM(shape3D,data.EvR[i][2]);
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -164,8 +164,8 @@ void Mesh::totalM(sparse &M){
                 for(int j=0; j<sLen; j++){
                     for(int k=0; k<sLen; k++){
 
-                        int row = mesh.eNode[i][j]+m*nLen;
-                        int col = mesh.eNode[i][k]+n*nLen;
+                        int row = data.eNode[i][j]+m*nLen;
+                        int col = data.eNode[i][k]+n*nLen;
 
                         // Adds the element only in the upper triangle
 
@@ -193,18 +193,18 @@ void Mesh::neumann(darray &B){
         // Coordinates of the nodes composing the faces
 
         vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.neuFace[i][j]];}
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.neuFace[i][j]];}
 
         // Computes the elemental B vectors
 
         Face face(eXYZ,shape2D);
-        darray B1 = face.selfB(shape2D,mesh.neuVal[i]);
+        darray B1 = face.selfB(shape2D,data.neuVal[i]);
 
         // Inserts the elemental vectors into the global B vector
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
-                B(mesh.neuFace[i][j]+k*nLen) += B1(j+k*sLen);
+                B(data.neuFace[i][j]+k*nLen) += B1(j+k*sLen);
             }
         }
     }
@@ -221,18 +221,18 @@ void Mesh::dirichlet(sparse &K,darray &B){
     // Gets the number of nodes in the dirichlet list
 
     for(int n=0; n<3; n++){
-        int dLen = mesh.dirNode[n].size();
+        int dLen = data.dirNode[n].size();
 
         // Gets the index of the node in the solution vector
 
         for(int i=0; i<dLen; i++){
-            int idx = mesh.dirNode[n][i]+n*nLen;
+            int idx = data.dirNode[n][i]+n*nLen;
 
             // Substract the coefficients from K to B and cancels the row-colums
 
             for(int j:row[idx]){
 
-                B(j) -= math::get(K,j,idx)*mesh.dirVal[n][i];
+                B(j) -= math::get(K,j,idx)*data.dirVal[n][i];
                 math::symset(K,j,idx,0);
             }
             row[idx].clear();
@@ -242,11 +242,11 @@ void Mesh::dirichlet(sparse &K,darray &B){
     // Places the dirichlet value the B vector and 1 in the diagonal of K
 
     for(int n=0; n<3; n++){
-        for(int i=0; i<mesh.dirNode[n].size(); i++){
+        for(int i=0; i<data.dirNode[n].size(); i++){
             
-            int idx = mesh.dirNode[n][i]+n*nLen;
+            int idx = data.dirNode[n][i]+n*nLen;
             alglib::sparseset(K,idx,idx,1);
-            B(idx) = mesh.dirVal[n][i];
+            B(idx) = data.dirVal[n][i];
         }
     }
 }
@@ -263,15 +263,15 @@ void Mesh::coupling(sparse &K,darray &B){
 
         // Gets the number of nodes in the periodic list
 
-        for(int i=0; i<mesh.coupNode[n].size(); i++){
-            int dLen = mesh.coupNode[n][i].size();
+        for(int i=0; i<data.coupNode[n].size(); i++){
+            int dLen = data.coupNode[n][i].size();
 
             // Gets the index of the curent and final coupled nodes
 
             for(int j=0; j<dLen-1; j++){
 
-                int idx1 = mesh.coupNode[n][i][j]+n*nLen;
-                int idx2 = mesh.coupNode[n][i].back()+n*nLen;
+                int idx1 = data.coupNode[n][i][j]+n*nLen;
+                int idx2 = data.coupNode[n][i].back()+n*nLen;
                 double fix = math::get(K,idx2,idx2)+math::get(K,idx1,idx1)+2*math::get(K,idx1,idx2);
 
                 // Adds the current row to the final row of K if non-zero
@@ -320,12 +320,12 @@ void Mesh::delta(sparse &K,darray &B){
     // Gets the number of nodes in the periodic list
 
     for(int n=0; n<3; n++){
-        for(int i=0; i<mesh.deltaNode[n].size(); i++){
+        for(int i=0; i<data.deltaNode[n].size(); i++){
 
             // Gets the index of the curent and final coupled nodes
 
-            int idx1 = mesh.deltaNode[n][i].first+n*nLen;
-            int idx2 = mesh.deltaNode[n][i].second+n*nLen;
+            int idx1 = data.deltaNode[n][i].first+n*nLen;
+            int idx2 = data.deltaNode[n][i].second+n*nLen;
             double fix = math::get(K,idx2,idx2)+math::get(K,idx1,idx1)+2*math::get(K,idx1,idx2);
 
             // Adds the current row to the final row of K if non-zero
@@ -365,21 +365,21 @@ void Mesh::complete(darray &u){
 
         // Copy the value of the last node into the coupled ones
 
-        for(int i=0; i<mesh.coupNode[n].size(); i++){
-            for(int j=0; j<mesh.coupNode[n][i].size(); j++){
+        for(int i=0; i<data.coupNode[n].size(); i++){
+            for(int j=0; j<data.coupNode[n][i].size(); j++){
 
-                int idx1 = mesh.coupNode[n][i][j]+n*nLen;
-                int idx2 = mesh.coupNode[n][i].back()+n*nLen;
+                int idx1 = data.coupNode[n][i][j]+n*nLen;
+                int idx2 = data.coupNode[n][i].back()+n*nLen;
                 u[idx1] = u[idx2];
             }
         }
 
         // Comes back from the difference Δu to the actual displacement
 
-        for(int i=0; i<mesh.deltaNode[n].size(); i++){
+        for(int i=0; i<data.deltaNode[n].size(); i++){
 
-            int idx1 = mesh.deltaNode[n][i].first+n*nLen;
-            int idx2 = mesh.deltaNode[n][i].second+n*nLen;
+            int idx1 = data.deltaNode[n][i].first+n*nLen;
+            int idx2 = data.deltaNode[n][i].second+n*nLen;
             u[idx1] += u[idx2];
         }
     }
@@ -396,7 +396,7 @@ void Mesh::update(darray &u){
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<3; j++){
-            mesh.nXYZ[i][j] += u[i+j*nLen];
+            data.nXYZ[i][j] += u[i+j*nLen];
         }
     }
 }
@@ -415,7 +415,7 @@ vector<darray> Mesh::stress(darray &u){
     for(int i=0; i<eLen; i++){
 
         vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
 
         // Stores the displacement of the curent element nodes
 
@@ -424,14 +424,14 @@ vector<darray> Mesh::stress(darray &u){
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
-                u1[j+k*sLen] = u(mesh.eNode[i][j]+k*nLen);
+                u1[j+k*sLen] = u(data.eNode[i][j]+k*nLen);
             }
         }
 
         // Computes the averaged Von Mises stress
 
-        Elem elem(eXYZ,mesh.eSurf[i]);
-        sigma[i] = elem.stress(shape3D,mesh.EvR[i],u1);
+        Elem elem(eXYZ,data.eSurf[i]);
+        sigma[i] = elem.stress(shape3D,data.EvR[i],u1);
     }
     return sigma;
 }

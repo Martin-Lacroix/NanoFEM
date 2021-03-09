@@ -28,7 +28,7 @@ dvector tovec(string input){
 // Reads the parameter from the input.txt file    |
 // -----------------------------------------------|
 
-void readInput(readStruct &read,meshStruct &mesh,string path){
+void readInput(readStruct &read,dataStruct &data,string path){
 
     string input;
     ifstream file;
@@ -37,7 +37,7 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     // Reads the order of the quadrature rule
 
     getline(file,input,';');
-    mesh.order = stoi(input);
+    data.order = stoi(input);
     getline(file,input,';');
     read.Lc = stod(input);
     getline(file,input,'!');
@@ -97,12 +97,12 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 // Reads the parameter from the input.xyz file    |
 // -----------------------------------------------|
 
-void readMeshSize(readStruct &read,meshStruct &mesh,string path){
+void readMeshSize(readStruct &read,dataStruct &data,string path){
 
     string input;
     ifstream file;
     file.open(path);
-    int order = mesh.order;
+    int order = data.order;
 
     // Reads the size of the cubic domain
 
@@ -142,10 +142,10 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<=dLen[1]*order; j++){
             for(int k=0; k<=dLen[2]*order; k++){
 
-                mesh.nXYZ.push_back({0,0,0});
-                mesh.nXYZ.back()[0] = zero[0]+i*eSize[0]/order;
-                mesh.nXYZ.back()[1] = zero[1]+j*eSize[1]/order;
-                mesh.nXYZ.back()[2] = zero[2]+k*eSize[2]/order;
+                data.nXYZ.push_back({0,0,0});
+                data.nXYZ.back()[0] = zero[0]+i*eSize[0]/order;
+                data.nXYZ.back()[1] = zero[1]+j*eSize[1]/order;
+                data.nXYZ.back()[2] = zero[2]+k*eSize[2]/order;
             }
         }
     }
@@ -156,8 +156,8 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
         for(int j=0; j<dLen[1]; j++){
             for(int k=0; k<dLen[2]; k++){
                 
-                mesh.eNode.push_back({});
-                int eID = mesh.eNode.size()-1;
+                data.eNode.push_back({});
+                int eID = data.eNode.size()-1;
                 read.neighbour.push_back(ivector(6,-1));
 
                 // Computes the first index and geometrical spacing
@@ -172,7 +172,7 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
                     for(int m=0; m<order+1; m++){
                         for(int p=0; p<order+1; p++){
 
-                            mesh.eNode.back().push_back(idx+p+m*dy+n*dx);
+                            data.eNode.back().push_back(idx+p+m*dy+n*dx);
                         }
                     }
                 }
@@ -232,7 +232,7 @@ unordered_set<int> locSpecies(readStruct &read,dvector coord){
 // Computes the stiffness tensor from the input.xyz file    |
 // ---------------------------------------------------------|
 
-void readSpecies(readStruct &read,meshStruct &mesh,string path){
+void readSpecies(readStruct &read,dataStruct &data,string path){
 
     string input;
     ifstream file;
@@ -242,11 +242,11 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 
     // Initializes the filling fraction of the elements
 
-    int eLen = mesh.eNode.size();
+    int eLen = data.eNode.size();
     vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
     read.empty.resize(eLen);
-    mesh.EvR.resize(eLen);
-    mesh.EvS.resize(eLen);
+    data.EvR.resize(eLen);
+    data.EvS.resize(eLen);
 
     // Reads the coodrinates of the chemical species
 
@@ -273,14 +273,14 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         double sum = accumulate(frac[i].begin(),frac[i].end(),0.0);
 
         if(sum<0.5){
-            mesh.EvS[i] = {0,0,0};
-            mesh.EvR[i] = {read.emptyEv[0],read.emptyEv[1],0};
+            data.EvS[i] = {0,0,0};
+            data.EvR[i] = {read.emptyEv[0],read.emptyEv[1],0};
             read.empty[i] = 1;
         }
         else{
             int max = max_element(frac[i].begin(),frac[i].end())-frac[i].begin();
-            mesh.EvS[i] = {read.EvS[max][0],read.EvS[max][1],read.EvS[max][2]};
-            mesh.EvR[i] = {read.Ev[max][0],read.Ev[max][1],0};
+            data.EvS[i] = {read.EvS[max][0],read.EvS[max][1],read.EvS[max][2]};
+            data.EvR[i] = {read.Ev[max][0],read.Ev[max][1],0};
             read.empty[i] = 0;
         }
     }
@@ -291,10 +291,10 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
 // Sets the free surface list of the elements    |
 // ----------------------------------------------|
 
-void surface(readStruct &read,meshStruct &mesh){
+void surface(readStruct &read,dataStruct &data){
 
-    int eLen = mesh.eNode.size();
-    mesh.eSurf.resize(eLen);
+    int eLen = data.eNode.size();
+    data.eSurf.resize(eLen);
 
     for(int i=0; i<eLen; i++){
         if(read.empty[i]==1){continue;}
@@ -303,8 +303,8 @@ void surface(readStruct &read,meshStruct &mesh){
             for(int j=0; j<read.neighbour[i].size(); j++){
                 
                 int idx = read.neighbour[i][j];
-                if(j==1 && idx==-1){mesh.eSurf[i].push_back(j);}
-                else if(idx!=-1 && read.empty[idx]==1){mesh.eSurf[i].push_back(j);}
+                if(j==1 && idx==-1){data.eSurf[i].push_back(j);}
+                else if(idx!=-1 && read.empty[idx]==1){data.eSurf[i].push_back(j);}
             }
         }
     }
@@ -314,7 +314,7 @@ void surface(readStruct &read,meshStruct &mesh){
 // Stores the displacement constrains on the nodes   |
 // --------------------------------------------------|
 
-void dirichlet(readStruct &read,meshStruct &mesh){
+void dirichlet(readStruct &read,dataStruct &data){
 
     ivector dLen = read.dLen;
     dvector tol = read.eSize;
@@ -323,22 +323,22 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
     for(int i=0; i<3; i++){
 
-        dLen[i] *= mesh.order;
-        tol[i] = read.eSize[i]/(mesh.order+1);
+        dLen[i] *= data.order;
+        tol[i] = read.eSize[i]/(data.order+1);
     }
 
     // RowLoc stores tracks the node added each row of in coupNode
 
-    vector<ivector> rowLoc(3,ivector(mesh.nXYZ.size(),-1));
+    vector<ivector> rowLoc(3,ivector(data.nXYZ.size(),-1));
     ivector opposite = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
 
     // Initialization and lock the node (0,0,0) at the origin
 
     for(int i=0; i<3; i++){
         
-        mesh.dirNode[i].push_back(0);
-        mesh.dirVal[i].push_back(0);
-        mesh.coupNode[i].resize(1);
+        data.dirNode[i].push_back(0);
+        data.dirVal[i].push_back(0);
+        data.coupNode[i].resize(1);
     }
 
     // Uniform (j,k) : sets the displacement along k of the top face j uniform
@@ -350,14 +350,14 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
         // For each node at the top surface of the dimension j
 
-        for(int i=0; i<mesh.nXYZ.size(); i++){
-            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
 
                 // Adds the node to coupNode[k] if not already there
 
                 if(rowLoc[k][i]<0){
 
-                    mesh.coupNode[k][0].push_back(i);
+                    data.coupNode[k][0].push_back(i);
                     rowLoc[k][i] = 0;
                 }
             }
@@ -371,14 +371,14 @@ void dirichlet(readStruct &read,meshStruct &mesh){
             int j = pair.first;
             int k = pair.second;
 
-        for(int i=0; i<mesh.nXYZ.size(); i++){
+        for(int i=0; i<data.nXYZ.size(); i++){
 
             // For each node at the top surface of the dimension j
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
 
-                mesh.dirNode[j].push_back(i);
-                mesh.dirVal[j].push_back(k);
+                data.dirNode[j].push_back(i);
+                data.dirVal[j].push_back(k);
             }
         }
     }
@@ -392,11 +392,11 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
         // For each node at the bottom surface of the dimension j
 
-        for(int i=0; i<mesh.nXYZ.size(); i++){
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
 
-                mesh.dirNode[k].push_back(i);
-                mesh.dirVal[k].push_back(0);
+                data.dirNode[k].push_back(i);
+                data.dirVal[k].push_back(0);
             }
         }
     }
@@ -410,18 +410,18 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
         // For each node at the top surface of the dimension j
 
-        for(int i=0; i<mesh.nXYZ.size(); i++){
-            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
 
-                mesh.dirNode[k].push_back(i);
-                mesh.dirVal[k].push_back(0);
+                data.dirNode[k].push_back(i);
+                data.dirVal[k].push_back(0);
             }
         }
     }
 
     // Coupled (j,k) : coupled u along k of opposite nodes of the top-bottom faces j
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
+    for(int i=0; i<data.nXYZ.size(); i++){
         for(pair<int,int> pair:read.coupled){
 
             int j = pair.first;
@@ -431,25 +431,25 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
             // For each node at the bottom surface of the dimension j
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
 
                 // Check whether the first or second node is already in the list
 
                 if(loc1>=0 && loc2<0){
 
-                    mesh.coupNode[k][loc1].push_back(i+opposite[j]);
+                    data.coupNode[k][loc1].push_back(i+opposite[j]);
                     rowLoc[k][i+opposite[j]] = loc1;
                 }
                 else if(loc1<0 && loc2>=0){
 
-                    mesh.coupNode[k][loc2].push_back(i);
+                    data.coupNode[k][loc2].push_back(i);
                     rowLoc[k][i] = loc2;
                 }
                 else if(loc1<0 && loc2<0){
 
-                    mesh.coupNode[k].push_back({i,i+opposite[j]});
-                    rowLoc[k][i+opposite[j]] = mesh.coupNode[k].size()-1;
-                    rowLoc[k][i] = mesh.coupNode[k].size()-1;
+                    data.coupNode[k].push_back({i,i+opposite[j]});
+                    rowLoc[k][i+opposite[j]] = data.coupNode[k].size()-1;
+                    rowLoc[k][i] = data.coupNode[k].size()-1;
                 }
             }
         }
@@ -457,7 +457,7 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
     // Selects the nodes at the edge of the conatrained face
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
+    for(int i=0; i<data.nXYZ.size(); i++){
         for(pair<int,int> pair:read.deltaZero){
 
             int j = pair.first;
@@ -465,18 +465,18 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 
             // For each node at the bottom surface of the dimension j
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
 
                 // Does not take the node if at the surface k
 
-                if(abs(mesh.nXYZ[i][k]-read.zero[k])>tol[j]){
-                    if(abs(mesh.nXYZ[i][k]-read.zero[k]-read.dSize[k])>tol[j]){
+                if(abs(data.nXYZ[i][k]-read.zero[k])>tol[j]){
+                    if(abs(data.nXYZ[i][k]-read.zero[k]-read.dSize[k])>tol[j]){
 
                         // Change of variable u => Δu = 0 for the other nodes of the face
 
-                        mesh.deltaNode[j].push_back(make_pair(i+opposite[j],i));
-                        mesh.dirNode[j].push_back(i+opposite[j]);
-                        mesh.dirVal[j].push_back(0);
+                        data.deltaNode[j].push_back(make_pair(i+opposite[j],i));
+                        data.dirNode[j].push_back(i+opposite[j]);
+                        data.dirVal[j].push_back(0);
                     }
                 }
             }
@@ -488,16 +488,16 @@ void dirichlet(readStruct &read,meshStruct &mesh){
 // Stores the Neumann boundary conditions    |
 // ------------------------------------------|
 
-void neumann(readStruct &read,meshStruct &mesh){
+void neumann(readStruct &read,dataStruct &data){
 
     int idx;
-    int order = mesh.order;
-    int sLen = mesh.order+1;
+    int order = data.order;
+    int sLen = data.order+1;
 
     // Neumann BC on the face perpendicular to the j-th dimension
 
     for(int n=0; n<read.axis[0].size(); n++){
-        for(int i=0; i<mesh.eNode.size(); i++){
+        for(int i=0; i<data.eNode.size(); i++){
             if(read.neighbour[i][5-2*read.axis[0][n]]==-1){
 
                 // Computes the nodes of the face without neighbour
@@ -510,15 +510,15 @@ void neumann(readStruct &read,meshStruct &mesh){
                         if(read.axis[0][n]==0){idx = j*sLen+k+order*sLen*sLen;}
                         else if(read.axis[0][n]==1){idx = j+k*sLen*sLen+order*sLen;}
                         else if(read.axis[0][n]==2){idx = j*sLen*sLen+k*sLen+order;}
-                        face.push_back(mesh.eNode[i][idx]);
+                        face.push_back(data.eNode[i][idx]);
                     }
                 }
 
                 // Stores the applied axial stress on the right face
                                 
-                mesh.neuFace.push_back(face);
-                mesh.neuVal.push_back("[0,0,0]");
-                mesh.neuVal.back()[read.axis[1][n]] = read.Fval;
+                data.neuFace.push_back(face);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[read.axis[1][n]] = read.Fval;
             }
         }
     }
@@ -528,12 +528,12 @@ void neumann(readStruct &read,meshStruct &mesh){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-void read(string path[2],meshStruct &mesh, timeStruct &time){
+void read(string path[2],dataStruct &data, timeStruct &time){
 
     readStruct read;
-    readInput(read,mesh,path[0]);
-    readMeshSize(read,mesh,path[1]);
-    readSpecies(read,mesh,path[1]);
+    readInput(read,data,path[0]);
+    readMeshSize(read,data,path[1]);
+    readSpecies(read,data,path[1]);
 
     // Sets the boundary conditions parameters
 
@@ -589,31 +589,31 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
 
-    // Sets the boundary conditions in the mesh
+    // Sets the boundary conditions in the data
 
-    dirichlet(read,mesh);
-    neumann(read,mesh);
-    surface(read,mesh);
+    dirichlet(read,data);
+    neumann(read,data);
+    surface(read,data);
 
-    // Rescales the mesh from lattice constant to nanometer
+    // Rescales the data from lattice constant to nanometer
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
-        for(double &n:mesh.nXYZ[i]){n *= read.Lc;}
+    for(int i=0; i<data.nXYZ.size(); i++){
+        for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
 
     /*
     cout << "\n\nNodes\n";
-    for(int i=0; i<mesh.nXYZ.size(); i++){
-        for(int j=0; j<mesh.nXYZ[i].size(); j++){
-            cout << mesh.nXYZ[i][j] << ", ";
+    for(int i=0; i<data.nXYZ.size(); i++){
+        for(int j=0; j<data.nXYZ[i].size(); j++){
+            cout << data.nXYZ[i][j] << ", ";
         }
         cout << "\n";
     }
     
     cout << "\n\nElements\n";
-    for(int i=0; i<mesh.eNode.size(); i++){
-        for(int j=0; j<mesh.eNode[i].size(); j++){
-            cout << mesh.eNode[i][j] << ", ";
+    for(int i=0; i<data.eNode.size(); i++){
+        for(int j=0; j<data.eNode[i].size(); j++){
+            cout << data.eNode[i][j] << ", ";
         }
         cout << "\n";
     }
@@ -633,18 +633,18 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     }
 
     cout << "\n\neSurf\n";
-    for(int i=0; i<mesh.eSurf.size(); i++){
+    for(int i=0; i<data.eSurf.size(); i++){
         cout << "Elem " << i << " -- ";
-        for(int j=0; j<mesh.eSurf[i].size(); j++){
-            cout << mesh.eSurf[i][j] << ", ";
+        for(int j=0; j<data.eSurf[i].size(); j++){
+            cout << data.eSurf[i][j] << ", ";
         }
         cout << "\n";
     }
 
     cout << "\n\nFaces\n";
-    for(int i=0; i<mesh.neuFace.size(); i++){
-        for(int j=0; j<mesh.neuFace[i].size(); j++){
-            cout << mesh.neuFace[i][j] << ", ";
+    for(int i=0; i<data.neuFace.size(); i++){
+        for(int j=0; j<data.neuFace[i].size(); j++){
+            cout << data.neuFace[i][j] << ", ";
         }
         cout << "\n";
     }
@@ -652,8 +652,8 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     cout << "\n\ndirNode\n";
     for(int i=0; i<3; i++){
         cout << "dim " << i << " -- ";
-        for(int j=0; j<mesh.dirNode[i].size(); j++){
-            cout << mesh.dirNode[i][j] << ",";
+        for(int j=0; j<data.dirNode[i].size(); j++){
+            cout << data.dirNode[i][j] << ",";
         }
         cout << "\n";
     }
@@ -661,18 +661,18 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     cout << "\n\ndirVal\n";
     for(int i=0; i<3; i++){
         cout << "dim " << i << " -- ";
-        for(int j=0; j<mesh.dirVal[i].size(); j++){
-            cout << mesh.dirVal[i][j] << ",";
+        for(int j=0; j<data.dirVal[i].size(); j++){
+            cout << data.dirVal[i][j] << ",";
         }
         cout << "\n";
     }
 
     cout << "\n\ncoupNode\n";
     for(int i=0; i<3; i++){
-        for(int j=0; j<mesh.coupNode[i].size(); j++){
+        for(int j=0; j<data.coupNode[i].size(); j++){
             cout << "dim " << i << " -- ";
-            for(int k=0; k<mesh.coupNode[i][j].size(); k++){
-                cout << mesh.coupNode[i][j][k] << ",";
+            for(int k=0; k<data.coupNode[i][j].size(); k++){
+                cout << data.coupNode[i][j][k] << ",";
             }
             cout << "\n";
         }
@@ -682,8 +682,8 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     cout << "\n\ndeltaNode\n";
     for(int i=0; i<3; i++){
         cout << "dim " << i << " -- ";
-        for(int j=0; j<mesh.deltaNode[i].size(); j++){
-            cout << "(" << mesh.deltaNode[i][j].first << "," << mesh.deltaNode[i][j].second << ") ";
+        for(int j=0; j<data.deltaNode[i].size(); j++){
+            cout << "(" << data.deltaNode[i][j].first << "," << data.deltaNode[i][j].second << ") ";
         }
         cout << "\n";
     }

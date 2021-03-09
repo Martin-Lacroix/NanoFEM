@@ -73,19 +73,19 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-void read(std::string path[2],meshStruct &mesh,timeStruct &time);
+void read(std::string path[2],dataStruct &data,timeStruct &time);
 
 // Functions to set the boundary conditions
 
-void neumann(readStruct &read,meshStruct &mesh);
-void dirichlet(readStruct &read,meshStruct &mesh);
+void neumann(readStruct &read,dataStruct &data);
+void dirichlet(readStruct &read,dataStruct &data);
 
 // Functions to read the different input files
 
-void setSurface(readStruct &read,meshStruct &mesh);
-void readInput(readStruct &read,meshStruct &mesh,std::string path);
+void setSurface(readStruct &read,dataStruct &data);
+void readInput(readStruct &read,dataStruct &data,std::string path);
 std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
-void readMeshSize(readStruct &read,meshStruct &mesh,std::string path);
-void readSpecies(readStruct &read,meshStruct &mesh,std::string path);
+void readMeshSize(readStruct &read,dataStruct &data,std::string path);
+void readSpecies(readStruct &read,dataStruct &data,std::string path);
 
 #endif

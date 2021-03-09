@@ -34,14 +34,14 @@ void write(Mesh &mesh,timeStruct &time,vector<darray> &uList,vector<darray> &sig
 
     // Writes the node coordinates as (x,y,z)
 
-    for(array3d nXYZ:mesh.mesh.nXYZ){
+    for(array3d nXYZ:mesh.data.nXYZ){
         for(int i=0; i<nXYZ.size()-1; i++){coordinates << nXYZ[i] << ",";}
         coordinates << nXYZ.back() << "\n";
     }
 
     // Writes the element nodes as (elem,node)
 
-    for(ivector eNode:mesh.mesh.eNode){
+    for(ivector eNode:mesh.data.eNode){
         for(int i=0; i<eNode.size()-1; i++){elements << eNode[i] << ",";}
         elements << eNode.back() << "\n";
     }
@@ -73,7 +73,7 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 
     int nLen = 3*Mesh.nLen;
     double dt = pow(wave.dt,2);
-    int size = 9*Mesh.eLen*pow(Mesh.mesh.order+1,6)/4;
+    int size = 9*Mesh.eLen*pow(Mesh.data.order+1,6)/4;
 
     darray B;
     sparse K,M,M1;
@@ -149,7 +149,7 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 // Solves the linear system in quasistatic equilibrium    |
 // -------------------------------------------------------|
 
-darray solveStatic(Mesh &Mesh){
+darray solveStatic(Mesh &mesh){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
@@ -158,8 +158,8 @@ darray solveStatic(Mesh &Mesh){
 
     // Builds the system matrix and vector
 
-    int nLen = 3*Mesh.nLen;
-    int size = 9*Mesh.eLen*pow(Mesh.mesh.order+1,6)/4;
+    int nLen = 3*mesh.nLen;
+    int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
 
     sparse K;
     darray B;
@@ -167,8 +167,8 @@ darray solveStatic(Mesh &Mesh){
     alglib::sparsecreate(nLen,nLen,size,K);
     math::zero(B);
 
-    Mesh.totalKB(K,B);
-    Mesh.neumann(B);
+    mesh.totalKB(K,B);
+    mesh.neumann(B);
 
     // Prints the computation time of the operation
 
@@ -195,9 +195,9 @@ darray solveStatic(Mesh &Mesh){
     }
     */
 
-    Mesh.delta(K,B);
-    Mesh.coupling(K,B);
-    Mesh.dirichlet(K,B);
+    mesh.delta(K,B);
+    mesh.coupling(K,B);
+    mesh.dirichlet(K,B);
     alglib::sparseconverttocrs(K);
 
     // Prints the computation time of the operation
@@ -217,7 +217,7 @@ darray solveStatic(Mesh &Mesh){
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
-    Mesh.complete(u);
+    mesh.complete(u);
 
     // Prints the computation time of the operation
 
@@ -242,10 +242,10 @@ int main(){
 
     // Reads the input files from Nascam
 
-    meshStruct mesh;
+    dataStruct data;
     timeStruct time;
     string path[2] = {"input.txt","input/test.xyz"};
-    read(path,mesh,time);
+    read(path,data,time);
 
     // Prints the computation time of the operation
 
@@ -256,7 +256,7 @@ int main(){
 
     // Creates the mesh class and solves with conjugate gradient
 
-    Mesh Mesh(mesh);
+    Mesh mesh(data);
     vector<darray> uList;
     vector<darray> sigma;
 
@@ -264,15 +264,15 @@ int main(){
 
     if(time.u0.length()==0){
 
-        darray u = solveStatic(Mesh);
+        darray u = solveStatic(mesh);
         uList.push_back(u);
 
         // Computes Von Mises stresses and updates the nodes
 
         start = chrono::high_resolution_clock::now();
         cout << "Stress extraction --- ";
-        sigma = Mesh.stress(u);
-        Mesh.update(u);
+        sigma = mesh.stress(u);
+        mesh.update(u);
 
         // Prints the computation time of the operation
 
@@ -284,13 +284,13 @@ int main(){
 
     // Computes the wave propagation
 
-    else{uList = solveWave(Mesh,time);}
+    else{uList = solveWave(mesh,time);}
 
     // Writes the results in a text file
 
     start = chrono::high_resolution_clock::now();
     cout << "Writes the results --- ";
-    write(Mesh,time,uList,sigma);
+    write(mesh,time,uList,sigma);
 
     // Prints the computation time of the operation
 
@@ -298,20 +298,20 @@ int main(){
     clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << clock.count()/1e6 << " sec\n\n";
 
-    /*
+    
     cout << "\n";
-    for(int i=0; i<Mesh.nLen; i++){
+    for(int i=0; i<mesh.nLen; i++){
         cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<Mesh.nLen; i++){
-        cout << "Node " << i << " -- uy = " << uList.back()[i+Mesh.nLen] << "\n";
+    for(int i=0; i<mesh.nLen; i++){
+        cout << "Node " << i << " -- uy = " << uList.back()[i+mesh.nLen] << "\n";
     }
     cout << "\n";
-    for(int i=0; i<Mesh.nLen; i++){
-        cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
+    for(int i=0; i<mesh.nLen; i++){
+        cout << "Node " << i << " -- uz = " << uList.back()[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
-    */
+    
 
 }
