@@ -256,7 +256,7 @@ int main(){
 
     // Creates the mesh class and solves with conjugate gradient
 
-    Mesh mesh(data);
+    Mesh mesh(move(data));
     vector<darray> uList;
     vector<darray> sigma;
 

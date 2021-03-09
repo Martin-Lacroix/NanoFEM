@@ -5,10 +5,9 @@ using namespace std;
 // Builds the elements list, shape functions and quadratures    |
 // -------------------------------------------------------------|
 
-Mesh::Mesh(dataStruct &data){
+Mesh::Mesh(dataStruct &&input) : data{move(input)}{
     
     quadStruct quad;
-    this->data = data;
     nLen = data.nXYZ.size();
     eLen = data.eNode.size();
     fLen = data.neuFace.size();

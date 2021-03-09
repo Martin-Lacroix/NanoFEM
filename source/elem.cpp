@@ -5,13 +5,11 @@ using namespace std;
 // Class of hexahedron isoparametric lagrange element in 3D   |
 // -----------------------------------------------------------|
 
-Elem::Elem(vector<array3d> nXYZ,ivector surface){
+Elem::Elem(vector<array3d> arg1,ivector arg2) : nXYZ{arg1},surface{arg2}{
 
-    // Builds the Jacobian matrix and its inverse
+    // Sets the number of nodes in each dimension
 
-    this->nXYZ = nXYZ;
     nLen = nXYZ.size();
-    this->surface = surface;
     sLen = cbrt(nLen+1e-5);
 }
 

@@ -44,9 +44,10 @@ class Mesh{
 
     public:
 
+    Mesh(dataStruct &&data);
+
     // Functions available in the mesh.cpp file
 
-    Mesh(dataStruct &data);
     void totalB(darray &B);
     void totalM(sparse &M);
     void totalKB(sparse &K,darray &B);
@@ -59,8 +60,8 @@ class Mesh{
     void neumann(darray &B);
     void complete(darray &u);
     void delta(sparse &K,darray &B);
-    void coupling(sparse&K,darray &B);
-    void dirichlet(sparse&K,darray &B);
+    void coupling(sparse &K,darray &B);
+    void dirichlet(sparse &K,darray &B);
 
     // Internal variables of the system
 
