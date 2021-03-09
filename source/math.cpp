@@ -120,7 +120,7 @@ namespace math{
     }
 
     // ------------------------------------------------------|
-    // Computes the vector operation V3 = V2 - (V1·V2) V1    |
+    // Computes the vector operation V3 = V1 - (V1·V2) V2    |
     // ------------------------------------------------------|
 
     array3d dotsub(array3d &V1,array3d &V2){
@@ -223,9 +223,9 @@ namespace math{
         return V2;
     }
 
-    // -------------------------------------|
-    // Fills a dense matrix M with zeros    |
-    // -------------------------------------|
+    // --------------------------------------------------|
+    // Fills an initialized dense matrix M with zeros    |
+    // --------------------------------------------------|
 
     void zero(matrix &M){
 
@@ -236,9 +236,9 @@ namespace math{
         }
     }
 
-    // ------------------------------------|
-    // Fills a dense array V with zeros    |
-    // ------------------------------------|
+    // -------------------------------------------------|
+    // Fills an initialized dense array V with zeros    |
+    // -------------------------------------------------|
 
     void zero(darray &V){
         for(int i=0; i<V.length(); i++){V(i) = 0;}
@@ -276,12 +276,17 @@ namespace math{
         int nLen = alglib::sparsegetnrows(M);
         vector<ivector> row(3*nLen);
 
+        row.reserve(alglib::sparsegetuppercount(M));
+
         // Stores the non-zero indice locations per row and column
 
         while(alglib::sparseenumerate(M,I,J,i,j,val)){
+            if(abs(val)<1e-12){alglib::sparseset(M,i,j,0);}
 
-            row[i].push_back(j);
-            if(i!=j){row[j].push_back(i);}
+            else{
+                row[i].push_back(j);
+                if(i!=j){row[j].push_back(i);}
+            }
         }
         return row;
     }
@@ -395,5 +400,72 @@ namespace math{
             }
         }
         return N;
+    }
+
+    // --------------------------------------------------------------|
+    // Projection matrix for the surface gradient in a 3D element    |
+    // --------------------------------------------------------------|
+
+    matrix projection(array3d norm){
+
+        matrix T,P;
+        P.setlength(3,3);
+        T.setlength(6,6);
+
+        // Computes the surface gredient ∇s = (I-n⊗n)∇
+
+        for(int j=0; j<3; j++){
+            for(int k=0; k<3; k++){
+                
+                if(j==k){P(j,k) = 1-norm[j]*norm[k];}
+                else{P(j,k) = -norm[j]*norm[k];}
+            }
+        }
+
+        // Computes the projection matrix with the normal
+
+        T(0,0) = P(0,0)*P(0,0);
+        T(0,1) = P(0,1)*P(0,1);
+        T(0,2) = P(2,0)*P(2,0);
+        T(0,3) = 2*P(0,0)*P(0,1);
+        T(0,4) = 2*P(2,0)*P(0,1);
+        T(0,5) = 2*P(0,0)*P(2,0);
+        
+        T(1,0) = P(0,1)*P(0,1);
+        T(1,1) = P(1,1)*P(1,1);
+        T(1,2) = P(1,2)*P(1,2);
+        T(1,3) = 2*P(0,1)*P(1,1);
+        T(1,4) = 2*P(1,2)*P(1,1);
+        T(1,5) = 2*P(0,1)*P(1,2);
+        
+        T(2,0) = P(2,0)*P(2,0);
+        T(2,1) = P(1,2)*P(1,2);
+        T(2,2) = P(2,2)*P(2,2);
+        T(2,3) = 2*P(1,2)*P(2,0);
+        T(2,4) = 2*P(1,2)*P(2,2);
+        T(2,5) = 2*P(2,2)*P(2,0);
+        
+        T(3,0) = P(0,0)*P(0,1);
+        T(3,1) = P(0,1)*P(1,1);
+        T(3,2) = P(2,0)*P(1,2);
+        T(3,3) = P(0,0)*P(1,1)+P(0,1)*P(0,1);
+        T(3,4) = P(2,0)*P(1,1)+P(1,2)*P(0,1);
+        T(3,5) = P(2,0)*P(0,1)+P(0,0)*P(1,2);
+        
+        T(4,0) = P(0,1)*P(2,0);
+        T(4,1) = P(1,2)*P(1,1);
+        T(4,2) = P(1,2)*P(2,2);
+        T(4,3) = P(1,1)*P(2,0)+P(0,1)*P(1,2);
+        T(4,4) = P(1,1)*P(2,2)+P(1,2)*P(1,2);
+        T(4,5) = P(1,2)*P(2,0)+P(0,1)*P(2,2);
+        
+        T(5,0) = P(0,0)*P(2,0);
+        T(5,1) = P(0,1)*P(1,2);
+        T(5,2) = P(2,2)*P(2,0);
+        T(5,3) = P(0,1)*P(2,0)+P(0,0)*P(1,2);
+        T(5,4) = P(2,0)*P(1,2)+P(2,2)*P(0,1);
+        T(5,5) = P(2,2)*P(0,0)+P(2,0)*P(2,0);
+
+        return T;
     }
 }

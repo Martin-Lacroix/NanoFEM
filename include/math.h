@@ -53,12 +53,13 @@ namespace math{
     void zero(darray &V);
     void zero(matrix &M);
 
-    // Other general sparse and dense matrix functions
-
+    // Other general fiunctions for sparse or dense matrices
+    
     array3d cross(array3d &V1,array3d &V2,bool k=0);
     std::vector<ivector> sparsemap(sparse &M);
     array3d dotsub(array3d &V1,array3d &V2);
     matrix invert(matrix &M,double det);
+    matrix projection(array3d norm);
 
     // Symmetric sparse matrix operations only
 

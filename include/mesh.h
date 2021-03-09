@@ -30,7 +30,7 @@ struct meshStruct{
     std::vector<ivector> coupNode[3];
     std::vector<std::pair<int,int>> deltaNode[3];
 
-    // Volume Young-Poisson-density and Surface Young-Poisson
+    // Volume E-v-density and Surface E-v-tension
 
     std::vector<array3d> EvR;
     std::vector<array3d> EvS;
@@ -46,18 +46,17 @@ class Mesh{
 
     // Functions available in the mesh.cpp file
 
-    sparse totalK();
-    sparse totalM();
-    darray neumann();
-    shapeStruct shape(quadStruct quad);
+    Mesh(meshStruct &mesh);
+    void totalB(darray &B);
+    void totalM(sparse &M);
+    void totalKB(sparse &K,darray &B);
+    shapeStruct shape(quadStruct &quad);
     std::vector<darray> stress(darray &u);
 
-    sparse totalK2();
-
-    // Constructor and operations on the stiffness matrix
+    // Boundary conditions on the total system
     
-    Mesh(meshStruct &mesh);
     void update(darray &u);
+    void neumann(darray &B);
     void complete(darray &u);
     void delta(sparse &K,darray &B);
     void coupling(sparse&K,darray &B);

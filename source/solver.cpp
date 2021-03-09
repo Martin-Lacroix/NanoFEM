@@ -62,7 +62,7 @@ void write(Mesh &mesh,timeStruct &time,vector<darray> &uList,vector<darray> &sig
 // Solves the linear system with wave propagation    |
 // --------------------------------------------------|
 
-vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
+vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
@@ -71,12 +71,19 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
 
     // Builds the full K and M matrices of the system
 
-    sparse M1;
-    int nLen = 3*mesh.nLen;
-    sparse M = mesh.totalM();
-    sparse K = mesh.totalK();
-    darray B = mesh.neumann();
+    int nLen = 3*Mesh.nLen;
     double dt = pow(wave.dt,2);
+    int size = 9*Mesh.eLen*pow(Mesh.mesh.order+1,6)/4;
+
+    darray B;
+    sparse K,M,M1;
+    B.setlength(nLen);
+    alglib::sparsecreate(nLen,nLen,size,K);
+    math::zero(B);
+
+    Mesh.totalM(M);
+    Mesh.neumann(B);
+    Mesh.totalKB(K,B);
 
     alglib::sparseconverttocrs(K);
     alglib::sparsecopytocrs(M,M1);
@@ -113,9 +120,9 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
 
         // Sets the boundary conditions
 
-        mesh.delta(M,y);
-        mesh.coupling(M,y);
-        mesh.dirichlet(M,y);
+        Mesh.delta(M,y);
+        Mesh.coupling(M,y);
+        Mesh.dirichlet(M,y);
         alglib::sparseconverttocrs(M);
 
         // Solves the symmetric linear system with Alglib
@@ -125,7 +132,7 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
         alglib::lincgcreate(nLen,state);
         alglib::lincgsolvesparse(state,M,1,y);
         alglib::lincgresults(state,u2,rep);
-        mesh.complete(u2);
+        Mesh.complete(u2);
         u.push_back(u2);
     }
 
@@ -142,35 +149,27 @@ vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
 // Solves the linear system in quasistatic equilibrium    |
 // -------------------------------------------------------|
 
-darray solveStatic(Mesh &mesh){
+darray solveStatic(Mesh &Mesh){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
     auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << "\nBuilds the matrix --- ";
 
-    // Builds the full K matrix of the system
+    // Builds the system matrix and vector
 
-    int nLen = 3*mesh.nLen;
-    sparse K = mesh.totalK();
-    darray B = mesh.neumann();
+    int nLen = 3*Mesh.nLen;
+    int size = 9*Mesh.eLen*pow(Mesh.mesh.order+1,6)/4;
 
-/*
-    sparse K2 = mesh.totalK2();
-    darray B2;
-    B2.setlength(3*nLen);
+    sparse K;
+    darray B;
+    B.setlength(nLen);
+    alglib::sparsecreate(nLen,nLen,size,K);
+    math::zero(B);
 
-    for(int i=0; i<nLen; i++){
+    Mesh.totalKB(K,B);
+    Mesh.neumann(B);
 
-        B2(i) = B(i);
-        B2(i+nLen) = 0;
-    }
-
-    K = K2;
-    B = B2;
-    nLen = 3*nLen;
-    */
-    
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
@@ -180,10 +179,6 @@ darray solveStatic(Mesh &mesh){
     cout << "Boundary conditions --- ";
 
     // Applies boundary conditions to K and B
-
-    mesh.delta(K,B);
-    mesh.coupling(K,B);
-    mesh.dirichlet(K,B);
 
 /*
     ofstream Kfile("output/K.txt");
@@ -198,10 +193,11 @@ darray solveStatic(Mesh &mesh){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-*/
+    */
 
-
-
+    Mesh.delta(K,B);
+    Mesh.coupling(K,B);
+    Mesh.dirichlet(K,B);
     alglib::sparseconverttocrs(K);
 
     // Prints the computation time of the operation
@@ -221,7 +217,7 @@ darray solveStatic(Mesh &mesh){
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
-    mesh.complete(u);
+    Mesh.complete(u);
 
     // Prints the computation time of the operation
 
@@ -302,6 +298,7 @@ int main(){
     clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << clock.count()/1e6 << " sec\n\n";
 
+    /*
     cout << "\n";
     for(int i=0; i<Mesh.nLen; i++){
         cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
@@ -315,6 +312,6 @@ int main(){
         cout << "Node " << i << " -- uz = " << uList.back()[i+2*Mesh.nLen] << "\n";
     }
     cout << "\n";
-    
+    */
 
 }

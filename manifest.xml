@@ -29,7 +29,7 @@
 			<param type="DOUBLE">
 				<name>Smoothing depth</name>
 				<default>0</default>
-				<unit>Lc</unit>
+				<unit>nm</unit>
 			</param>
 		</group>
 
@@ -101,6 +101,7 @@
 			<param type="LIST">
 				<name>Dimension</name>
 				<element>All</element>
+				<element>eZZ</element>
 				<default>All</default>
 			</param>
 			<param type="DOUBLE">
@@ -112,7 +113,7 @@
 
 		<group name="Layer Parameters" type="LAYER_TABLE">
 			<param type="DOUBLE" >
-				<name>Young modulus</name>
+				<name>Young modulus (GPa)</name>
 				<default>1</default>
 			</param>
 			<param type="DOUBLE" >
@@ -120,11 +121,15 @@
 				<default>0.3</default>
 			</param>
 			<param type="DOUBLE" >
-				<name>Surface modulus</name>
+				<name>Surface modulus (N/m)</name>
 				<default>0</default>
 			</param>
 			<param type="DOUBLE" >
 				<name>Surface ratio</name>
+				<default>0</default>
+			</param>
+			<param type="DOUBLE" >
+				<name>Surface tension (N/m)</name>
 				<default>0</default>
 			</param>
 		</group>

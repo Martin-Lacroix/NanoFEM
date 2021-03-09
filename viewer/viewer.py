@@ -118,9 +118,9 @@ gmsh.view.add("Displacement z",3)
 gmsh.view.add("Stress xx",4)
 gmsh.view.add("Stress yy",5)
 gmsh.view.add("Stress zz",6)
-gmsh.view.add("Stress yz",7)
-gmsh.view.add("Stress zx",8)
-gmsh.view.add("Stress xy",9)
+gmsh.view.add("Stress xy",7)
+gmsh.view.add("Stress yz",8)
+gmsh.view.add("Stress zx",9)
 
 # Writes the displacement data in the model
 

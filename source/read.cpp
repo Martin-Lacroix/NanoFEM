@@ -43,6 +43,7 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
     getline(file,input,'!');
     read.cropZ = stod(input);
     getline(file,input,'\n');
+    read.cropZ /= read.Lc;
 
     // Reads the parameters of empty elements
 
@@ -87,7 +88,7 @@ void readInput(readStruct &read,meshStruct &mesh,string path){
 
         dvector param = tovec(input);
         read.Ev.push_back({param[0],param[1]});
-        read.EvS.push_back({param[2],param[3]});
+        read.EvS.push_back({param[2],param[3],param[4]});
         getline(file,input,'\n');
     }
 }
@@ -156,7 +157,7 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
             for(int k=0; k<dLen[2]; k++){
                 
                 mesh.eNode.push_back({});
-                int eLen = mesh.eNode.size();
+                int eID = mesh.eNode.size()-1;
                 read.neighbour.push_back(ivector(6,-1));
 
                 // Computes the first index and geometrical spacing
@@ -176,17 +177,14 @@ void readMeshSize(readStruct &read,meshStruct &mesh,string path){
                     }
                 }
 
-                // Stores the list of neightbour elements on 3 bottom faces
+                // Stores the list of neightbour elements
 
-                if(i!=0){read.neighbour.back()[0] = eLen-dLen[1]*dLen[2];}
-                if(j!=0){read.neighbour.back()[2] = eLen-dLen[2];}
-                if(k!=0){read.neighbour.back()[4] = eLen-1;}
-
-                // Stores the list of neightbour elements on 3 top faces
-
-                if(i!=dLen[0]-1){read.neighbour.back()[1] = eLen+dLen[1]*dLen[2];}
-                if(j!=dLen[1]-1){read.neighbour.back()[3] = eLen+dLen[2];}
-                if(k!=dLen[2]-1){read.neighbour.back()[5] = eLen+1;}
+                if(k!=0){read.neighbour.back()[0] = eID-1;}
+                if(k!=dLen[2]-1){read.neighbour.back()[1] = eID+1;}
+                if(j!=0){read.neighbour.back()[2] = eID-dLen[2];}
+                if(j!=dLen[1]-1){read.neighbour.back()[3] = eID+dLen[2];}
+                if(i!=0){read.neighbour.back()[4] = eID-dLen[2]*dLen[1];}
+                if(i!=dLen[0]-1){read.neighbour.back()[5] = eID+dLen[2]*dLen[1];}
             }
         }
     }
@@ -281,7 +279,7 @@ void readSpecies(readStruct &read,meshStruct &mesh,string path){
         }
         else{
             int max = max_element(frac[i].begin(),frac[i].end())-frac[i].begin();
-            mesh.EvS[i] = {read.EvS[max][0],read.EvS[max][1],0};
+            mesh.EvS[i] = {read.EvS[max][0],read.EvS[max][1],read.EvS[max][2]};
             mesh.EvR[i] = {read.Ev[max][0],read.Ev[max][1],0};
             read.empty[i] = 0;
         }
@@ -305,7 +303,7 @@ void surface(readStruct &read,meshStruct &mesh){
             for(int j=0; j<read.neighbour[i].size(); j++){
                 
                 int idx = read.neighbour[i][j];
-                if(j==3 && idx==-1){mesh.eSurf[i].push_back(j);}
+                if(j==1 && idx==-1){mesh.eSurf[i].push_back(j);}
                 else if(idx!=-1 && read.empty[idx]==1){mesh.eSurf[i].push_back(j);}
             }
         }
@@ -329,13 +327,12 @@ void dirichlet(readStruct &read,meshStruct &mesh){
         tol[i] = read.eSize[i]/(mesh.order+1);
     }
 
-    // Computes some repeatitly needed values
+    // RowLoc stores tracks the node added each row of in coupNode
 
-    vector<ivector> row(3,ivector(mesh.nXYZ.size(),-1));
-    ivector add1 = {(dLen[1]+1)*(dLen[2]+1),(dLen[2]+1),1};
-    ivector add2 = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
+    vector<ivector> rowLoc(3,ivector(mesh.nXYZ.size(),-1));
+    ivector opposite = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
 
-    // Initialization and lock the node at the origin
+    // Initialization and lock the node (0,0,0) at the origin
 
     for(int i=0; i<3; i++){
         
@@ -344,118 +341,143 @@ void dirichlet(readStruct &read,meshStruct &mesh){
         mesh.coupNode[i].resize(1);
     }
 
-   // Prevents the elongation of the sheared face
+    // Uniform (j,k) : sets the displacement along k of the top face j uniform
 
-    int f = read.deltaZero.first;
-    int d = read.deltaZero.second;
-    double fLen = read.zero[f]+read.dSize[f];
+    for(pair<int,double> pair:read.uniform){
 
-    // Selects the nodes at the edge of the conatrained face
+        int j = pair.first;
+        int k = pair.second;
 
-    for(int i=0; i<mesh.nXYZ.size(); i++){
+        // For each node at the top surface of the dimension j
 
-        if(abs(mesh.nXYZ[i][f]-fLen)<tol[f]){
-            if(abs(mesh.nXYZ[i][d]-read.zero[d])<tol[d]){
-
-                // Change of variable u => Δu = 0 for the other nodes of the face
-
-                for(int j=1; j<=dLen[d]; j++){
-
-                    mesh.deltaNode[d].push_back(make_pair(i+j*add1[d],i));
-                    mesh.dirNode[d].push_back(i+j*add1[d]);
-                    mesh.dirVal[d].push_back(0);
-                }
-            }
-        }
-    }
-    
-    // Locks the displacement in all directions if clamped
-
-    for(int j:read.clamped){
         for(int i=0; i<mesh.nXYZ.size(); i++){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
 
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
-                for(int k=0; k<3; k++){
+                // Adds the node to coupNode[k] if not already there
 
-                    mesh.dirNode[k].push_back(i);
-                    mesh.dirVal[k].push_back(0);
+                if(rowLoc[k][i]<0){
+
+                    mesh.coupNode[k][0].push_back(i);
+                    rowLoc[k][i] = 0;
                 }
             }
         }
     }
 
-    // Imposes the axial displacement on a top face
+    // Axial (j,k) : imposes the displacement k along j of the top face j
 
-    for(pair<int,double> j:read.axial){
+    for(pair<int,double> pair:read.axial){
+
+            int j = pair.first;
+            int k = pair.second;
+
         for(int i=0; i<mesh.nXYZ.size(); i++){
 
-            if(abs(mesh.nXYZ[i][j.first]-read.zero[j.first])<tol[j.first]){
+            // For each node at the top surface of the dimension j
 
-                mesh.dirNode[j.first].push_back(i+add2[j.first]);
-                mesh.dirVal[j.first].push_back(j.second);
-            }
-        }
-    }
-
-    // Stores the Dirichlet boundary conditions
-
-    for(int j:read.flat){
-        for(int i=0; i<mesh.nXYZ.size(); i++){
-            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                // Lock the axis if the current node is at the bottom
+            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
 
                 mesh.dirNode[j].push_back(i);
-                mesh.dirVal[j].push_back(0);
-
-                // Coupled displacement in the axial dimension
-
-                if(row[j][i+add2[j]]<0){
-
-                    mesh.coupNode[j][0].push_back(i+add2[j]);
-                    row[j][i+add2[j]] = 0;
-                }
+                mesh.dirVal[j].push_back(k);
             }
         }
     }
-                
-    // Coupled displacement in 2 transversal dimensions
+
+    // LockBot (j,k) : locks the displacement along k of the bottom face j at 0
+
+    for(pair<int,double> pair:read.lockBot){
+
+        int j = pair.first;
+        int k = pair.second;
+
+        // For each node at the bottom surface of the dimension j
+
+        for(int i=0; i<mesh.nXYZ.size(); i++){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
+
+                mesh.dirNode[k].push_back(i);
+                mesh.dirVal[k].push_back(0);
+            }
+        }
+    }
+
+    // LockTop (j,k) : locks the displacement along k of the top face j at 0
+
+    for(pair<int,double> pair:read.lockTop){
+
+        int j = pair.first;
+        int k = pair.second;
+
+        // For each node at the top surface of the dimension j
+
+        for(int i=0; i<mesh.nXYZ.size(); i++){
+            if(abs(mesh.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+
+                mesh.dirNode[k].push_back(i);
+                mesh.dirVal[k].push_back(0);
+            }
+        }
+    }
+
+    // Coupled (j,k) : coupled u along k of opposite nodes of the top-bottom faces j
 
     for(int i=0; i<mesh.nXYZ.size(); i++){
         for(pair<int,int> pair:read.coupled){
 
             int j = pair.first;
             int k = pair.second;
-            int loc1 = row[k][i];
-            int loc2 = row[k][i+add2[j]];
+            int loc1 = rowLoc[k][i];
+            int loc2 = rowLoc[k][i+opposite[j]];
+
+            // For each node at the bottom surface of the dimension j
 
             if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                // Do not add the nodes with change of variable
-
-                if(abs(mesh.nXYZ[i][f]-fLen)<tol[f]){
-                    if(abs(mesh.nXYZ[i][d]-read.zero[d])<tol[d]){
-                        continue;
-                    }
-                }
 
                 // Check whether the first or second node is already in the list
 
                 if(loc1>=0 && loc2<0){
 
-                    mesh.coupNode[k][loc1].push_back(i+add2[j]);
-                    row[k][i+add2[j]] = loc1;
+                    mesh.coupNode[k][loc1].push_back(i+opposite[j]);
+                    rowLoc[k][i+opposite[j]] = loc1;
                 }
                 else if(loc1<0 && loc2>=0){
 
                     mesh.coupNode[k][loc2].push_back(i);
-                    row[k][i] = loc2;
+                    rowLoc[k][i] = loc2;
                 }
                 else if(loc1<0 && loc2<0){
 
-                    mesh.coupNode[k].push_back({i,i+add2[j]});
-                    row[k][i+add2[j]] = mesh.coupNode[k].size()-1;
-                    row[k][i] = mesh.coupNode[k].size()-1;
+                    mesh.coupNode[k].push_back({i,i+opposite[j]});
+                    rowLoc[k][i+opposite[j]] = mesh.coupNode[k].size()-1;
+                    rowLoc[k][i] = mesh.coupNode[k].size()-1;
+                }
+            }
+        }
+    }
+
+    // Selects the nodes at the edge of the conatrained face
+
+    for(int i=0; i<mesh.nXYZ.size(); i++){
+        for(pair<int,int> pair:read.deltaZero){
+
+            int j = pair.first;
+            int k = pair.second;
+
+            // For each node at the bottom surface of the dimension j
+
+            if(abs(mesh.nXYZ[i][j]-read.zero[j])<tol[j]){
+
+                // Does not take the node if at the surface k
+
+                if(abs(mesh.nXYZ[i][k]-read.zero[k])>tol[j]){
+                    if(abs(mesh.nXYZ[i][k]-read.zero[k]-read.dSize[k])>tol[j]){
+
+                        // Change of variable u => Δu = 0 for the other nodes of the face
+
+                        mesh.deltaNode[j].push_back(make_pair(i+opposite[j],i));
+                        mesh.dirNode[j].push_back(i+opposite[j]);
+                        mesh.dirVal[j].push_back(0);
+                    }
                 }
             }
         }
@@ -476,7 +498,7 @@ void neumann(readStruct &read,meshStruct &mesh){
 
     for(int n=0; n<read.axis[0].size(); n++){
         for(int i=0; i<mesh.eNode.size(); i++){
-            if(read.neighbour[i][2*read.axis[0][n]+1]==-1){
+            if(read.neighbour[i][5-2*read.axis[0][n]]==-1){
 
                 // Computes the nodes of the face without neighbour
 
@@ -517,41 +539,53 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
 
     if(read.type=="Axial stress"){
         
-        read.flat = {0,1,2};
+        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
     else if(read.load=="eXY"){
-        
-        read.flat = {0,2};
-        read.clamped = {0};
-        read.deltaZero = make_pair(0,1);
-        read.coupled = {make_pair(0,2),make_pair(1,0),make_pair(1,1),make_pair(1,2)};
+
+        read.uniform = {make_pair(0,1)};
+        read.lockTop = {make_pair(0,0),make_pair(0,2)};
+        read.lockBot = {make_pair(0,0),make_pair(0,1),make_pair(0,2),make_pair(2,2)};
+        read.coupled = {make_pair(1,0),make_pair(1,2)};
+        read.deltaZero = {make_pair(1,0)};
     }
     else if(read.load=="eYX"){
-        
-        read.flat = {1,2};
-        read.clamped = {1};
-        read.deltaZero = make_pair(1,0);
-        read.coupled = {make_pair(1,2),make_pair(0,0),make_pair(0,1),make_pair(0,2)};
+
+        read.uniform = {make_pair(1,0)};
+        read.lockTop = {make_pair(1,1),make_pair(1,2)};
+        read.lockBot = {make_pair(1,0),make_pair(1,1),make_pair(1,2),make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2)};
+        read.deltaZero = {make_pair(0,1)};
     }
     else if(read.load=="eZY"){
         
-        read.flat = {0,2};
-        read.clamped = {2};
-        read.deltaZero = make_pair(2,1);
+        read.uniform = {make_pair(2,1)};
+        read.lockTop = {make_pair(2,0),make_pair(2,2)};
+        read.lockBot = {make_pair(2,0),make_pair(2,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+        read.deltaZero = {make_pair(0,2),make_pair(1,2)};
     }
     else if(read.load=="eZX"){
+
+        read.uniform = {make_pair(2,0)};
+        read.lockTop = {make_pair(2,1),make_pair(2,2)};
+        read.lockBot = {make_pair(2,0),make_pair(2,1),make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+        read.deltaZero = {make_pair(0,2),make_pair(1,2)};
+    }
+    else if(read.type=="Hydrostatic" && read.load=="All"){
         
-        read.flat = {1,2};
-        read.clamped = {2};
-        read.deltaZero = make_pair(2,0);
+        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-
-    else if(read.type=="Hydrostatic"){
+    else if(read.type=="Hydrostatic" && read.load=="eZZ"){
         
-        read.flat = {0,1,2};
+        read.uniform = {make_pair(2,2)};
+        read.lockTop = {make_pair(0,0),make_pair(1,1)};
+        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2),make_pair(2,0),make_pair(2,1)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
 
@@ -567,7 +601,7 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
         for(double &n:mesh.nXYZ[i]){n *= read.Lc;}
     }
 
-/*
+    /*
     cout << "\n\nNodes\n";
     for(int i=0; i<mesh.nXYZ.size(); i++){
         for(int j=0; j<mesh.nXYZ[i].size(); j++){
@@ -580,6 +614,29 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
     for(int i=0; i<mesh.eNode.size(); i++){
         for(int j=0; j<mesh.eNode[i].size(); j++){
             cout << mesh.eNode[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nNeighbour\n";
+    for(int i=0; i<read.neighbour.size(); i++){
+        for(int j=0; j<read.neighbour[i].size(); j++){
+            cout << read.neighbour[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nEmpty\n";
+    for(int i=0; i<read.empty.size(); i++){
+        cout << "Elem " << i << " -- " << read.empty[i] << "\n";
+    
+    }
+
+    cout << "\n\neSurf\n";
+    for(int i=0; i<mesh.eSurf.size(); i++){
+        cout << "Elem " << i << " -- ";
+        for(int j=0; j<mesh.eSurf[i].size(); j++){
+            cout << mesh.eSurf[i][j] << ", ";
         }
         cout << "\n";
     }
@@ -621,6 +678,15 @@ void read(string path[2],meshStruct &mesh, timeStruct &time){
         }
         cout << "\n";
     }
-    */
 
+    cout << "\n\ndeltaNode\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<mesh.deltaNode[i].size(); j++){
+            cout << "(" << mesh.deltaNode[i][j].first << "," << mesh.deltaNode[i][j].second << ") ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+    */
 }

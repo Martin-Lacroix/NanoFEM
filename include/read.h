@@ -46,10 +46,8 @@ struct readStruct{
     ivector axis[2];
     double Fval;
 
-    // Index of the clamped and flat surfaces
-
-    ivector flat;
-    ivector clamped;
+    // Axis of the applied stress
+    
     std::vector<std::pair<int,double>> axial;
 
     // Type and axis of the applied stress
@@ -63,8 +61,11 @@ struct readStruct{
 
     // list of coupled and delta displacement (face,axis)
 
-    std::pair<int,int> deltaZero;
     std::vector<std::pair<int,int>> coupled;
+    std::vector<std::pair<int,int>> lockBot;
+    std::vector<std::pair<int,int>> lockTop;
+    std::vector<std::pair<int,int>> uniform;
+    std::vector<std::pair<int,int>> deltaZero;
 };
 
 // -------------------------------------------|

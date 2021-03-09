@@ -27,9 +27,9 @@ Mesh::Mesh(meshStruct &mesh){
     for(int i=0; i<quad.gLen; i++){
         for(int j=1; j<3; j++){
 
-            quadS[j-1].gRST[i] = {pow(-1,j),quad.gRST[i][0],quad.gRST[i][1]};
+            quadS[j-1].gRST[i] = {quad.gRST[i][0],quad.gRST[i][1],pow(-1,j)};
             quadS[j+1].gRST[i] = {quad.gRST[i][0],pow(-1,j),quad.gRST[i][1]};
-            quadS[j+3].gRST[i] = {quad.gRST[i][0],quad.gRST[i][1],pow(-1,j)};
+            quadS[j+3].gRST[i] = {pow(-1,j),quad.gRST[i][0],quad.gRST[i][1]};
         }
     }
 
@@ -44,7 +44,7 @@ Mesh::Mesh(meshStruct &mesh){
 // Returns the structure of 2D and 3D linear shape functions    |
 // -------------------------------------------------------------|
 
-shapeStruct Mesh::shape(quadStruct quad){
+shapeStruct Mesh::shape(quadStruct &quad){
 
     shapeStruct shape;
     dvector node(mesh.order+1);
@@ -89,35 +89,36 @@ shapeStruct Mesh::shape(quadStruct quad){
 // Computes the total stiffness matrix K for global FEM    |
 // --------------------------------------------------------|
 
-sparse Mesh::totalK(){
+void Mesh::totalKB(sparse &K,darray &B){
 
-    sparse K;
     int sLen = shape3D.N.cols();
-    int size = 9*eLen*pow(mesh.order+1,6)/4;
-    alglib::sparsecreate(3*nLen,3*nLen,size,K);
-
-    // Coordinates of the nodes of the element
-
     for(int i=0; i<eLen; i++){
+
+        // Coordinates of the nodes of the element
         
         vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
 
-        // Computes the elemental K matrices
+        // Computes the elemental matrices
 
         Elem elem(eXYZ,mesh.eSurf[i]);
-        matrix D = math::stiffness(mesh.EvR[i]);
-        //matrix Ds = math::stiffness(mesh.EvS[i]);
-        //matrix K2 = elem.selfKs(shapeS,Ds);
-        matrix K1 = elem.selfK(shape3D,D);
-        //math::add(1,1,K2,K1);
+        matrix Ke = elem.selfK(shape3D,mesh.EvR[i]);
+        pair<matrix,darray> Kb = elem.selfKB(shape2D,shapeS,mesh.EvS[i]);
 
+        // Inserts the elemental vector into the global B vector
+
+        for(int k=0; k<3; k++){
+            for(int j=0; j<sLen; j++){
+                B(mesh.eNode[i][j]+k*nLen) += Kb.second(j+k*sLen);
+            }
+        }
+        
         // Inserts the elemental matrix into the global K matrix
 
-        for(int j=0; j<sLen; j++){
-            for(int k=0; k<sLen; k++){
-                for(int m=0; m<3; m++){
-                    for(int n=0; n<3; n++){
+        for(int m=0; m<3; m++){
+            for(int n=0; n<3; n++){
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
 
                         int row = mesh.eNode[i][j]+m*nLen;
                         int col = mesh.eNode[i][k]+n*nLen;
@@ -126,7 +127,8 @@ sparse Mesh::totalK(){
 
                         if(row<=col){
 
-                            double val = K1[j+m*sLen][k+n*sLen];
+                            //double val = Ke[j+m*sLen][k+n*sLen]+Kb.first[j+m*sLen][k+n*sLen];
+                            double val = Ke[j+m*sLen][k+n*sLen];
                             alglib::sparseadd(K,row,col,val);
                         }
                     }
@@ -134,93 +136,18 @@ sparse Mesh::totalK(){
             }
         }
     }
-    return K;
 }
-
-
-
-
-
-
-sparse Mesh::totalK2(){
-
-    sparse K;
-    int sLen = shape3D.N.cols();
-    int size = 9*eLen*pow(mesh.order+1,6)/4;
-    alglib::sparsecreate(9*nLen,9*nLen,size,K);
-
-    // Coordinates of the nodes of the element
-
-    for(int i=0; i<eLen; i++){
-        
-        vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
-
-        // Computes the elemental K matrices
-
-        Elem elem(eXYZ,mesh.eSurf[i]);
-        matrix D = math::stiffness(mesh.EvR[i]);
-        matrix Ka = elem.selfK(shape3D,D);
-
-
-
-        D = math::couple(mesh.EvR[i][0],mesh.EvR[i][1],0);
-        matrix Kb = elem.selfK(shape3D,D);
-        matrix Ks = elem.selfM(shape3D,1);
-        matrix Kg = elem.selfG(shape3D);
-
-        // Inserts the elemental matrix into the global K matrix
-
-        for(int j=0; j<sLen; j++){
-            for(int k=0; k<sLen; k++){
-                for(int m=0; m<3; m++){
-                    for(int n=0; n<3; n++){
-
-                        int row = mesh.eNode[i][j]+m*nLen;
-                        int col = mesh.eNode[i][k]+n*nLen;
-
-                        double val = Kg[j+m*sLen][k+n*sLen];
-                        alglib::sparseadd(K,row,col+6*nLen,val); 
-
-                        val = Ks[j+m*sLen][k+n*sLen];
-                        alglib::sparseadd(K,row+3*nLen,col+6*nLen,val);
-
-                        // Adds the element only in the upper triangle
-
-                        if(row<=col){
-
-                            val = Ka[j+m*sLen][k+n*sLen];
-                            alglib::sparseadd(K,row,col,val);
-
-                            val = Kb[j+m*sLen][k+n*sLen];
-                            alglib::sparseadd(K,row+3*nLen,col+3*nLen,val);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return K;
-}
-
-
-
-
 
 // ---------------------------------------------------|
 // Computes the total mass matrix M for global FEM    |
 // ---------------------------------------------------|
 
-sparse Mesh::totalM(){
+void Mesh::totalM(sparse &M){
 
-    sparse M;
     int sLen = shape3D.N.cols();
-    int size = 9*eLen*pow(mesh.order+1,6)/4;
-    alglib::sparsecreate(3*nLen,3*nLen,size,M);
+    for(int i=0; i<eLen; i++){
 
     // Coordinates of the nodes of the element
-
-    for(int i=0; i<eLen; i++){
         
         vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.eNode[i][j]];}
@@ -232,10 +159,10 @@ sparse Mesh::totalM(){
 
         // Inserts the elemental matrix into the global M matrix
 
-        for(int j=0; j<sLen; j++){
-            for(int k=0; k<sLen; k++){
-                for(int m=0; m<3; m++){
-                    for(int n=0; n<3; n++){
+        for(int m=0; m<3; m++){
+            for(int n=0; n<3; n++){
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
 
                         int row = mesh.eNode[i][j]+m*nLen;
                         int col = mesh.eNode[i][k]+n*nLen;
@@ -252,23 +179,18 @@ sparse Mesh::totalM(){
             }
         }
     }
-    return M;
 }
 
 // -------------------------------------------------------------|
 // Computes the vector of applied stresses B from Neumann BC    |
 // -------------------------------------------------------------|
 
-darray Mesh::neumann(){
+void Mesh::neumann(darray &B){
 
-    darray B;
     int sLen = shape2D.N.cols();
-    B.setlength(3*nLen);
-    math::zero(B);
-
-    // Coordinates of the nodes composing the faces
-
     for(int i=0; i<fLen; i++){
+
+        // Coordinates of the nodes composing the faces
 
         vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = mesh.nXYZ[mesh.neuFace[i][j]];}
@@ -286,7 +208,6 @@ darray Mesh::neumann(){
             }
         }
     }
-    return B;
 }
 
 // ----------------------------------------------------------------|
@@ -510,8 +431,7 @@ vector<darray> Mesh::stress(darray &u){
         // Computes the averaged Von Mises stress
 
         Elem elem(eXYZ,mesh.eSurf[i]);
-        matrix D = math::stiffness(mesh.EvR[i]);
-        sigma[i] = elem.stress(shape3D,D,u1);
+        sigma[i] = elem.stress(shape3D,mesh.EvR[i],u1);
     }
     return sigma;
 }
