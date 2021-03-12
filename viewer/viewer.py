@@ -3,9 +3,10 @@ import gmsh
 
 # %% Load Data
 
-nXYZ = np.loadtxt(r"..\output\coordinates.txt",delimiter=",")
-elem = np.atleast_2d(np.loadtxt(r"..\output\elements.txt",delimiter=","))
-uList = np.atleast_2d(np.loadtxt(r"..\output\displacement.txt",delimiter=","))
+nXYZ = np.loadtxt(r"..\output\nodes.txt",delimiter=",")
+u = np.atleast_2d(np.loadtxt(r"..\output\disp.txt",delimiter=","))
+s = np.atleast_2d(np.loadtxt(r"..\output\stress.txt",delimiter=","))
+elem = np.atleast_2d(np.loadtxt(r"..\output\elem.txt",delimiter=","))
 
 eLen = elem.shape[0]
 nLen = nXYZ.shape[0]
@@ -15,28 +16,21 @@ nLen = nXYZ.shape[0]
 xLen = [np.min(nXYZ[:,0]),np.max(nXYZ[:,0])]
 yLen = [np.min(nXYZ[:,1]),np.max(nXYZ[:,1])]
 zLen = [np.min(nXYZ[:,2]),np.max(nXYZ[:,2])]
-step = len(uList)
 
 # Stores the displacement field
-
-ux = [0]*step
-uy = [0]*step
-uz = [0]*step
-
-for k in range(step):
     
-    ux[k] = [[uList[k][i]] for i in range(nLen)]
-    uy[k] = [[uList[k][i+nLen]] for i in range(nLen)]
-    uz[k] = [[uList[k][i+2*nLen]] for i in range(nLen)]
+ux = [[u[i,0]] for i in range(nLen)]
+uy = [[u[i,1]] for i in range(nLen)]
+uz = [[u[i,2]] for i in range(nLen)]
 
 # Stores the stress field
 
-try:
-    sig = []
-    s = np.atleast_2d(np.loadtxt(r"..\output\stress.txt",delimiter=","))
-    for j in range(6): sig.append([[s[i,j]] for i in range(eLen)])
-
-except: pass
+sxx = [[s[i,0]] for i in range(eLen)]
+syy = [[s[i,1]] for i in range(eLen)]
+szz = [[s[i,2]] for i in range(eLen)]
+sxy = [[s[i,3]] for i in range(eLen)]
+syz = [[s[i,4]] for i in range(eLen)]
+szx = [[s[i,5]] for i in range(eLen)]
 
 
 # %% Domain Geometry
@@ -109,34 +103,41 @@ else: gmsh.model.mesh.addElements(3,1,[12],[eTag],[eNode])
 
 # %% Plots the solution
 
-gmsh.view.add("Displacement x",1)
-gmsh.view.add("Displacement y",2)
-gmsh.view.add("Displacement z",3)
+gmsh.view.add("ux",1)
+gmsh.view.add("uy",2)
+gmsh.view.add("uz",3)
 
 # Stress field
 
-gmsh.view.add("Stress xx",4)
-gmsh.view.add("Stress yy",5)
-gmsh.view.add("Stress zz",6)
-gmsh.view.add("Stress xy",7)
-gmsh.view.add("Stress yz",8)
-gmsh.view.add("Stress zx",9)
+gmsh.view.add("sxx",4)
+gmsh.view.add("syy",5)
+gmsh.view.add("szz",6)
+gmsh.view.add("sxy",7)
+gmsh.view.add("syz",8)
+gmsh.view.add("szx",9)
 
 # Writes the displacement data in the model
-
-for i in range(step):
     
-    gmsh.view.addModelData(1,i,"Nascam","NodeData",nTag,ux[i])
-    gmsh.view.addModelData(2,i,"Nascam","NodeData",nTag,uy[i])
-    gmsh.view.addModelData(3,i,"Nascam","NodeData",nTag,uz[i])
+gmsh.view.addModelData(1,0,"Nascam","NodeData",nTag,ux)
+gmsh.view.addModelData(2,0,"Nascam","NodeData",nTag,uy)
+gmsh.view.addModelData(3,0,"Nascam","NodeData",nTag,uz)
 
-gmsh.write(r"..\output\displacement.msh")
-for i in range(3): gmsh.view.write(i+1,r"..\output\displacement.msh",append=True)
+gmsh.view.write(1,r"..\output\disp-X.msh")
+gmsh.view.write(2,r"..\output\disp-Y.msh")
+gmsh.view.write(3,r"..\output\disp-Z.msh")
 
 # Writes the stress data in the model
 
-if(len(sig)>0):
-    
-    gmsh.write(r"..\output\stress.msh")
-    for i in range(6): gmsh.view.addModelData(i+4,0,"Nascam","ElementData",eTag,sig[i])
-    for i in range(6): gmsh.view.write(i+4,r"..\output\stress.msh",append=True)
+gmsh.view.addModelData(4,0,"Nascam","ElementData",eTag,sxx)
+gmsh.view.addModelData(5,0,"Nascam","ElementData",eTag,syy)
+gmsh.view.addModelData(6,0,"Nascam","ElementData",eTag,szz)
+gmsh.view.addModelData(7,0,"Nascam","ElementData",eTag,sxy)
+gmsh.view.addModelData(8,0,"Nascam","ElementData",eTag,syz)
+gmsh.view.addModelData(9,0,"Nascam","ElementData",eTag,szz)
+
+gmsh.view.write(4,r"..\output\stress-XX.msh")
+gmsh.view.write(5,r"..\output\stress-YY.msh")
+gmsh.view.write(6,r"..\output\stress-ZZ.msh")
+gmsh.view.write(7,r"..\output\stress-XY.msh")
+gmsh.view.write(8,r"..\output\stress-YZ.msh")
+gmsh.view.write(9,r"..\output\stress-ZX.msh")

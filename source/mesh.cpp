@@ -234,7 +234,7 @@ void Mesh::dirichlet(sparse &K,darray &B){
                 B(j) -= math::get(K,j,idx)*data.dirVal[n][i];
                 math::symset(K,j,idx,0);
             }
-            row[idx].clear();
+            row[idx] = ivector();
         }
     }
 
@@ -295,7 +295,7 @@ void Mesh::coupling(sparse &K,darray &B){
                 // Zeroes the column and row in K corresoponding to the coupled node
 
                 for(int k:row[idx1]){math::symset(K,idx1,k,0);}
-                row[idx1].clear();
+                row[idx1] = ivector();
     
                 // Corrects the diagonal elements in K and edits B
 
@@ -418,19 +418,19 @@ vector<darray> Mesh::stress(darray &u){
 
         // Stores the displacement of the curent element nodes
 
-        darray u1;
-        u1.setlength(3*sLen);
+        darray ue;
+        ue.setlength(3*sLen);
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
-                u1[j+k*sLen] = u(data.eNode[i][j]+k*nLen);
+                ue[j+k*sLen] = u(data.eNode[i][j]+k*nLen);
             }
         }
 
         // Computes the averaged Von Mises stress
 
         Elem elem(eXYZ,data.eSurf[i]);
-        sigma[i] = elem.stress(shape3D,data.EvR[i],u1);
+        sigma[i] = elem.stress(shape3D,data.EvR[i],ue);
     }
     return sigma;
 }

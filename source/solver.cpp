@@ -5,56 +5,58 @@
 #include <chrono>
 using namespace std;
 
+// ---------------------------------------------------------|
+// Structure storing the time data and initial conditions   |
+// ---------------------------------------------------------|
+
+struct timeStruct{
+
+    // Saving frequency and total number of time steps
+
+    darray u0;
+    double dt;
+    int nSave;
+    int nSteps;
+};
+
 // ------------------------------------------------|
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void write(Mesh &mesh,timeStruct &time,vector<darray> &uList,vector<darray> &sigma){
+void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
     mkdir("output");
-    ofstream elements("output/elements.txt");
-    ofstream coordinates("output/coordinates.txt");
-    ofstream displacement("output/displacement.txt");
+    ofstream uXYZ("output/disp.txt");
+    ofstream elem("output/elem.txt");
+    ofstream nodes("output/nodes.txt");
+    ofstream stress("output/stress.txt");
 
     // Writes the displacement field in a text file
 
-    if(time.u0.length()>0){
-        for(int i=0; i<uList.size(); i+=time.nSave){
-
-            for(int j=0; j<uList[i].length()-1; j++){displacement << uList[i][j] << ",";}
-            displacement << uList[i][uList[i].length()-1] << "\n";
-        }
-    }
-    else{
-        for(darray u:uList){
-            for(int i=0; i<u.length()-1; i++){displacement << u[i] << ",";}
-            displacement << u[u.length()-1] << "\n";
-        }
+    for(int i=0; i<mesh.nLen; i++){
+        for(int j=0; j<2; j++){uXYZ << disp[i+j*mesh.nLen] << ",";}
+        uXYZ << disp[i+2*mesh.nLen] << "\n";
     }
 
     // Writes the node coordinates as (x,y,z)
 
     for(array3d nXYZ:mesh.data.nXYZ){
-        for(int i=0; i<nXYZ.size()-1; i++){coordinates << nXYZ[i] << ",";}
-        coordinates << nXYZ.back() << "\n";
+        for(int i=0; i<nXYZ.size()-1; i++){nodes << nXYZ[i] << ",";}
+        nodes << nXYZ.back() << "\n";
     }
 
     // Writes the element nodes as (elem,node)
 
     for(ivector eNode:mesh.data.eNode){
-        for(int i=0; i<eNode.size()-1; i++){elements << eNode[i] << ",";}
-        elements << eNode.back() << "\n";
+        for(int i=0; i<eNode.size()-1; i++){elem << eNode[i] << ",";}
+        elem << eNode.back() << "\n";
     }
 
     // Writes the averaged elemental stress in a text file
 
-    if(sigma.size()>0){
-        ofstream stress("output/stress.txt");
-
-        for(darray s:sigma){
-            for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
-            stress << s[s.length()-1] << "\n";
-        }
+    for(darray s:sigma){
+        for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
+        stress << s[s.length()-1] << "\n";
     }
 }
 
@@ -193,7 +195,7 @@ darray solveStatic(Mesh &mesh){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-    */
+*/
 
     mesh.delta(K,B);
     mesh.coupling(K,B);
@@ -245,7 +247,7 @@ int main(){
     dataStruct data;
     timeStruct time;
     string path[2] = {"input.txt","input/test.xyz"};
-    read(path,data,time);
+    read(path,data);
 
     // Prints the computation time of the operation
 
@@ -257,40 +259,28 @@ int main(){
     // Creates the mesh class and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    vector<darray> uList;
+    darray disp = solveStatic(mesh);
     vector<darray> sigma;
 
-    // Computes the quasitatic solution
+    // Computes Von Mises stresses and updates the nodes
 
-    if(time.u0.length()==0){
+    start = chrono::high_resolution_clock::now();
+    cout << "Stress extraction --- ";
+    sigma = mesh.stress(disp);
+    mesh.update(disp);
 
-        darray u = solveStatic(mesh);
-        uList.push_back(u);
+    // Prints the computation time of the operation
 
-        // Computes Von Mises stresses and updates the nodes
-
-        start = chrono::high_resolution_clock::now();
-        cout << "Stress extraction --- ";
-        sigma = mesh.stress(u);
-        mesh.update(u);
-
-        // Prints the computation time of the operation
-
-        stop = chrono::high_resolution_clock::now();
-        clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-        start = chrono::high_resolution_clock::now();
-        cout << clock.count()/1e6 << " sec\n";
-    }
-
-    // Computes the wave propagation
-
-    else{uList = solveWave(mesh,time);}
+    stop = chrono::high_resolution_clock::now();
+    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
+    start = chrono::high_resolution_clock::now();
+    cout << clock.count()/1e6 << " sec\n";
 
     // Writes the results in a text file
 
     start = chrono::high_resolution_clock::now();
     cout << "Writes the results --- ";
-    write(mesh,time,uList,sigma);
+    write(mesh,disp,sigma);
 
     // Prints the computation time of the operation
 
@@ -298,20 +288,20 @@ int main(){
     clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << clock.count()/1e6 << " sec\n\n";
 
-    
+/*
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- ux = " << uList.back()[i] << "\n";
+        cout << "Node " << i << " -- ux = " << disp[i] << "\n";
     }
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uy = " << uList.back()[i+mesh.nLen] << "\n";
+        cout << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
     }
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uz = " << uList.back()[i+2*mesh.nLen] << "\n";
+        cout << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
-    
+*/
 
 }

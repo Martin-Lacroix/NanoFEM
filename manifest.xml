@@ -76,6 +76,12 @@
 				<element>eZZ</element>
 				<default>eXX</default>
 			</param>
+			<param type="LIST">
+				<name>Free surface</name>
+				<element>Top Z</element>
+				<element>Bottom Z</element>
+				<element>Both</element>
+			</param>
 			<param type="DOUBLE">
 				<name>Axial stress</name>
 				<default>1</default>
@@ -91,6 +97,12 @@
 				<element>eZX</element>
 				<default>eXY</default>
 			</param>
+			<param type="LIST">
+				<name>Free surface</name>
+				<element>Top Z</element>
+				<element>Bottom Z</element>
+				<element>Both</element>
+			</param>
 			<param type="DOUBLE">
 				<name>Shear stress</name>
 				<default>1</default>
@@ -101,8 +113,16 @@
 			<param type="LIST">
 				<name>Dimension</name>
 				<element>All</element>
+				<element>eXX</element>
+				<element>eYY</element>
 				<element>eZZ</element>
 				<default>All</default>
+			</param>
+			<param type="LIST">
+				<name>Free surface</name>
+				<element>Top Z</element>
+				<element>Bottom Z</element>
+				<element>Both</element>
 			</param>
 			<param type="DOUBLE">
 				<name>Normal stress</name>

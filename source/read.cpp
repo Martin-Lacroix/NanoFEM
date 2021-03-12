@@ -76,7 +76,14 @@ void readInput(readStruct &read,dataStruct &data,string path){
         else if(input[i+1]=='Z'){read.axis[i] = {2};}
     }
 
-    // Reads the value of the action
+    // reads the surface location
+
+    getline(file,input,';');
+    if(input=="Top Z"){read.free = {1};}
+    else if(input=="Bottom Z"){read.free = {0};}
+    else if(input=="Both"){read.free = {0,1};}
+
+    // Reads the value of the stress
 
     getline(file,input,'!');
     read.Fval = stod(input);
@@ -303,8 +310,8 @@ void surface(readStruct &read,dataStruct &data){
             for(int j=0; j<read.neighbour[i].size(); j++){
                 
                 int idx = read.neighbour[i][j];
-                if(j==1 && idx==-1){data.eSurf[i].push_back(j);}
-                else if(idx!=-1 && read.empty[idx]==1){data.eSurf[i].push_back(j);}
+                if(idx==-1){for(int k:read.free){if(j==k){data.eSurf[i].push_back(k);}}}
+                else if(read.empty[idx]==1){data.eSurf[i].push_back(j);}
             }
         }
     }
@@ -528,7 +535,7 @@ void neumann(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-void read(string path[2],dataStruct &data, timeStruct &time){
+void read(string path[2],dataStruct &data){
 
     readStruct read;
     readInput(read,data,path[0]);
@@ -543,7 +550,7 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-    else if(read.load=="eXY"){
+    else if(read.type=="Shear stress" && read.load=="eXY"){
 
         read.uniform = {make_pair(0,1)};
         read.lockTop = {make_pair(0,0),make_pair(0,2)};
@@ -551,7 +558,7 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         read.coupled = {make_pair(1,0),make_pair(1,2)};
         read.deltaZero = {make_pair(1,0)};
     }
-    else if(read.load=="eYX"){
+    else if(read.type=="Shear stress" && read.load=="eYX"){
 
         read.uniform = {make_pair(1,0)};
         read.lockTop = {make_pair(1,1),make_pair(1,2)};
@@ -559,7 +566,7 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         read.coupled = {make_pair(0,1),make_pair(0,2)};
         read.deltaZero = {make_pair(0,1)};
     }
-    else if(read.load=="eZY"){
+    else if(read.type=="Shear stress" && read.load=="eZY"){
         
         read.uniform = {make_pair(2,1)};
         read.lockTop = {make_pair(2,0),make_pair(2,2)};
@@ -567,7 +574,7 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
         read.deltaZero = {make_pair(0,2),make_pair(1,2)};
     }
-    else if(read.load=="eZX"){
+    else if(read.type=="Shear stress" && read.load=="eZX"){
 
         read.uniform = {make_pair(2,0)};
         read.lockTop = {make_pair(2,1),make_pair(2,2)};
@@ -580,6 +587,20 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+    else if(read.type=="Hydrostatic" && read.load=="eXX"){
+        
+        read.uniform = {make_pair(0,0)};
+        read.lockTop = {make_pair(1,1),make_pair(2,2)};
+        read.lockBot = {make_pair(0,0),make_pair(0,1),make_pair(0,2),make_pair(1,1),make_pair(2,2)};
+        read.coupled = {make_pair(1,0),make_pair(1,2)};
+    }
+    else if(read.type=="Hydrostatic" && read.load=="eYY"){
+        
+        read.uniform = {make_pair(1,1)};
+        read.lockTop = {make_pair(0,0),make_pair(2,2)};
+        read.lockBot = {make_pair(0,0),make_pair(1,0),make_pair(1,1),make_pair(1,1),make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2)};
     }
     else if(read.type=="Hydrostatic" && read.load=="eZZ"){
         
@@ -601,7 +622,7 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
 
-    /*
+/*
     cout << "\n\nNodes\n";
     for(int i=0; i<data.nXYZ.size(); i++){
         for(int j=0; j<data.nXYZ[i].size(); j++){
@@ -688,5 +709,6 @@ void read(string path[2],dataStruct &data, timeStruct &time){
         cout << "\n";
     }
     cout << "\n";
-    */
+*/
+
 }

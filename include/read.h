@@ -2,23 +2,6 @@
 #ifndef READ_H
 #define READ_H
 
-// ---------------------------------------------------------|
-// Structure storing the time data and initial conditions   |
-// ---------------------------------------------------------|
-
-struct timeStruct{
-
-    // Saving frequency and total number of time steps
-
-    double dt;
-    int nSave;
-    int nSteps;
-
-    // Initial solution in displacement
-
-    darray u0;
-};
-
 // --------------------------------------------------------------|
 // Structure storing temporary parameters from the input files   |
 // --------------------------------------------------------------|
@@ -43,17 +26,15 @@ struct readStruct{
 
     // Face index, axis of the applied stress and its value
 
+    std::vector<std::pair<int,double>> axial;
     ivector axis[2];
     double Fval;
 
-    // Axis of the applied stress
-    
-    std::vector<std::pair<int,double>> axial;
-
-    // Type and axis of the applied stress
+    // Type, value of the applied stress and ndex of the free surface
     
     std::string type;
     std::string load;
+    ivector free;
 
     // Lis of neightbour elements
 
@@ -73,7 +54,7 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-void read(std::string path[2],dataStruct &data,timeStruct &time);
+void read(std::string path[2],dataStruct &data);
 
 // Functions to set the boundary conditions
 
