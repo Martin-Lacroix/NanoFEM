@@ -1,4 +1,4 @@
-#include "..\include\read.h"
+#include "..\include\parser.h"
 #include "solvers.h"
 #include <direct.h>
 #include <fstream>
@@ -246,8 +246,9 @@ int main(){
 
     dataStruct data;
     timeStruct time;
-    string path[2] = {"input.txt","input/test.xyz"};
-    read(path,data);
+    string path[2] = {"input.txt","input/single Cu.xyz"};
+    bool success = read(path,data);
+    if(success==0){return 0;}
 
     // Prints the computation time of the operation
 
@@ -282,6 +283,8 @@ int main(){
     cout << "Writes the results --- ";
     write(mesh,disp,sigma);
 
+    dispJmol(mesh,disp);
+
     // Prints the computation time of the operation
 
     stop = chrono::high_resolution_clock::now();
@@ -302,6 +305,5 @@ int main(){
         cout << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
-*/
-
+    */
 }

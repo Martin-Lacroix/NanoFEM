@@ -1,6 +1,6 @@
 #include "mesh.h"
-#ifndef READ_H
-#define READ_H
+#ifndef PARSER_H
+#define PARSER_H
 
 // --------------------------------------------------------------|
 // Structure storing temporary parameters from the input files   |
@@ -54,7 +54,7 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-void read(std::string path[2],dataStruct &data);
+bool read(std::string path[2],dataStruct &data);
 
 // Functions to set the boundary conditions
 
@@ -68,5 +68,9 @@ void readInput(readStruct &read,dataStruct &data,std::string path);
 std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
 void readMeshSize(readStruct &read,dataStruct &data,std::string path);
 void readSpecies(readStruct &read,dataStruct &data,std::string path);
+
+// Functions to write the results in Jmol
+
+void dispJmol(Mesh &mesh,darray &disp);
 
 #endif

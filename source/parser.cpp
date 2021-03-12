@@ -1,5 +1,6 @@
-#include "..\include\read.h"
+#include "..\include\parser.h"
 #include <unordered_map>
+#include <direct.h>
 #include <iterator>
 #include <fstream>
 #include <sstream>
@@ -539,7 +540,7 @@ void neumann(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-void read(string path[2],dataStruct &data){
+bool read(string path[2],dataStruct &data){
 
     readStruct read;
     readInput(read,data,path[0]);
@@ -613,6 +614,9 @@ void read(string path[2],dataStruct &data){
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2),make_pair(2,0),make_pair(2,1)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
+    else{
+        cout << "\nWrong parameters\n\n";
+        return 0;}
 
     // Sets the boundary conditions in the data
 
@@ -626,7 +630,7 @@ void read(string path[2],dataStruct &data){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
 
-/*
+    /*
     cout << "\n\nNodes\n";
     for(int i=0; i<data.nXYZ.size(); i++){
         for(int j=0; j<data.nXYZ[i].size(); j++){
@@ -713,6 +717,155 @@ void read(string path[2],dataStruct &data){
         cout << "\n";
     }
     cout << "\n";
-*/
+    */
 
+    return 1;
+}
+
+// ----------------------------------------------------------------------|
+// Converts a normed quantity into a chemical species (Jérôme MULLER)    |
+// ----------------------------------------------------------------------|
+
+const char* FCT_atm_name(double norm){
+
+    int i_color;
+    int Nb_color = 30;
+    i_color = (int)ceil(norm*(Nb_color-1));
+
+    // Selects the chemical species
+
+    switch(i_color){
+
+       case 0 : return("Pb");
+       case 1 : return("Ir");
+       case 2 : return("Os");
+       case 3 : return("Re");
+       case 4 : return("Pu");
+       case 5 : return("Np");
+       case 6 : return("U" );
+       case 7 : return("Pa");
+       case 8 : return("Th");
+       case 9 : return("Ta");
+       case 10 : return("Am");
+       case 11 : return("Cm");
+       case 12 : return("Bk");
+       case 13 : return("Cf");
+       case 14 : return("Es");
+       case 15 : return("Fm");
+       case 16 : return("Md");
+       case 17 : return("No");
+       case 18 : return("Lr");
+       case 19 : return("Rf");
+       case 20 : return("Db");
+       case 21 : return("Sg");
+       case 22 : return("Bh");
+       case 23 : return("Hs");
+       case 24 : return("Mt");
+       case 25 : return("Fe");
+       case 26 : return("P" );
+       case 27 : return("Se");
+       case 28 : return("Au");
+       case 29 : return("S" );
+       default : return("XX");
+    }
+}
+
+// ------------------------------------------------------------|
+// Writes the output displacement file compatible with Jmol    |
+// ------------------------------------------------------------|
+
+void dispJmol(Mesh &mesh,darray &disp){
+
+    mkdir("output");
+    int nLen = mesh.nLen;
+    vector<string> header(26);
+    vector<string> dim = {"X","Y","Z"};
+
+    // Parameters for the colour legend
+
+    int barLength = 60;
+    double zMin = mesh.data.nXYZ[0][2];
+    double zMax = mesh.data.nXYZ.back()[2];
+    double xLoc = mesh.data.nXYZ[0][0]-mesh.data.nXYZ.back()[0]/4.0;
+    double yLoc = mesh.data.nXYZ[0][1]-mesh.data.nXYZ.back()[1]/4.0;
+
+    // Header parameters for Jmol
+
+    header[1] = "jmolscript: set autobond off";
+    header[2] = "set specular OFF";
+    header[3] = "set antialiasDisplay OFF";
+    header[4] = "set platformSpeed 2";
+    header[5] = "spacefill 0.7";
+    header[6] = "vector scale 3.0";
+    header[7] = "vector 0.05";
+    header[8] = "vector off";
+    header[9] = "moveto 0 BOTTOM";
+    header[10] = "anim mode loop";
+    header[11] = "anim fps 2";
+    header[12] = "anim off";
+    header[15] = "set labeloffset -10 0";
+    header[16] = "set labelfront";
+    header[17] = "color label green";
+    header[18] = "font label 30 serif bold";
+    header[21] = "set labeloffset -10 0";
+    header[22] = "set labelfront";
+    header[23] = "color label green";
+    header[24] = "font label 30 serif bold";
+    header[25] = "select all";
+
+    // Loops in the 3 spatial dimensions
+
+    for(int k=0; k<3; k++){
+
+        ofstream uXYZ("output/displacement-"+dim[k]+".xyz");
+        double min = 0;
+        double max = 0;
+
+        // Computes the displacment norms and the range
+
+        for(int i=0; i<nLen; i++){
+
+            if(disp[i+k*nLen]>max){max = disp[i+k*nLen];}
+            else if(disp[i+k*nLen]<min){min = disp[i+k*nLen];}
+        }
+
+        // Header parameters for Jmol
+
+        header[0] = "Displacement field u"+dim[k];
+        header[13] = "select atomno="+to_string(1);
+        header[14] = "label "+to_string(min)+" nm";
+        header[19] = "select atomno="+to_string(barLength);
+        header[20] = "label "+to_string(max)+" nm";
+
+        // Writes the header and number of nodes
+
+        uXYZ << nLen+barLength << "\n";
+        for(string option:header){uXYZ << option << ";";}
+        uXYZ << "\n";
+
+        // Writes the legend colour bar in the file
+
+        for(int i=0; i<barLength; i++){
+
+            double val = i/(double)barLength;
+            uXYZ << FCT_atm_name(val) << " ";
+            uXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
+            uXYZ << "\n";
+        }
+
+        // Writes the displacement field in the file
+
+        for(int i=0; i<mesh.nLen; i++){
+
+            double val = (disp[i+k*nLen]-min)/(max-min);
+            const char *species = FCT_atm_name(val);
+            uXYZ << species << " ";
+
+            // Extracts the u(x,y,z) values from the solution vector
+
+            for(int j=0; j<3; j++){uXYZ << mesh.data.nXYZ[i][j] << " ";}
+            uXYZ << disp[i+k*nLen] << " ";
+            uXYZ << "\n";
+        }
+    }
 }
