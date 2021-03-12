@@ -123,13 +123,17 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     read.zero = tovec(input.substr(10));
     dvector zero = read.zero;
 
-    // Reads the size of a 8-node finite element
+    // Reads the size of a hexahedron finite element
 
     getline(file,input,';');
     read.eSize = tovec(input.substr(8));
     dvector eSize = read.eSize;
 
-    // Truncates the height of the domain to the closest element
+    // Truncates the size of the domain to the closest element
+
+    for(int i=0; i<3; i++){
+        read.dSize[i] -= fmod(read.dSize[i],eSize[i]);
+    }
 
     if(read.cropZ>eSize[0]/2){
         
