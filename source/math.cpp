@@ -281,12 +281,9 @@ namespace math{
         // Stores the non-zero indice locations per row and column
 
         while(alglib::sparseenumerate(M,I,J,i,j,val)){
-            if(abs(val)<1e-12){alglib::sparseset(M,i,j,0);}
 
-            else{
-                row[i].push_back(j);
-                if(i!=j){row[j].push_back(i);}
-            }
+            row[i].push_back(j);
+            if(i!=j){row[j].push_back(i);}
         }
         return row;
     }
@@ -345,15 +342,15 @@ namespace math{
                 N1.resize(sLen,0);
 
                 for(int j=0; j<sLen; j++){
-                    for(int l=0; l<sLen; l++){
+                    for(int i=0; i<sLen; i++){
 
                         // Computes the first term of the summ of products
 
-                        if(l!=j){
-                            double La = 1/(node[j]-node[l]);
+                        if(i!=j){
+                            double La = 1/(node[j]-node[i]);
 
-                            for(int m=0; m<sLen; m++){
-                                if(m!=j && m!=l){La *= (val[n]-node[m])/(node[j]-node[m]);}
+                            for(int k=0; k<sLen; k++){
+                                if(k!=j && k!=i){La *= (val[n]-node[k])/(node[j]-node[k]);}
                             }
                             N1[j] += La;
                         }
