@@ -115,19 +115,24 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     // Reads the size of the cubic domain
 
     getline(file,input,'\n');
-    for(int i=0; i<2; i++){getline(file,input,';');}
-    read.dSize = tovec(input.substr(8));
+    //for(int i=0; i<2; i++){getline(file,input,'>');}
+
+    getline(file,input,'>');
+    getline(file,input,';');
+    read.dSize = tovec(input);
 
     // Reads the origin of the domain
 
+    getline(file,input,'>');
     getline(file,input,';');
-    read.zero = tovec(input.substr(10));
+    read.zero = tovec(input);
     dvector zero = read.zero;
 
     // Reads the size of a hexahedron finite element
 
+    getline(file,input,'>');
     getline(file,input,';');
-    read.eSize = tovec(input.substr(8));
+    read.eSize = tovec(input);
     dvector eSize = read.eSize;
 
     // Truncates the size of the domain to the closest element

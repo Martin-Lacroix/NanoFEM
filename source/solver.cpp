@@ -246,7 +246,7 @@ int main(){
 
     dataStruct data;
     timeStruct time;
-    string path[2] = {"input.txt","input/single Cu.xyz"};
+    string path[2] = {"input.txt","input/sphere.xyz"};
     bool success = read(path,data);
     if(success==0){return 0;}
 
@@ -291,7 +291,7 @@ int main(){
     clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
     cout << clock.count()/1e6 << " sec\n\n";
 
-/*
+    /*
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
         cout << "Node " << i << " -- ux = " << disp[i] << "\n";
