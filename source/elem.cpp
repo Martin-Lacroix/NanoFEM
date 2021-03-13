@@ -73,10 +73,10 @@ void Elem::updateJ(shapeStruct &shape){
 // This should normally free the memory of those vectors   |
 // --------------------------------------------------------|
 
-void Elem::freeJ(){
+void Elem::freeJdN(){
 
-    dvector().swap(detJ);
-    vector<matrix>().swap(J);
+    detJ = dvector();
+    J = vector<matrix>();
     for(int i=0; i<3; i++){dN[i].setlength(0,0);}
 }
 

@@ -47,7 +47,7 @@ class Mesh{
     Mesh(dataStruct &&data);
 
     // Functions available in the mesh.cpp file
-
+    
     void totalB(darray &B);
     void totalM(sparse &M);
     void totalKB(sparse &K,darray &B);
@@ -69,7 +69,7 @@ class Mesh{
     shapeStruct shape3D;
     shapeStruct shape2D;
     shapeStruct shapeS[6];
-    std::vector<Elem> eList;
+    std::vector<Elem> elem;
 
     // Number of nodes, elements and faces
     

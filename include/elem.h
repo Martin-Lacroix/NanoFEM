@@ -32,7 +32,7 @@ class Elem{
     darray stress(shapeStruct &shape,array3d EvR,darray u);
     dvector surfaceJ(shapeStruct &shape,ivector &node,int index);
     void updateJ(shapeStruct &shape);
-    void freeJ();
+    void freeJdN();
 
     // Functions of elemental stiffness and mass matrices
 

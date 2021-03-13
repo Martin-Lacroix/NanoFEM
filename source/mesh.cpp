@@ -45,8 +45,8 @@ Mesh::Mesh(dataStruct &&input) : data{move(input)}{
         
         vector<array3d> eXYZ(sLen);
         for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
-        Elem elem(eXYZ,data.eSurf[i]);
-        eList.push_back(elem);
+        Elem hexa(eXYZ,data.eSurf[i]);
+        elem.push_back(hexa);
     }
 }
 
@@ -106,9 +106,9 @@ void Mesh::totalKB(sparse &K,darray &B){
 
         // Computes the elemental K matrices
 
-        matrix Ke = eList[i].selfK(shape3D,data.EvR[i]);
-        pair<matrix,darray> Kb = eList[i].selfKB(shape2D,shapeS,data.EvS[i]);
-        eList[i].freeJ();
+        matrix Ke = elem[i].selfK(shape3D,data.EvR[i]);
+        pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.EvS[i]);
+        elem[i].freeJdN();
 
         // Inserts the elemental vector into the global B vector
 
@@ -154,8 +154,8 @@ void Mesh::totalM(sparse &M){
 
         // Computes the elemental M matrices
 
-        matrix M1 = eList[i].selfM(shape3D,data.EvR[i][2]);
-        eList[i].freeJ();
+        matrix M1 = elem[i].selfM(shape3D,data.EvR[i][2]);
+        elem[i].freeJdN();
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -383,7 +383,6 @@ void Mesh::complete(darray &u){
             u[idx1] += u[idx2];
         }
     }
-    
 }
 
 // ---------------------------------------------------------|
@@ -427,7 +426,8 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        sigma[i] = eList[i].stress(shape3D,data.EvR[i],ue);
+        sigma[i] = elem[i].stress(shape3D,data.EvR[i],ue);
+        elem[i].freeJdN();
     }
     return sigma;
 }
