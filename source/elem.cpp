@@ -5,7 +5,7 @@ using namespace std;
 // Class of hexahedron isoparametric lagrange element in 3D   |
 // -----------------------------------------------------------|
 
-Elem::Elem(vector<array3d> arg1,ivector arg2) : nXYZ{arg1},surface{arg2}{
+Elem::Elem(vector<array3d> inp1,ivector inp2) : nXYZ{inp1},surface{inp2}{
 
     // Sets the number of nodes in each dimension
 
@@ -67,6 +67,17 @@ void Elem::updateJ(shapeStruct &shape){
             }
         }
     }
+}
+
+// --------------------------------------------------------|
+// This should normally free the memory of those vectors   |
+// --------------------------------------------------------|
+
+void Elem::freeJ(){
+
+    dvector().swap(detJ);
+    vector<matrix>().swap(J);
+    for(int i=0; i<3; i++){dN[i].setlength(0,0);}
 }
 
 // ---------------------------------------------------------|

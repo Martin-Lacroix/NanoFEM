@@ -26,13 +26,13 @@ class Elem{
 
     public:
 
-    Elem(std::vector<array3d> nXYZ,ivector surface);
-
     // Constructor and functions available in the elem.cpp file
 
+    Elem(std::vector<array3d> nXYZ,ivector surface);
     darray stress(shapeStruct &shape,array3d EvR,darray u);
     dvector surfaceJ(shapeStruct &shape,ivector &node,int index);
     void updateJ(shapeStruct &shape);
+    void freeJ();
 
     // Functions of elemental stiffness and mass matrices
 

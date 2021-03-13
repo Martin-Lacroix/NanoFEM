@@ -783,7 +783,7 @@ void dispJmol(Mesh &mesh,darray &disp){
 
     // Parameters for the colour legend
 
-    int barLength = 60;
+    int barLength = 300;
     double zMin = mesh.data.nXYZ[0][2];
     double zMax = mesh.data.nXYZ.back()[2];
     double xLoc = mesh.data.nXYZ[0][0]-mesh.data.nXYZ.back()[0]/4.0;

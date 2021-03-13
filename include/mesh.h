@@ -69,6 +69,7 @@ class Mesh{
     shapeStruct shape3D;
     shapeStruct shape2D;
     shapeStruct shapeS[6];
+    std::vector<Elem> eList;
 
     // Number of nodes, elements and faces
     

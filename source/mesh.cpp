@@ -11,6 +11,7 @@ Mesh::Mesh(dataStruct &&input) : data{move(input)}{
     nLen = data.nXYZ.size();
     eLen = data.eNode.size();
     fLen = data.neuFace.size();
+    int sLen = 0.1+pow(data.order+1,3);
 
     // Stores the quadrature rules and shape functions
 
@@ -36,6 +37,16 @@ Mesh::Mesh(dataStruct &&input) : data{move(input)}{
 
     for(int i=0; i<6; i++){
         shapeS[i] = shape(quadS[i]);
+    }
+
+    // Creates the list of elements with node coordinates
+
+    for(int i=0; i<eLen; i++){
+        
+        vector<array3d> eXYZ(sLen);
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
+        Elem elem(eXYZ,data.eSurf[i]);
+        eList.push_back(elem);
     }
 }
 
@@ -93,16 +104,11 @@ void Mesh::totalKB(sparse &K,darray &B){
     int sLen = shape3D.N.cols();
     for(int i=0; i<eLen; i++){
 
-        // Coordinates of the nodes of the element
-        
-        vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
+        // Computes the elemental K matrices
 
-        // Computes the elemental matrices
-
-        Elem elem(eXYZ,data.eSurf[i]);
-        matrix Ke = elem.selfK(shape3D,data.EvR[i]);
-        pair<matrix,darray> Kb = elem.selfKB(shape2D,shapeS,data.EvS[i]);
+        matrix Ke = eList[i].selfK(shape3D,data.EvR[i]);
+        pair<matrix,darray> Kb = eList[i].selfKB(shape2D,shapeS,data.EvS[i]);
+        eList[i].freeJ();
 
         // Inserts the elemental vector into the global B vector
 
@@ -146,15 +152,10 @@ void Mesh::totalM(sparse &M){
     int sLen = shape3D.N.cols();
     for(int i=0; i<eLen; i++){
 
-    // Coordinates of the nodes of the element
-        
-        vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
-
         // Computes the elemental M matrices
 
-        Elem elem(eXYZ,data.eSurf[i]);
-        matrix M1 = elem.selfM(shape3D,data.EvR[i][2]);
+        matrix M1 = eList[i].selfM(shape3D,data.EvR[i][2]);
+        eList[i].freeJ();
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -413,13 +414,10 @@ vector<darray> Mesh::stress(darray &u){
 
     for(int i=0; i<eLen; i++){
 
-        vector<array3d> eXYZ(sLen);
-        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
-
-        // Stores the displacement of the curent element nodes
-
         darray ue;
         ue.setlength(3*sLen);
+
+        // Stores the displacement of the curent element nodes
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
@@ -429,8 +427,7 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        Elem elem(eXYZ,data.eSurf[i]);
-        sigma[i] = elem.stress(shape3D,data.EvR[i],ue);
+        sigma[i] = eList[i].stress(shape3D,data.EvR[i],ue);
     }
     return sigma;
 }
