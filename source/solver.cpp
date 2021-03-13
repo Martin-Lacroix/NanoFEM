@@ -28,7 +28,7 @@ void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
     mkdir("output");
     ofstream uXYZ("output/disp.txt");
     ofstream elem("output/elem.txt");
-    ofstream nodes("output/nodes.txt");
+    ofstream node("output/node.txt");
     ofstream stress("output/stress.txt");
 
     // Writes the displacement field in a text file
@@ -41,8 +41,8 @@ void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
     // Writes the node coordinates as (x,y,z)
 
     for(array3d nXYZ:mesh.data.nXYZ){
-        for(int i=0; i<nXYZ.size()-1; i++){nodes << nXYZ[i] << ",";}
-        nodes << nXYZ.back() << "\n";
+        for(int i=0; i<nXYZ.size()-1; i++){node << nXYZ[i] << ",";}
+        node << nXYZ.back() << "\n";
     }
 
     // Writes the element nodes as (elem,node)
