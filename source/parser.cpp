@@ -62,27 +62,31 @@ void readInput(readStruct &read,dataStruct &data,string path){
     // Reads the type of applied stress
 
     getline(file,input,'\n');
+    transform(input.begin(),input.end(),input.begin(),::tolower);
     read.type = input;
 
     // Reads the axis of applied stress
 
     getline(file,input,';');
+    transform(input.begin(),input.end(),input.begin(),::tolower);
     read.load = input;
 
     for(int i=0; i<2; i++){
 
-        if(input=="All"){read.axis[i] = {0,1,2};}
-        else if(input[i+1]=='X'){read.axis[i] = {0};}
-        else if(input[i+1]=='Y'){read.axis[i] = {1};}
-        else if(input[i+1]=='Z'){read.axis[i] = {2};}
+        if(input=="all"){read.axis[i] = {0,1,2};}
+        else if(input[i+1]=='x'){read.axis[i] = {0};}
+        else if(input[i+1]=='y'){read.axis[i] = {1};}
+        else if(input[i+1]=='z'){read.axis[i] = {2};}
     }
 
     // reads the surface location
 
     getline(file,input,';');
-    if(input=="Top Z"){read.free = {1};}
-    else if(input=="Bottom Z"){read.free = {0};}
-    else if(input=="Both"){read.free = {0,1};}
+    transform(input.begin(),input.end(),input.begin(),::tolower);
+
+    if(input=="top"){read.free = {1};}
+    else if(input=="bottom"){read.free = {0};}
+    else if(input=="both"){read.free = {0,1};}
 
     // Reads the value of the stress
 
@@ -115,8 +119,6 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     // Reads the size of the cubic domain
 
     getline(file,input,'\n');
-    //for(int i=0; i<2; i++){getline(file,input,'>');}
-
     getline(file,input,'>');
     getline(file,input,';');
     read.dSize = tovec(input);
@@ -360,7 +362,7 @@ void dirichlet(readStruct &read,dataStruct &data){
 
     // Uniform (j,k) : sets the displacement along k of the top face j uniform
 
-    for(pair<int,double> pair:read.uniform){
+    for(pair<int,int> pair:read.uniform){
 
         int j = pair.first;
         int k = pair.second;
@@ -386,7 +388,7 @@ void dirichlet(readStruct &read,dataStruct &data){
     for(pair<int,double> pair:read.axial){
 
             int j = pair.first;
-            int k = pair.second;
+            double k = pair.second;
 
         for(int i=0; i<data.nXYZ.size(); i++){
 
@@ -402,7 +404,7 @@ void dirichlet(readStruct &read,dataStruct &data){
 
     // LockBot (j,k) : locks the displacement along k of the bottom face j at 0
 
-    for(pair<int,double> pair:read.lockBot){
+    for(pair<int,int> pair:read.lockBot){
 
         int j = pair.first;
         int k = pair.second;
@@ -420,7 +422,7 @@ void dirichlet(readStruct &read,dataStruct &data){
 
     // LockTop (j,k) : locks the displacement along k of the top face j at 0
 
-    for(pair<int,double> pair:read.lockTop){
+    for(pair<int,int> pair:read.lockTop){
 
         int j = pair.first;
         int k = pair.second;
@@ -545,7 +547,7 @@ void neumann(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-bool read(string path[2],dataStruct &data){
+void read(string path[2],dataStruct &data){
 
     readStruct read;
     readInput(read,data,path[0]);
@@ -554,13 +556,13 @@ bool read(string path[2],dataStruct &data){
 
     // Sets the boundary conditions parameters
 
-    if(read.type=="Axial stress"){
+    if(read.type=="axial stress"){
         
         read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-    else if(read.type=="Shear stress" && read.load=="eXY"){
+    else if(read.type=="shear stress" && read.load=="exy"){
 
         read.uniform = {make_pair(0,1)};
         read.lockTop = {make_pair(0,0),make_pair(0,2)};
@@ -568,7 +570,7 @@ bool read(string path[2],dataStruct &data){
         read.coupled = {make_pair(1,0),make_pair(1,2)};
         read.deltaZero = {make_pair(1,0)};
     }
-    else if(read.type=="Shear stress" && read.load=="eYX"){
+    else if(read.type=="shear stress" && read.load=="eyx"){
 
         read.uniform = {make_pair(1,0)};
         read.lockTop = {make_pair(1,1),make_pair(1,2)};
@@ -576,7 +578,7 @@ bool read(string path[2],dataStruct &data){
         read.coupled = {make_pair(0,1),make_pair(0,2)};
         read.deltaZero = {make_pair(0,1)};
     }
-    else if(read.type=="Shear stress" && read.load=="eZY"){
+    else if(read.type=="shear stress" && read.load=="ezy"){
         
         read.uniform = {make_pair(2,1)};
         read.lockTop = {make_pair(2,0),make_pair(2,2)};
@@ -584,7 +586,7 @@ bool read(string path[2],dataStruct &data){
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
         read.deltaZero = {make_pair(0,2),make_pair(1,2)};
     }
-    else if(read.type=="Shear stress" && read.load=="eZX"){
+    else if(read.type=="shear stress" && read.load=="ezx"){
 
         read.uniform = {make_pair(2,0)};
         read.lockTop = {make_pair(2,1),make_pair(2,2)};
@@ -592,36 +594,33 @@ bool read(string path[2],dataStruct &data){
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
         read.deltaZero = {make_pair(0,2),make_pair(1,2)};
     }
-    else if(read.type=="Hydrostatic" && read.load=="All"){
+    else if(read.type=="hydrostatic" && read.load=="all"){
         
         read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-    else if(read.type=="Hydrostatic" && read.load=="eXX"){
+    else if(read.type=="hydrostatic" && read.load=="exx"){
         
         read.uniform = {make_pair(0,0)};
         read.lockTop = {make_pair(1,1),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(0,1),make_pair(0,2),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(1,0),make_pair(1,2)};
     }
-    else if(read.type=="Hydrostatic" && read.load=="eYY"){
+    else if(read.type=="hydrostatic" && read.load=="eyy"){
         
         read.uniform = {make_pair(1,1)};
         read.lockTop = {make_pair(0,0),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(1,0),make_pair(1,1),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2)};
     }
-    else if(read.type=="Hydrostatic" && read.load=="eZZ"){
+    else if(read.type=="hydrostatic" && read.load=="ezz"){
         
         read.uniform = {make_pair(2,2)};
         read.lockTop = {make_pair(0,0),make_pair(1,1)};
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2),make_pair(2,0),make_pair(2,1)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-    else{
-        cout << "\nWrong parameters\n\n";
-        return 0;}
 
     // Sets the boundary conditions in the data
 
@@ -643,7 +642,7 @@ bool read(string path[2],dataStruct &data){
         }
         cout << "\n";
     }
-    
+
     cout << "\n\nElements\n";
     for(int i=0; i<data.eNode.size(); i++){
         for(int j=0; j<data.eNode[i].size(); j++){
@@ -723,8 +722,6 @@ bool read(string path[2],dataStruct &data){
     }
     cout << "\n";
     */
-
-    return 1;
 }
 
 // ----------------------------------------------------------------------|
@@ -779,12 +776,16 @@ const char* FCT_atm_name(double norm){
 // Writes the output displacement file compatible with Jmol    |
 // ------------------------------------------------------------|
 
-void dispJmol(Mesh &mesh,darray &disp){
+void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
     mkdir("output");
     int nLen = mesh.nLen;
+    int eLen = mesh.eLen;
+    int sLen = mesh.shape3D.N.cols();
+
     vector<string> header(26);
-    vector<string> dim = {"X","Y","Z"};
+    vector<string> uName = {"X","Y","Z"};
+    vector<string> sName = {"XX","YY","ZZ","XY","YZ","ZX"};
 
     // Parameters for the colour legend
 
@@ -818,15 +819,15 @@ void dispJmol(Mesh &mesh,darray &disp){
     header[24] = "font label 30 serif bold";
     header[25] = "select all";
 
-    // Loops in the 3 spatial dimensions
+    // Loops in the 3 dimensions (ux, uy, uz)
 
     for(int k=0; k<3; k++){
 
-        ofstream uXYZ("output/displacement-"+dim[k]+".xyz");
+        ofstream uXYZ("output/displacement-"+uName[k]+".xyz");
         double min = 0;
         double max = 0;
 
-        // Computes the displacment norms and the range
+        // Computes the maximum and minimum displacement
 
         for(int i=0; i<nLen; i++){
 
@@ -836,7 +837,7 @@ void dispJmol(Mesh &mesh,darray &disp){
 
         // Header parameters for Jmol
 
-        header[0] = "Displacement field u"+dim[k];
+        header[0] = "Displacement field u"+uName[k];
         header[13] = "select atomno="+to_string(1);
         header[14] = "label "+to_string(min)+" nm";
         header[19] = "select atomno="+to_string(barLength);
@@ -871,6 +872,72 @@ void dispJmol(Mesh &mesh,darray &disp){
             for(int j=0; j<3; j++){uXYZ << mesh.data.nXYZ[i][j] << " ";}
             uXYZ << disp[i+k*nLen] << " ";
             uXYZ << "\n";
+        }
+    }
+
+    // Loops in the 6 dimensions (sxx, syy, szz, sxy, syz, szx)
+
+    for(int k=0; k<6; k++){
+
+        ofstream sXYZ("output/stress-"+sName[k]+".xyz");
+        double min = 0;
+        double max = 0;
+
+        // Computes the maximum and minimum stress
+
+        for(int i=0; i<eLen; i++){
+
+            if(sigma[i][k]>max){max = sigma[i][k];}
+            else if(sigma[i][k]<min){min = sigma[i][k];}
+        }
+
+        // Header parameters for Jmol
+
+        header[0] = "Stress field s"+sName[k];
+        header[13] = "select atomno="+to_string(1);
+        header[14] = "label "+to_string(min)+" nm";
+        header[19] = "select atomno="+to_string(barLength);
+        header[20] = "label "+to_string(max)+" nm";
+
+        // Writes the header and number of nodes
+
+        sXYZ << eLen+barLength << "\n";
+        for(string option:header){sXYZ << option << ";";}
+        sXYZ << "\n";
+
+        // Writes the legend colour bar in the file
+
+        for(int i=0; i<barLength; i++){
+
+            double val = i/(double)barLength;
+            sXYZ << FCT_atm_name(val) << " ";
+            sXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
+            sXYZ << "\n";
+        }
+
+        // Writes the stress field in the file
+
+        for(int i=0; i<mesh.eLen; i++){
+
+            array3d xyz = {0,0,0};
+            double val = (sigma[i][k]-min)/(max-min);
+            const char *species = FCT_atm_name(val);
+            sXYZ << species << " ";
+
+
+            // Coordinates of the center of the element
+
+            for(int j:mesh.data.eNode[i]){
+                for(int n=0; n<3; n++){
+                    xyz[n] += mesh.data.nXYZ[j][n]/sLen;
+                }
+            }
+
+            // Extracts the stress values from the solution vector
+
+            for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
+            sXYZ << sigma[i][k] << " ";
+            sXYZ << "\n";
         }
     }
 }

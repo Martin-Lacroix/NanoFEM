@@ -182,7 +182,7 @@ darray solveStatic(Mesh &mesh){
 
     // Applies boundary conditions to K and B
 
-/*
+    /*
     ofstream Kfile("output/K.txt");
     ofstream Bfile("output/B.txt");
 
@@ -195,7 +195,8 @@ darray solveStatic(Mesh &mesh){
         Kfile << "\n";
         Bfile << B[i] << "\n";
     }
-*/
+    */
+
 
     mesh.delta(K,B);
     mesh.coupling(K,B);
@@ -246,9 +247,8 @@ int main(){
 
     dataStruct data;
     timeStruct time;
-    string path[2] = {"input.txt","input/sphere.xyz"};
-    bool success = read(path,data);
-    if(success==0){return 0;}
+    string path[2] = {"input.txt","input/single Cu.xyz"};
+    read(path,data);
 
     // Prints the computation time of the operation
 
@@ -261,13 +261,12 @@ int main(){
 
     Mesh mesh(move(data));
     darray disp = solveStatic(mesh);
-    vector<darray> sigma;
+    start = chrono::high_resolution_clock::now();
+    cout << "Stress extraction --- ";
 
     // Computes Von Mises stresses and updates the nodes
 
-    start = chrono::high_resolution_clock::now();
-    cout << "Stress extraction --- ";
-    sigma = mesh.stress(disp);
+    vector<darray> sigma = mesh.stress(disp);
     mesh.update(disp);
 
     // Prints the computation time of the operation
@@ -282,8 +281,7 @@ int main(){
     start = chrono::high_resolution_clock::now();
     cout << "Writes the results --- ";
     write(mesh,disp,sigma);
-
-    dispJmol(mesh,disp);
+    writeJmol(mesh,disp,sigma);
 
     // Prints the computation time of the operation
 

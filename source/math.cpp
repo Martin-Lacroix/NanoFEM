@@ -275,9 +275,7 @@ namespace math{
         alglib::ae_int_t I=0,J=0;
         int nLen = alglib::sparsegetnrows(M);
         vector<ivector> row(3*nLen);
-
-        row.reserve(alglib::sparsegetuppercount(M));
-
+        
         // Stores the non-zero indice locations per row and column
 
         while(alglib::sparseenumerate(M,I,J,i,j,val)){

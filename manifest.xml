@@ -78,8 +78,8 @@
 			</param>
 			<param type="LIST">
 				<name>Free surface</name>
-				<element>Top Z</element>
-				<element>Bottom Z</element>
+				<element>Top</element>
+				<element>Bottom</element>
 				<element>Both</element>
 			</param>
 			<param type="DOUBLE">
@@ -99,8 +99,8 @@
 			</param>
 			<param type="LIST">
 				<name>Free surface</name>
-				<element>Top Z</element>
-				<element>Bottom Z</element>
+				<element>Top</element>
+				<element>Bottom</element>
 				<element>Both</element>
 			</param>
 			<param type="DOUBLE">
@@ -120,8 +120,8 @@
 			</param>
 			<param type="LIST">
 				<name>Free surface</name>
-				<element>Top Z</element>
-				<element>Bottom Z</element>
+				<element>Top</element>
+				<element>Bottom</element>
 				<element>Both</element>
 			</param>
 			<param type="DOUBLE">

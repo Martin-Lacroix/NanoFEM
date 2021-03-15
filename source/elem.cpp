@@ -75,8 +75,8 @@ void Elem::updateJ(shapeStruct &shape){
 
 void Elem::freeJdN(){
 
-    detJ = dvector();
-    J = vector<matrix>();
+    dvector().swap(detJ);
+    vector<matrix>().swap(J);
     for(int i=0; i<3; i++){dN[i].setlength(0,0);}
 }
 

@@ -26,7 +26,6 @@ struct readStruct{
 
     // Face index, axis of the applied stress and its value
 
-    std::vector<std::pair<int,double>> axial;
     ivector axis[2];
     double Fval;
 
@@ -46,6 +45,7 @@ struct readStruct{
     std::vector<std::pair<int,int>> lockBot;
     std::vector<std::pair<int,int>> lockTop;
     std::vector<std::pair<int,int>> uniform;
+    std::vector<std::pair<int,double>> axial;
     std::vector<std::pair<int,int>> deltaZero;
 };
 
@@ -54,7 +54,7 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-bool read(std::string path[2],dataStruct &data);
+void read(std::string path[2],dataStruct &data);
 
 // Functions to set the boundary conditions
 
@@ -71,6 +71,6 @@ void readSpecies(readStruct &read,dataStruct &data,std::string path);
 
 // Functions to write the results in Jmol
 
-void dispJmol(Mesh &mesh,darray &disp);
+void writeJmol(Mesh &mesh,darray &disp,std::vector<darray> &sigma);
 
 #endif

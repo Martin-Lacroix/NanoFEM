@@ -62,8 +62,8 @@ def makeFull(K):
     
 # %% Load files
 
-U = np.loadtxt("output/displacement.txt",delimiter=",")
-nXYZ = np.loadtxt("output/coordinates.txt",delimiter=",")
+U = np.loadtxt("output/disp.txt",delimiter=",")
+nXYZ = np.loadtxt("output/node.txt",delimiter=",")
 nLen = U.shape[0]
 
 K = np.loadtxt("output/K.txt")

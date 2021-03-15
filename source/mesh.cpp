@@ -235,7 +235,7 @@ void Mesh::dirichlet(sparse &K,darray &B){
                 B(j) -= math::get(K,j,idx)*data.dirVal[n][i];
                 math::symset(K,j,idx,0);
             }
-            row[idx] = ivector();
+            ivector().swap(row[idx]);
         }
     }
 
