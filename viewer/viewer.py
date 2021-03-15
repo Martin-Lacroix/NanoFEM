@@ -133,7 +133,7 @@ gmsh.view.addModelData(5,0,"Nascam","ElementData",eTag,syy)
 gmsh.view.addModelData(6,0,"Nascam","ElementData",eTag,szz)
 gmsh.view.addModelData(7,0,"Nascam","ElementData",eTag,sxy)
 gmsh.view.addModelData(8,0,"Nascam","ElementData",eTag,syz)
-gmsh.view.addModelData(9,0,"Nascam","ElementData",eTag,szz)
+gmsh.view.addModelData(9,0,"Nascam","ElementData",eTag,szx)
 
 gmsh.view.write(4,r"..\output\stress-XX.msh")
 gmsh.view.write(5,r"..\output\stress-YY.msh")
