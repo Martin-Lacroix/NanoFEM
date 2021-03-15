@@ -32,7 +32,6 @@ sxy = [[s[i,3]] for i in range(eLen)]
 syz = [[s[i,4]] for i in range(eLen)]
 szx = [[s[i,5]] for i in range(eLen)]
 
-
 # %% Domain Geometry
 
 gmsh.initialize()
