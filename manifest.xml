@@ -9,7 +9,7 @@
 	</info>
 
 	<requiredFiles>
-		<file type="OUTPUT">
+		<file type="OUTPUT_TOTAL" >
 			<name>coating.xyz</name>
 		</file>
 	</requiredFiles>
