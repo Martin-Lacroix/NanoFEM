@@ -247,7 +247,7 @@ int main(){
 
     dataStruct data;
     timeStruct time;
-    string path[2] = {"input.txt","input/single Cu.xyz"};
+    string path[2] = {"input.txt","input/coating.xyz"};
     read(path,data);
 
     // Prints the computation time of the operation

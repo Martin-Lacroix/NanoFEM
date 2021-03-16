@@ -782,8 +782,9 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
     int nLen = mesh.nLen;
     int eLen = mesh.eLen;
     int sLen = mesh.shape3D.N.cols();
+    double scale = abs(mesh.data.nXYZ[1][2]-mesh.data.nXYZ[0][2]);
 
-    vector<string> header(26);
+    vector<string> header(18);
     vector<string> uName = {"X","Y","Z"};
     vector<string> sName = {"XX","YY","ZZ","XY","YZ","ZX"};
 
@@ -801,23 +802,15 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
     header[2] = "set specular OFF";
     header[3] = "set antialiasDisplay OFF";
     header[4] = "set platformSpeed 2";
-    header[5] = "spacefill 0.7";
-    header[6] = "vector scale 3.0";
-    header[7] = "vector 0.05";
-    header[8] = "vector off";
-    header[9] = "moveto 0 BOTTOM";
-    header[10] = "anim mode loop";
-    header[11] = "anim fps 2";
-    header[12] = "anim off";
-    header[15] = "set labeloffset -10 0";
-    header[16] = "set labelfront";
-    header[17] = "color label green";
-    header[18] = "font label 30 serif bold";
-    header[21] = "set labeloffset -10 0";
-    header[22] = "set labelfront";
-    header[23] = "color label green";
-    header[24] = "font label 30 serif bold";
-    header[25] = "select all";
+    header[5] = "spacefill "+to_string(scale);
+    header[6] = "vector off";
+    header[7] = "moveto 0 BOTTOM";
+    header[8] = "anim off";
+    header[9] = "set labeloffset -10 0";
+    header[10] = "set labelfront";
+    header[11] = "color label white";
+    header[12] = "font label 30 serif";
+    header[13] = "select all";
 
     // Loops in the 3 dimensions (ux, uy, uz)
 
@@ -838,10 +831,10 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
         // Header parameters for Jmol
 
         header[0] = "Displacement field u"+uName[k];
-        header[13] = "select atomno="+to_string(1);
-        header[14] = "label "+to_string(min)+" nm";
-        header[19] = "select atomno="+to_string(barLength);
-        header[20] = "label "+to_string(max)+" nm";
+        header[14] = "select atomno="+to_string(1);
+        header[15] = "label "+to_string(min)+" nm";
+        header[16] = "select atomno="+to_string(barLength);
+        header[17] = "label "+to_string(max)+" nm";
 
         // Writes the header and number of nodes
 
@@ -895,9 +888,9 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
         header[0] = "Stress field s"+sName[k];
         header[13] = "select atomno="+to_string(1);
-        header[14] = "label "+to_string(min)+" nm";
+        header[14] = "label "+to_string(min)+" GPa";
         header[19] = "select atomno="+to_string(barLength);
-        header[20] = "label "+to_string(max)+" nm";
+        header[20] = "label "+to_string(max)+" GPa";
 
         // Writes the header and number of nodes
 
