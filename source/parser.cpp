@@ -802,7 +802,7 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
     header[2] = "set specular OFF";
     header[3] = "set antialiasDisplay OFF";
     header[4] = "set platformSpeed 2";
-    header[5] = "spacefill "+to_string(scale);
+    header[5] = "spacefill "+to_string(scale/2);
     header[6] = "vector off";
     header[7] = "moveto 0 BOTTOM";
     header[8] = "anim off";
@@ -886,7 +886,7 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
         // Header parameters for Jmol
 
-        header[0] = "Displacement field u"+uName[k];
+        header[0] = "Stress field s"+sName[k];
         header[14] = "select atomno="+to_string(1);
         header[15] = "label "+to_string(min)+" GPa";
         header[16] = "select atomno="+to_string(barLength);
