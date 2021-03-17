@@ -246,8 +246,6 @@ int main(){
     // Reads the input files from Nascam
 
     dataStruct data;
-    timeStruct time;
-    //string path[2] = {"input.txt","input/coating.xyz"};
     string path = "input.txt";
     read(path,data);
 
