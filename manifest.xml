@@ -15,6 +15,21 @@
 	</requiredFiles>
 	
 	<userInput>
+		<group>
+			<param type="LIST" ref="Layer">
+				<name>Studied layers</name>
+				<element>All layers</element>
+				<element>Manual selection</element>
+				<default>All layers</default>
+			</param>
+		</group>
+
+		<group displayIf="Layer:Manual selection">
+			<param type="FILE" toPath="true">
+				<name>Coating file path</name>
+			</param>
+		</group>
+
 		<group name="General Parameters">
 			<param type="INT">
 				<name>Element order</name>
@@ -61,13 +76,14 @@
 		
 		<group>
 			<param type="LIST" ref="Type">
-				<name>Load Type</name>
+				<name>Load type</name>
 				<element>Axial stress</element>
 				<element>Shear stress</element>
 				<element>Hydrostatic</element>
 				<default>Axial stress</default>
 			</param>
 		</group>
+
 		<group name="Load Parameters" displayIf="Type:Axial stress">
 			<param type="LIST">
 				<name>Dimension</name>
@@ -88,6 +104,7 @@
 				<unit>GPa</unit>
 			</param>
 		</group>
+
 		<group name="Load Parameters" displayIf="Type:Shear stress">
 			<param type="LIST">
 				<name>Dimension</name>
@@ -109,6 +126,7 @@
 				<unit>GPa</unit>
 			</param>
 		</group>
+
 		<group name="Load Parameters" displayIf="Type:Hydrostatic">
 			<param type="LIST">
 				<name>Dimension</name>

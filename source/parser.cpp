@@ -29,11 +29,26 @@ dvector tovec(string input){
 // Reads the parameter from the input.txt file    |
 // -----------------------------------------------|
 
-void readInput(readStruct &read,dataStruct &data,string path){
+string readInput(readStruct &read,dataStruct &data,string path){
 
     string input;
     ifstream file;
+    string coating;
     file.open(path);
+
+    // Gets the coating input file
+
+    getline(file,input,'\n');
+    transform(input.begin(),input.end(),input.begin(),::tolower);
+
+    if(input=="manual selection"){
+
+        getline(file,input,'\n');
+        coating = input;
+    }
+    else if(input=="all layers"){
+        coating = "input/coating.xyz";
+    }
 
     // Reads the order of the quadrature rule
 
@@ -103,6 +118,8 @@ void readInput(readStruct &read,dataStruct &data,string path){
         read.EvS.push_back({param[2],param[3],param[4]});
         getline(file,input,'\n');
     }
+
+    return coating;
 }
 
 // -----------------------------------------------|
@@ -547,12 +564,12 @@ void neumann(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-void read(string path[2],dataStruct &data){
+void read(string path,dataStruct &data){
 
     readStruct read;
-    readInput(read,data,path[0]);
-    readMeshSize(read,data,path[1]);
-    readSpecies(read,data,path[1]);
+    string coating = readInput(read,data,path);
+    readMeshSize(read,data,coating);
+    readSpecies(read,data,coating);
 
     // Sets the boundary conditions parameters
 
@@ -790,7 +807,7 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
     // Parameters for the colour legend
 
-    int barLength = 300;
+    int barLength = 3000;
     double zMin = mesh.data.nXYZ[0][2];
     double zMax = mesh.data.nXYZ.back()[2];
     double xLoc = mesh.data.nXYZ[0][0]-mesh.data.nXYZ.back()[0]/4.0;

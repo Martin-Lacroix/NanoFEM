@@ -54,7 +54,7 @@ struct readStruct{
 // -------------------------------------------|
 
 dvector tovec(std::string input);
-void read(std::string path[2],dataStruct &data);
+void read(std::string path,dataStruct &data);
 
 // Functions to set the boundary conditions
 
@@ -64,10 +64,10 @@ void dirichlet(readStruct &read,dataStruct &data);
 // Functions to read the different input files
 
 void setSurface(readStruct &read,dataStruct &data);
-void readInput(readStruct &read,dataStruct &data,std::string path);
 std::unordered_set<int> locSpecies(readStruct &read, dvector coord);
-void readMeshSize(readStruct &read,dataStruct &data,std::string path);
 void readSpecies(readStruct &read,dataStruct &data,std::string path);
+void readMeshSize(readStruct &read,dataStruct &data,std::string path);
+std::string readInput(readStruct &read,dataStruct &data,std::string path);
 
 // Functions to write the results in Jmol
 
