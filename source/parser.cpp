@@ -886,11 +886,11 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
         // Header parameters for Jmol
 
-        header[0] = "Stress field s"+sName[k];
-        header[13] = "select atomno="+to_string(1);
-        header[14] = "label "+to_string(min)+" GPa";
-        header[19] = "select atomno="+to_string(barLength);
-        header[20] = "label "+to_string(max)+" GPa";
+        header[0] = "Displacement field u"+uName[k];
+        header[14] = "select atomno="+to_string(1);
+        header[15] = "label "+to_string(min)+" GPa";
+        header[16] = "select atomno="+to_string(barLength);
+        header[17] = "label "+to_string(max)+" GPa";
 
         // Writes the header and number of nodes
 
