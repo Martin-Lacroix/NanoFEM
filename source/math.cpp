@@ -7,26 +7,19 @@ namespace math{
     // Stiffness tensor D for isotropic linear elasticity   |
     // -----------------------------------------------------|
 
-    matrix stiffness(array3d EvR){
+    matrix stiffness(array3d LmX){
 
         matrix D;
         D.setlength(6,6);
         math::zero(D);
 
-        // Computes the Lamé parameters
+        // Fills the elements of the stiffness tensor
 
-        double mu = EvR[0]/(2*(1+EvR[1]));
-        double lam = EvR[0]*EvR[1]/((1+EvR[1])*(1-2*EvR[1]));
-        D(0,1) = D(0,2) = D(1,2) = lam;
-        D(1,0) = D(2,0) = D(2,1) = lam;
+        D(0,1) = D(0,2) = D(1,2) = LmX[0];
+        D(1,0) = D(2,0) = D(2,1) = LmX[0];
+        D(3,3) = D(4,4) = D(5,5) = LmX[1];
+        D(0,0) = D(1,1) = D(2,2) = 2*LmX[1]+LmX[0];
 
-        // Fills the diagonal elements of the matrix
-
-        for(int i=0; i<3; i++){
-
-            D(i,i) = 2*mu+lam;
-            D(i+3,i+3) = mu;
-        }
         return D;
     }
 

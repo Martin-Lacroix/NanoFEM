@@ -10,10 +10,10 @@ struct readStruct{
 
     // Young modulus and Poisson ratio of each type of element
     
-    dvector emptyEv;
+    array3d emptyLmR;
     std::vector<bool> empty;
-    std::vector<dvector> Ev;
-    std::vector<dvector> EvS;
+    std::vector<array3d> LmR;
+    std::vector<array3d> LmS;
 
     // Number of elements and size of the domain in each dimension
 

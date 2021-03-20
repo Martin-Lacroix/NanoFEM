@@ -32,7 +32,7 @@ struct quadStruct{
 
 namespace math{
 
-    matrix stiffness(array3d EvR);
+    matrix stiffness(array3d LmX);
     quadStruct legendre(int dim,int order);
     matrix couple(double E,double v,double l);
     dvector lagrange(int var,dvector node,dvector val);

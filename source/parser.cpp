@@ -6,6 +6,19 @@
 #include <sstream>
 using namespace std;
 
+// -------------------------------------------|
+// Input = [E,v] to Lamé parameters [λ,μ]     |
+// -------------------------------------------|
+
+array3d toLame(dvector input){
+
+    array3d LmX;
+    LmX[1] = input[0]/(2*(1+input[1]));
+    LmX[0] = input[0]*input[1]/((1+input[1])*(1-2*input[1]));
+    LmX[2] = 0;
+    return LmX;
+}
+
 // --------------------------------------------|
 // Converts a string to a vector of doubles    |
 // --------------------------------------------|
@@ -64,14 +77,14 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Reads the parameters of empty elements
 
     getline(file,input,'!');
-    read.emptyEv = tovec(input);
+    read.emptyLmR = toLame(tovec(input));
     getline(file,input,'\n');
 
     // Reads the parameters of substrate element
         
     getline(file,input,'!');
-    read.Ev.push_back(tovec(input));
-    read.EvS.push_back({0,0,0});
+    read.LmS.push_back({0,0,0});
+    read.LmR.push_back(toLame(tovec(input)));
     getline(file,input,'\n');
 
     // Reads the type of applied stress
@@ -102,6 +115,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
     if(input=="top"){read.free = {1};}
     else if(input=="bottom"){read.free = {0};}
     else if(input=="both"){read.free = {0,1};}
+    else if(input=="None"){read.free = {};}
 
     // Reads the value of the stress
 
@@ -114,8 +128,8 @@ string readInput(readStruct &read,dataStruct &data,string path){
     while(getline(file,input,'!')){
 
         dvector param = tovec(input);
-        read.Ev.push_back({param[0],param[1]});
-        read.EvS.push_back({param[2],param[3],param[4]});
+        read.LmR.push_back(toLame({param[0],param[1]}));
+        read.LmS.push_back({param[2],param[3],param[4]});
         getline(file,input,'\n');
     }
 
@@ -279,10 +293,10 @@ void readSpecies(readStruct &read,dataStruct &data,string path){
     // Initializes the filling fraction of the elements
 
     int eLen = data.eNode.size();
-    vector<dvector> frac(eLen,dvector(read.Ev.size(),0));
+    vector<dvector> frac(eLen,dvector(read.LmR.size(),0));
     read.empty.resize(eLen);
-    data.EvR.resize(eLen);
-    data.EvS.resize(eLen);
+    data.LmR.resize(eLen);
+    data.LmS.resize(eLen);
 
     // Reads the coodrinates of the chemical species
 
@@ -309,14 +323,14 @@ void readSpecies(readStruct &read,dataStruct &data,string path){
         double sum = accumulate(frac[i].begin(),frac[i].end(),0.0);
 
         if(sum<0.5){
-            data.EvS[i] = {0,0,0};
-            data.EvR[i] = {read.emptyEv[0],read.emptyEv[1],0};
+            data.LmR[i] = read.emptyLmR;
+            data.LmS[i] = {0,0,0};
             read.empty[i] = 1;
         }
         else{
             int max = max_element(frac[i].begin(),frac[i].end())-frac[i].begin();
-            data.EvS[i] = {read.EvS[max][0],read.EvS[max][1],read.EvS[max][2]};
-            data.EvR[i] = {read.Ev[max][0],read.Ev[max][1],0};
+            data.LmR[i] = read.LmR[max];
+            data.LmS[i] = read.LmS[max];
             read.empty[i] = 0;
         }
     }

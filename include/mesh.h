@@ -32,8 +32,8 @@ struct dataStruct{
 
     // Volume E-v-density and Surface E-v-tension
 
-    std::vector<array3d> EvR;
-    std::vector<array3d> EvS;
+    std::vector<array3d> LmR;
+    std::vector<array3d> LmS;
 };
 
 // -------------------------------|

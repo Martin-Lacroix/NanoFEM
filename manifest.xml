@@ -64,7 +64,7 @@
 		<group name="Substrate Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
-				<default>1</default>
+				<default>200</default>
 				<unit>GPa</unit>
 			</param>
 			<param type="DOUBLE">
@@ -141,6 +141,7 @@
 				<element>Top</element>
 				<element>Bottom</element>
 				<element>Both</element>
+				<element>None</element>
 			</param>
 			<param type="DOUBLE">
 				<name>Normal stress</name>
@@ -152,18 +153,18 @@
 		<group name="Layer Parameters" type="LAYER_TABLE">
 			<param type="DOUBLE" >
 				<name>Young modulus (GPa)</name>
-				<default>1</default>
+				<default>130</default>
 			</param>
 			<param type="DOUBLE" >
 				<name>Poisson ratio</name>
 				<default>0.3</default>
 			</param>
 			<param type="DOUBLE" >
-				<name>Surface modulus (N/m)</name>
+				<name>Surface λ (N/m)</name>
 				<default>0</default>
 			</param>
 			<param type="DOUBLE" >
-				<name>Surface ratio</name>
+				<name>Surface μ (N/m)</name>
 				<default>0</default>
 			</param>
 			<param type="DOUBLE" >

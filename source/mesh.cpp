@@ -95,9 +95,9 @@ shapeStruct Mesh::shape(quadStruct &quad){
     return shape;
 }
 
-// --------------------------------------------------------|
-// Computes the total stiffness matrix K for global FEM    |
-// --------------------------------------------------------|
+// -------------------------------------------------------|
+// Computes the total stiffness matrix K for local FEM    |
+// -------------------------------------------------------|
 
 void Mesh::totalKB(sparse &K,darray &B){
 
@@ -106,8 +106,8 @@ void Mesh::totalKB(sparse &K,darray &B){
 
         // Computes the elemental K matrices
 
-        matrix Ke = elem[i].selfK(shape3D,data.EvR[i]);
-        pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.EvS[i]);
+        matrix Ke = elem[i].selfK(shape3D,data.LmR[i]);
+        pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.LmS[i]);
         elem[i].freeJdN();
 
         // Inserts the elemental vector into the global B vector
@@ -132,8 +132,7 @@ void Mesh::totalKB(sparse &K,darray &B){
 
                         if(row<=col){
 
-                            //double val = Ke[j+m*sLen][k+n*sLen]+Kb.first[j+m*sLen][k+n*sLen];
-                            double val = Ke[j+m*sLen][k+n*sLen];
+                            double val = Ke[j+m*sLen][k+n*sLen]+Kb.first[j+m*sLen][k+n*sLen];
                             alglib::sparseadd(K,row,col,val);
                         }
                     }
@@ -154,7 +153,7 @@ void Mesh::totalM(sparse &M){
 
         // Computes the elemental M matrices
 
-        matrix M1 = elem[i].selfM(shape3D,data.EvR[i][2]);
+        matrix M1 = elem[i].selfM(shape3D,data.LmR[i][2]);
         elem[i].freeJdN();
 
         // Inserts the elemental matrix into the global M matrix
@@ -426,7 +425,7 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        sigma[i] = elem[i].stress(shape3D,data.EvR[i],ue);
+        sigma[i] = elem[i].stress(shape3D,data.LmR[i],ue);
         elem[i].freeJdN();
     }
     return sigma;
