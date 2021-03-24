@@ -24,24 +24,14 @@ namespace math{
     }
 
     // --------------------------------------------------------|
-    // Couple-stress tensor D for isotropic linear elasticity  |
+    // Non-local kernel density function at global coordinate  |
     // --------------------------------------------------------|
 
-    matrix couple(double E,double v,double l){
+    double kernel(array3d x,array3d y,double range){
 
-        matrix D;
-        D.setlength(6,6);
-        double mu = E/(2*(1+v));
-        math::zero(D);
-
-        // Fills the diagonal elements of the matrix
-
-        for(int i=0; i<3; i++){
-
-            D(i,i) = 2*mu*l*l;
-            D(i+3,i+3) = mu*l*l;
-        }
-        return D;
+        double dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2]);
+        double k = exp(-dist/range)/(pow(range,3)*8);
+        return k;
     }
 
     // ------------------------------------------------|

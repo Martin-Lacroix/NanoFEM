@@ -64,7 +64,7 @@ void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
 // Solves the linear system with wave propagation    |
 // --------------------------------------------------|
 
-vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
+vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
@@ -73,9 +73,9 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 
     // Builds the full K and M matrices of the system
 
-    int nLen = 3*Mesh.nLen;
+    int nLen = 3*mesh.nLen;
     double dt = pow(wave.dt,2);
-    int size = 9*Mesh.eLen*pow(Mesh.data.order+1,6)/4;
+    int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
 
     darray B;
     sparse K,M,M1;
@@ -83,9 +83,9 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
     alglib::sparsecreate(nLen,nLen,size,K);
     math::zero(B);
 
-    Mesh.totalM(M);
-    Mesh.neumann(B);
-    Mesh.totalKB(K,B);
+    mesh.totalM(M);
+    mesh.neumann(B);
+    mesh.totalKB(K,B);
 
     alglib::sparseconverttocrs(K);
     alglib::sparsecopytocrs(M,M1);
@@ -94,7 +94,7 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 
     vector<darray> u;
     darray u1 = wave.u0;
-    darray x,y,u2 = u1;
+    darray x,y,u2 = wave.u0;
     u.push_back(wave.u0);
 
     // Prints the computation time of the operation
@@ -122,9 +122,9 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
 
         // Sets the boundary conditions
 
-        Mesh.delta(M,y);
-        Mesh.coupling(M,y);
-        Mesh.dirichlet(M,y);
+        mesh.delta(M,y);
+        mesh.coupling(M,y);
+        mesh.dirichlet(M,y);
         alglib::sparseconverttocrs(M);
 
         // Solves the symmetric linear system with Alglib
@@ -134,7 +134,7 @@ vector<darray> solveWave(Mesh &Mesh,timeStruct &wave){
         alglib::lincgcreate(nLen,state);
         alglib::lincgsolvesparse(state,M,1,y);
         alglib::lincgresults(state,u2,rep);
-        Mesh.complete(u2);
+        mesh.complete(u2);
         u.push_back(u2);
     }
 

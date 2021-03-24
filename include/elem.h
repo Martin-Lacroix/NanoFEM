@@ -26,23 +26,26 @@ class Elem{
 
     public:
 
+    void freeJdN();
+    void updateJ(shapeStruct &shape);
+
     // Constructor and functions available in the elem.cpp file
 
     Elem(std::vector<array3d> nXYZ,ivector surface);
-    darray stress(shapeStruct &shape,array3d EvR,darray u);
+    darray stress(shapeStruct &shape,array3d LmR,darray u);
     dvector surfaceJ(shapeStruct &shape,ivector &node,int index);
-    void updateJ(shapeStruct &shape);
-    void freeJdN();
 
     // Functions of elemental stiffness and mass matrices
 
     matrix selfM(shapeStruct &shape,double rho);
-    matrix selfK(shapeStruct &shape,array3d EvR);
+    matrix selfK(shapeStruct &shape,array3d LmR);
+    matrix selfS(shapeStruct &shape,array3d xyz,double range);
     std::pair<matrix,darray> selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d EvS);
 
     // Parameters specific to each element
 
     std::vector<array3d> nXYZ;
+    std::vector<array3d> gXYZ;
     std::vector<matrix> J;
     ivector surface;
     dvector detJ;

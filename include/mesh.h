@@ -8,9 +8,11 @@
 
 struct dataStruct{
 
+    int order;
+    double range;
+
     // Main informations about the mesh
 
-    int order;
     std::vector<array3d> nXYZ;
     std::vector<ivector> eNode;
     std::vector<ivector> eSurf;
@@ -43,10 +45,15 @@ struct dataStruct{
 class Mesh{
 
     public:
-
     Mesh(dataStruct &&data);
 
-    // Functions available in the mesh.cpp file
+    // Functions flor non-local finite element
+
+    matrix elemK(int idx);
+    matrix totalS(array3d xyz);
+    void nonLocalK(sparse &K);
+
+    // Functions for dynamic and local finite element
     
     void totalB(darray &B);
     void totalM(sparse &M);

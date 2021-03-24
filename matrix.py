@@ -2,6 +2,14 @@ import numpy as np
 
 # %% Functions
 
+def kernel(x,y,d):
+    
+    norm = 1/(8*d*d*d)
+    dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2])
+    k = norm*np.exp(-dist/d)
+    
+    return k
+
 def fixed(K,B,dim,node,val):
     
     nLen = B.shape[0]//3
@@ -59,6 +67,11 @@ def makeFull(K):
     K += K2
     return K
 
+
+def positive(K):
+    
+    ok = np.all(np.linalg.eigvals(K)>=0)
+    return ok
     
 # %% Load files
 
@@ -81,3 +94,8 @@ B = np.loadtxt("output/B.txt")
 
 # sameK = np.allclose(K_old,K)
 # sameB = np.allclose(B_old,B)
+
+x = np.array([0,0,5])
+y = np.array([0,0,0])
+test = kernel(x,y,1)
+print(np.linalg.norm(y-x))

@@ -101,7 +101,7 @@ shapeStruct Mesh::shape(quadStruct &quad){
 
 void Mesh::totalKB(sparse &K,darray &B){
 
-    int sLen = shape3D.N.cols();
+    int sLen = shape3D.N.rows();
     for(int i=0; i<eLen; i++){
 
         // Computes the elemental K matrices
@@ -148,12 +148,12 @@ void Mesh::totalKB(sparse &K,darray &B){
 
 void Mesh::totalM(sparse &M){
 
-    int sLen = shape3D.N.cols();
+    int sLen = shape3D.N.rows();
     for(int i=0; i<eLen; i++){
 
         // Computes the elemental M matrices
 
-        matrix M1 = elem[i].selfM(shape3D,data.LmR[i][2]);
+        matrix Me = elem[i].selfM(shape3D,data.LmR[i][2]);
         elem[i].freeJdN();
 
         // Inserts the elemental matrix into the global M matrix
@@ -170,7 +170,7 @@ void Mesh::totalM(sparse &M){
 
                         if(row<=col){
 
-                            double val = M1[j+m*sLen][k+n*sLen];
+                            double val = Me[j+m*sLen][k+n*sLen];
                             alglib::sparseadd(M,row,col,val);
                         }
                     }
@@ -178,6 +178,104 @@ void Mesh::totalM(sparse &M){
             }
         }
     }
+}
+
+// -----------------------------------------------------------|
+// Computes the total stiffness matrix K for non-local FEM    |
+// -----------------------------------------------------------|
+
+void Mesh::nonLocalK(sparse &K){
+
+    int sLen = shape3D.N.rows();
+    for(int i=0; i<eLen; i++){
+
+        // Computes the elemental M matrices
+
+        matrix Ke = elemK(i);
+
+        // Inserts the elemental matrix into the global K matrix
+
+        for(int m=0; m<3; m++){
+            for(int n=0; n<3; n++){
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<nLen; k++){
+
+                        int row = data.eNode[i][j]+m*nLen;
+                        int col = k+n*nLen;
+
+                        if(row<=col){
+
+                            double val = Ke[j+m*sLen][k+n*nLen];
+                            alglib::sparseadd(K,row,col,val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------|
+// Computes the elemental non-local stiffness matrix    |
+// -----------------------------------------------------|
+
+matrix Mesh::elemK(int idx){
+
+    matrix B,K;
+    int sLen = elem[idx].nLen;
+    K.setlength(3*sLen,3*nLen);
+    B.setlength(3*sLen,6);
+    math::zero(B);
+    math::zero(K);
+
+    // Update the Jacobian and builds the stiffness matrix
+
+    elem[idx].updateJ(shape3D);
+    matrix D = math::stiffness(data.LmR[idx]);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<shape3D.gLen; i++){
+        for(int j=0; j<sLen; j++){
+
+            B(j,0) = B(j+sLen,3) = B(j+2*sLen,5) = elem[idx].dN[0](j,i);
+            B(j,3) = B(j+sLen,1) = B(j+2*sLen,4) = elem[idx].dN[1](j,i);
+            B(j,5) = B(j+sLen,4) = B(j+2*sLen,2) = elem[idx].dN[2](j,i);
+        }
+
+        matrix S = totalS(elem[idx].gXYZ[i]);
+        matrix K1 = math::prod(shape3D.weight[i],B,D);
+        matrix K2 = math::prod(elem[idx].detJ[i],K1,S);
+        math::add(1,1,K2,K);
+    }
+    return K;
+}
+
+// ---------------------------------------------------------|
+// Evaluates the total non-local S matrix at a point xyz    |
+// ---------------------------------------------------------|
+
+matrix Mesh::totalS(array3d xyz){
+
+    matrix S;
+    S.setlength(6,3*nLen);
+    math::zero(S);
+
+    for(int i=0; i<eLen; i++){
+
+        int sLen = elem[i].nLen;
+        elem[i].updateJ(shape3D);
+        matrix Se = elem[i].selfS(shape3D,xyz,data.range);
+
+        for(int n=0; n<3; n++){
+            for(int j=0; j<6; j++){
+                for(int k=0; k<sLen; k++){
+                    S(j,data.eNode[i][k]+n*nLen) += Se(j,k+n*sLen);
+                }
+            }
+        }
+    }
+    return S;
 }
 
 // -------------------------------------------------------------|
@@ -390,12 +488,24 @@ void Mesh::complete(darray &u){
 
 void Mesh::update(darray &u){
 
+    int sLen = shape3D.N.rows();
+
     // Adds the displacement to the corresponding node coordinate
 
     for(int i=0; i<nLen; i++){
         for(int j=0; j<3; j++){
             data.nXYZ[i][j] += u[i+j*nLen];
         }
+    }
+
+    // Creates the list of elements with node coordinates
+
+    for(int i=0; i<eLen; i++){
+        
+        vector<array3d> eXYZ(sLen);
+        for(int j=0; j<sLen; j++){eXYZ[j] = data.nXYZ[data.eNode[i][j]];}
+        Elem hexa(eXYZ,data.eSurf[i]);
+        elem[i] = hexa;
     }
 }
 
@@ -406,7 +516,7 @@ void Mesh::update(darray &u){
 vector<darray> Mesh::stress(darray &u){
 
     vector<darray> sigma(eLen);
-    int sLen = shape3D.N.cols();
+    int sLen = shape3D.N.rows();
 
     // Coordinates of the nodes of the element
 

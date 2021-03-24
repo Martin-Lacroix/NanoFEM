@@ -186,7 +186,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     for(int i=0; i<3; i++){read.dLen.push_back(0.1+read.dSize[i]/eSize[i]);}
     ivector dLen = read.dLen;
 
-    // Stores the node coordinates and the BC in the mesh
+    // Stores the node coordinates of the nodes in the mesh
 
     for(int i=0; i<=dLen[0]*order; i++){
         for(int j=0; j<=dLen[1]*order; j++){
@@ -221,7 +221,6 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
                 for(int n=0; n<order+1; n++){
                     for(int m=0; m<order+1; m++){
                         for(int p=0; p<order+1; p++){
-
                             data.eNode.back().push_back(idx+p+m*dy+n*dx);
                         }
                     }
@@ -344,16 +343,43 @@ void readSpecies(readStruct &read,dataStruct &data,string path){
 void surface(readStruct &read,dataStruct &data){
 
     int eLen = data.eNode.size();
+    ivector dLen = read.dLen;
     data.eSurf.resize(eLen);
+
+    // Parameters for reaching the opposite element in the mesh
+
+    for(int i=0; i<3; i++){dLen[i] -= 1;}
+    ivector opposite = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
+
+    // Sets the free surface of each element
 
     for(int i=0; i<eLen; i++){
         if(read.empty[i]==1){continue;}
 
         else{
             for(int j=0; j<read.neighbour[i].size(); j++){
-                
+
                 int idx = read.neighbour[i][j];
-                if(idx==-1){for(int k:read.free){if(j==k){data.eSurf[i].push_back(k);}}}
+                if(idx==-1){
+                    
+                    // Check if the top and bottom Z surfaces are free
+
+                    if(j==1 || j==0){
+                        if(find(read.free.begin(),read.free.end(),j)!=read.free.end()){
+                            data.eSurf[i].push_back(j);
+                        }
+                    }
+
+                    // Checks if the periodicity leads to an empty element
+                    
+                    else if(j==2 && read.empty[i+opposite[1]]==1){data.eSurf[i].push_back(j);}
+                    else if(j==3 && read.empty[i-opposite[1]]==1){data.eSurf[i].push_back(j);}
+                    else if(j==4 && read.empty[i+opposite[0]]==1){data.eSurf[i].push_back(j);}
+                    else if(j==5 && read.empty[i-opposite[0]]==1){data.eSurf[i].push_back(j);}
+                }
+
+                // Checks if neighbour element is empty
+
                 else if(read.empty[idx]==1){data.eSurf[i].push_back(j);}
             }
         }
@@ -588,7 +614,7 @@ void read(string path,dataStruct &data){
     // Sets the boundary conditions parameters
 
     if(read.type=="axial stress"){
-        
+
         read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
@@ -664,7 +690,7 @@ void read(string path,dataStruct &data){
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
-
+    
     /*
     cout << "\n\nNodes\n";
     for(int i=0; i<data.nXYZ.size(); i++){
@@ -752,7 +778,9 @@ void read(string path,dataStruct &data){
         cout << "\n";
     }
     cout << "\n";
+
     */
+    
 }
 
 // ----------------------------------------------------------------------|

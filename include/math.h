@@ -34,7 +34,7 @@ namespace math{
 
     matrix stiffness(array3d LmX);
     quadStruct legendre(int dim,int order);
-    matrix couple(double E,double v,double l);
+    double kernel(array3d x,array3d y,double range);
     dvector lagrange(int var,dvector node,dvector val);
 
     // Sparse or dense matrix-matrix or vector-vector addition
