@@ -690,7 +690,7 @@ void read(string path,dataStruct &data){
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
-    
+
     /*
     cout << "\n\nNodes\n";
     for(int i=0; i<data.nXYZ.size(); i++){
@@ -778,7 +778,6 @@ void read(string path,dataStruct &data){
         cout << "\n";
     }
     cout << "\n";
-
     */
     
 }

@@ -196,7 +196,6 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
 
     darray BS;
     matrix B,K;
-    ivector node;
     array3d v,norm;
     BS.setlength(3*nLen);
     B.setlength(3*nLen,6);
@@ -217,10 +216,9 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
 
         math::zero(B);
         updateJ(shapeS[k]);
-        dvector detJ2D = surfaceJ(shape,node,k);
 
         for(int i=0; i<shapeS[k].gLen; i++){
-            for(int j:node){
+            for(int j=0; j<nLen; j++){
 
                 // Computes the shape functions derivative matrix B
                 
@@ -229,7 +227,7 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
                 B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dN[2](j,i);
             }
 
-            // Computes the exterior normal to the surface
+            // Computes the dirrector vectors of the surface
 
             array3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
             array3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
@@ -238,29 +236,34 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
             switch(k){
             case 0:
                 v = math::dotsub(vs,vr);
-                norm = math::cross(vs,v,1);
+                norm = math::cross(vs,v);
                 break;
             case 1:
                 v = math::dotsub(vs,vr);
-                norm = math::cross(v,vs,1);
+                norm = math::cross(v,vs);
                 break;
             case 2:
                 v = math::dotsub(vr,vt);
-                norm = math::cross(v,vr,1);
+                norm = math::cross(v,vr);
                 break;
             case 3:
                 v = math::dotsub(vr,vt);
-                norm = math::cross(vr,v,1);
+                norm = math::cross(vr,v);
                 break;
             case 4:
                 v = math::dotsub(vt,vs);
-                norm = math::cross(vt,v,1);
+                norm = math::cross(vt,v);
                 break;
             case 5:
                 v = math::dotsub(vt,vs);
-                norm = math::cross(v,vt,1);
+                norm = math::cross(v,vt);
                 break;
             }
+
+            // Computes the Jacobian determinant and the normal
+            
+            double detJ2D = sqrt(norm[0]*norm[0]+norm[1]*norm[1]+norm[2]*norm[2]);
+            for(int j=0; j<3; j++){norm[j] /= detJ2D;}
 
             // Computes the isotropic surface stiffness tensor
 
@@ -272,13 +275,13 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
 
             matrix BT = math::prod(1,B,T);
             matrix K1 = math::prod(shape.weight[i],BT,S);
-            matrix K2 = math::prod(detJ2D[i],K1,BT,0,1);
+            matrix K2 = math::prod(detJ2D,K1,BT,0,1);
             math::add(1,1,K2,K);
 
             // Computes B by Gauss-Legendre quadrature
 
             darray Be = math::prod(shape.weight[i],BT,tau);
-            math::add(-detJ2D[i],1,Be,BS);
+            math::add(-detJ2D,1,Be,BS);
         }
     }
 
@@ -327,66 +330,6 @@ darray Elem::stress(shapeStruct &shape,array3d EvR,darray u){
 
     for(int i=0; i<6; i++){sigma[i] /= volume;}
     return sigma;
-}
-
-// -----------------------------------------------------------|
-// Determinant of the 2D face Jacobian in the 3D hexahedron   |
-// -----------------------------------------------------------|
-
-dvector Elem::surfaceJ(shapeStruct &shape,ivector &node,int index){
-
-    node.clear();
-    vector<array3d> fXYZ;
-
-    // Creates the node and coordinates of the face
-
-    switch(index){
-    case 0:
-        for(int i=0; i<sLen*sLen; i++){
-            fXYZ.push_back(nXYZ[i*sLen]);
-            node.push_back(i*sLen);
-        }
-        break;
-    case 1:
-        for(int i=0; i<sLen*sLen; i++){
-            node.push_back(i*sLen+sLen-1);
-            fXYZ.push_back(nXYZ[i*sLen+sLen-1]);
-        }
-        break;
-    case 2:
-        for(int i=0; i<sLen; i++){
-            for(int j=0; j<sLen; j++){
-                node.push_back(i*sLen*sLen+j);
-                fXYZ.push_back(nXYZ[i*sLen*sLen+j]);
-            }
-        }
-        break;
-    case 3:
-        for(int i=0; i<sLen; i++){
-            for(int j=0; j<sLen; j++){
-                node.push_back(i*sLen*sLen+j+(sLen-1)*sLen);
-                fXYZ.push_back(nXYZ[i*sLen*sLen+j+(sLen-1)*sLen]);
-            }
-        }
-        break;
-    case 4:
-        for(int i=0; i<sLen*sLen; i++){
-            fXYZ.push_back(nXYZ[i]);
-            node.push_back(i);
-        }
-        break;
-    case 5:
-        for(int i=0; i<sLen*sLen; i++){
-            node.push_back(i+(sLen-1)*sLen*sLen);
-            fXYZ.push_back(nXYZ[i+(sLen-1)*sLen*sLen]);
-        }
-        break;
-    }
-
-    // Creates the 2D face element and its the determinant
-
-    Face face(fXYZ,shape);
-    return face.detJ2D;
 }
 
 // -----------------------------------------------------------|

@@ -86,19 +86,12 @@ namespace math{
     // Vector cross product V3 = V1 × V2, k = 1 means that V3 is normed    |
     // --------------------------------------------------------------------|
 
-    array3d cross(array3d &V1,array3d &V2,bool k){
+    array3d cross(array3d &V1,array3d &V2){
 
         array3d V3;
         V3[0] = V1[1]*V2[2]-V1[2]*V2[1];
         V3[1] = V1[0]*V2[2]-V1[2]*V2[0];
         V3[2] = V1[0]*V2[1]-V1[1]*V2[0];
-
-        if(k==1){
-            
-            double n = 0;
-            for(int i=0; i<3; i++){n += V3[i]*V3[i];}
-            for(int i=0; i<3; i++){V3[i] /= sqrt(n);}
-        }
         return V3;
     }
 
