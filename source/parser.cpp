@@ -1,9 +1,7 @@
 #include "..\include\parser.h"
 #include <unordered_map>
 #include <direct.h>
-#include <iterator>
 #include <fstream>
-#include <sstream>
 using namespace std;
 
 // -------------------------------------------|
@@ -145,27 +143,53 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     string input;
     ifstream file;
     file.open(path);
+    vector<string> vec;
     int order = data.order;
+
+    // Stores the input parameters
+
+    getline(file,input,'\n');
+    getline(file,input,'\n');
+    istringstream iss(input);
+    while(getline(iss,input,';')){vec.push_back(input);}
+
+    // Reads the size of the elements
+
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("MCsize") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,'>');
+            getline(iss,input);
+            read.eSize = tovec(input);
+        }
+    }
 
     // Reads the size of the cubic domain
 
-    getline(file,input,'\n');
-    getline(file,input,'>');
-    getline(file,input,';');
-    read.dSize = tovec(input);
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("SBsize") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,'>');
+            getline(iss,input);
+            read.dSize = tovec(input);
+        }
+    }
 
     // Reads the origin of the domain
 
-    getline(file,input,'>');
-    getline(file,input,';');
-    read.zero = tovec(input);
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("SBcorner") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,'>');
+            getline(iss,input);
+            read.zero = tovec(input);
+        }
+    }
+
     dvector zero = read.zero;
-
-    // Reads the size of a hexahedron finite element
-
-    getline(file,input,'>');
-    getline(file,input,';');
-    read.eSize = tovec(input);
     dvector eSize = read.eSize;
 
     // Truncates the size of the domain to the closest element
@@ -256,21 +280,21 @@ unordered_set<int> locSpecies(readStruct &read,dvector coord){
         // Slightly moves the species along y axis
 
         int dx = dLen[0]*(coord[0]-zero[0])/read.dSize[0]+tol[i];
-        if(dx>=dLen[0]){continue;}
+        if(dx>=dLen[0] || dx<0){continue;}
 
         // Slightly moves the species along y axis
 
         for(int j=0; j<2; j++){
 
             int dy = dLen[1]*(coord[1]-zero[1])/read.dSize[1]+tol[j];
-            if(dy>=dLen[1]){continue;}
+            if(dy>=dLen[1] || dy<0){continue;}
 
             // Slightly moves the species along z axis
 
             for(int k=0; k<2; k++){
                         
                 int dz = dLen[2]*(coord[2]-zero[2])/read.dSize[2]+tol[k];
-                if(dz<dLen[2]){eList.insert(dx*dLen[1]*dLen[2]+dy*dLen[2]+dz);}
+                if(dz<dLen[2] && dz>=0){eList.insert(dx*dLen[1]*dLen[2]+dy*dLen[2]+dz);}
             }
         }
     }
@@ -381,220 +405,6 @@ void surface(readStruct &read,dataStruct &data){
                 // Checks if neighbour element is empty
 
                 else if(read.empty[idx]==1){data.eSurf[i].push_back(j);}
-            }
-        }
-    }
-}
-
-// --------------------------------------------------|
-// Stores the displacement constrains on the nodes   |
-// --------------------------------------------------|
-
-void dirichlet(readStruct &read,dataStruct &data){
-
-    ivector dLen = read.dLen;
-    dvector tol = read.eSize;
-
-    // Tolerance to check if a node is at a boundary
-
-    for(int i=0; i<3; i++){
-
-        dLen[i] *= data.order;
-        tol[i] = read.eSize[i]/(data.order+1);
-    }
-
-    // RowLoc stores tracks the node added each row of in coupNode
-
-    vector<ivector> rowLoc(3,ivector(data.nXYZ.size(),-1));
-    ivector opposite = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
-
-    // Initialization and lock the node (0,0,0) at the origin
-
-    for(int i=0; i<3; i++){
-        
-        data.dirNode[i].push_back(0);
-        data.dirVal[i].push_back(0);
-        data.coupNode[i].resize(1);
-    }
-
-    // Uniform (j,k) : sets the displacement along k of the top face j uniform
-
-    for(pair<int,int> pair:read.uniform){
-
-        int j = pair.first;
-        int k = pair.second;
-
-        // For each node at the top surface of the dimension j
-
-        for(int i=0; i<data.nXYZ.size(); i++){
-            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
-
-                // Adds the node to coupNode[k] if not already there
-
-                if(rowLoc[k][i]<0){
-
-                    data.coupNode[k][0].push_back(i);
-                    rowLoc[k][i] = 0;
-                }
-            }
-        }
-    }
-
-    // Axial (j,k) : imposes the displacement k along j of the top face j
-
-    for(pair<int,double> pair:read.axial){
-
-            int j = pair.first;
-            double k = pair.second;
-
-        for(int i=0; i<data.nXYZ.size(); i++){
-
-            // For each node at the top surface of the dimension j
-
-            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
-
-                data.dirNode[j].push_back(i);
-                data.dirVal[j].push_back(k);
-            }
-        }
-    }
-
-    // LockBot (j,k) : locks the displacement along k of the bottom face j at 0
-
-    for(pair<int,int> pair:read.lockBot){
-
-        int j = pair.first;
-        int k = pair.second;
-
-        // For each node at the bottom surface of the dimension j
-
-        for(int i=0; i<data.nXYZ.size(); i++){
-            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                data.dirNode[k].push_back(i);
-                data.dirVal[k].push_back(0);
-            }
-        }
-    }
-
-    // LockTop (j,k) : locks the displacement along k of the top face j at 0
-
-    for(pair<int,int> pair:read.lockTop){
-
-        int j = pair.first;
-        int k = pair.second;
-
-        // For each node at the top surface of the dimension j
-
-        for(int i=0; i<data.nXYZ.size(); i++){
-            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
-
-                data.dirNode[k].push_back(i);
-                data.dirVal[k].push_back(0);
-            }
-        }
-    }
-
-    // Coupled (j,k) : coupled u along k of opposite nodes of the top-bottom faces j
-
-    for(int i=0; i<data.nXYZ.size(); i++){
-        for(pair<int,int> pair:read.coupled){
-
-            int j = pair.first;
-            int k = pair.second;
-            int loc1 = rowLoc[k][i];
-            int loc2 = rowLoc[k][i+opposite[j]];
-
-            // For each node at the bottom surface of the dimension j
-
-            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                // Check whether the first or second node is already in the list
-
-                if(loc1>=0 && loc2<0){
-
-                    data.coupNode[k][loc1].push_back(i+opposite[j]);
-                    rowLoc[k][i+opposite[j]] = loc1;
-                }
-                else if(loc1<0 && loc2>=0){
-
-                    data.coupNode[k][loc2].push_back(i);
-                    rowLoc[k][i] = loc2;
-                }
-                else if(loc1<0 && loc2<0){
-
-                    data.coupNode[k].push_back({i,i+opposite[j]});
-                    rowLoc[k][i+opposite[j]] = data.coupNode[k].size()-1;
-                    rowLoc[k][i] = data.coupNode[k].size()-1;
-                }
-            }
-        }
-    }
-
-    // Selects the nodes at the edge of the conatrained face
-
-    for(int i=0; i<data.nXYZ.size(); i++){
-        for(pair<int,int> pair:read.deltaZero){
-
-            int j = pair.first;
-            int k = pair.second;
-
-            // For each node at the bottom surface of the dimension j
-
-            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
-
-                // Does not take the node if at the surface k
-
-                if(abs(data.nXYZ[i][k]-read.zero[k])>tol[j]){
-                    if(abs(data.nXYZ[i][k]-read.zero[k]-read.dSize[k])>tol[j]){
-
-                        // Change of variable u => Δu = 0 for the other nodes of the face
-
-                        data.deltaNode[j].push_back(make_pair(i+opposite[j],i));
-                        data.dirNode[j].push_back(i+opposite[j]);
-                        data.dirVal[j].push_back(0);
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ------------------------------------------|
-// Stores the Neumann boundary conditions    |
-// ------------------------------------------|
-
-void neumann(readStruct &read,dataStruct &data){
-
-    int idx;
-    int order = data.order;
-    int sLen = data.order+1;
-
-    // Neumann BC on the face perpendicular to the j-th dimension
-
-    for(int n=0; n<read.axis[0].size(); n++){
-        for(int i=0; i<data.eNode.size(); i++){
-            if(read.neighbour[i][5-2*read.axis[0][n]]==-1){
-
-                // Computes the nodes of the face without neighbour
-
-                ivector face;
-
-                for(int j=0; j<sLen; j++){
-                    for(int k=0; k<sLen; k++){
-
-                        if(read.axis[0][n]==0){idx = j*sLen+k+order*sLen*sLen;}
-                        else if(read.axis[0][n]==1){idx = j+k*sLen*sLen+order*sLen;}
-                        else if(read.axis[0][n]==2){idx = j*sLen*sLen+k*sLen+order;}
-                        face.push_back(data.eNode[i][idx]);
-                    }
-                }
-
-                // Stores the applied axial stress on the right face
-                                
-                data.neuFace.push_back(face);
-                data.neuVal.push_back("[0,0,0]");
-                data.neuVal.back()[read.axis[1][n]] = read.Fval;
             }
         }
     }
@@ -780,215 +590,4 @@ void read(string path,dataStruct &data){
     cout << "\n";
     */
     
-}
-
-// ----------------------------------------------------------------------|
-// Converts a normed quantity into a chemical species (Jérôme MULLER)    |
-// ----------------------------------------------------------------------|
-
-const char* FCT_atm_name(double norm){
-
-    int i_color;
-    int Nb_color = 30;
-    i_color = (int)ceil(norm*(Nb_color-1));
-
-    // Selects the chemical species
-
-    switch(i_color){
-
-       case 0 : return("Pb");
-       case 1 : return("Ir");
-       case 2 : return("Os");
-       case 3 : return("Re");
-       case 4 : return("Pu");
-       case 5 : return("Np");
-       case 6 : return("U" );
-       case 7 : return("Pa");
-       case 8 : return("Th");
-       case 9 : return("Ta");
-       case 10 : return("Am");
-       case 11 : return("Cm");
-       case 12 : return("Bk");
-       case 13 : return("Cf");
-       case 14 : return("Es");
-       case 15 : return("Fm");
-       case 16 : return("Md");
-       case 17 : return("No");
-       case 18 : return("Lr");
-       case 19 : return("Rf");
-       case 20 : return("Db");
-       case 21 : return("Sg");
-       case 22 : return("Bh");
-       case 23 : return("Hs");
-       case 24 : return("Mt");
-       case 25 : return("Fe");
-       case 26 : return("P" );
-       case 27 : return("Se");
-       case 28 : return("Au");
-       case 29 : return("S" );
-       default : return("XX");
-    }
-}
-
-// ------------------------------------------------------------|
-// Writes the output displacement file compatible with Jmol    |
-// ------------------------------------------------------------|
-
-void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
-
-    mkdir("output");
-    int nLen = mesh.nLen;
-    int eLen = mesh.eLen;
-    int sLen = mesh.shape3D.N.cols();
-    double scale = abs(mesh.data.nXYZ[1][2]-mesh.data.nXYZ[0][2]);
-
-    vector<string> header(18);
-    vector<string> uName = {"X","Y","Z"};
-    vector<string> sName = {"XX","YY","ZZ","XY","YZ","ZX"};
-
-    // Parameters for the colour legend
-
-    int barLength = 3000;
-    double zMin = mesh.data.nXYZ[0][2];
-    double zMax = mesh.data.nXYZ.back()[2];
-    double xLoc = mesh.data.nXYZ[0][0]-mesh.data.nXYZ.back()[0]/4.0;
-    double yLoc = mesh.data.nXYZ[0][1]-mesh.data.nXYZ.back()[1]/4.0;
-
-    // Header parameters for Jmol
-
-    header[1] = "jmolscript: set autobond off";
-    header[2] = "set specular OFF";
-    header[3] = "set antialiasDisplay OFF";
-    header[4] = "set platformSpeed 2";
-    header[5] = "spacefill "+to_string(scale/2);
-    header[6] = "vector off";
-    header[7] = "moveto 0 BOTTOM";
-    header[8] = "anim off";
-    header[9] = "set labeloffset -10 0";
-    header[10] = "set labelfront";
-    header[11] = "color label white";
-    header[12] = "font label 30 serif";
-    header[13] = "select all";
-
-    // Loops in the 3 dimensions (ux, uy, uz)
-
-    for(int k=0; k<3; k++){
-
-        ofstream uXYZ("output/displacement-"+uName[k]+".xyz");
-        double min = 0;
-        double max = 0;
-
-        // Computes the maximum and minimum displacement
-
-        for(int i=0; i<nLen; i++){
-
-            if(disp[i+k*nLen]>max){max = disp[i+k*nLen];}
-            else if(disp[i+k*nLen]<min){min = disp[i+k*nLen];}
-        }
-
-        // Header parameters for Jmol
-
-        header[0] = "Displacement field u"+uName[k];
-        header[14] = "select atomno="+to_string(1);
-        header[15] = "label "+to_string(min)+" nm";
-        header[16] = "select atomno="+to_string(barLength);
-        header[17] = "label "+to_string(max)+" nm";
-
-        // Writes the header and number of nodes
-
-        uXYZ << nLen+barLength << "\n";
-        for(string option:header){uXYZ << option << ";";}
-        uXYZ << "\n";
-
-        // Writes the legend colour bar in the file
-
-        for(int i=0; i<barLength; i++){
-
-            double val = i/(double)barLength;
-            uXYZ << FCT_atm_name(val) << " ";
-            uXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
-            uXYZ << "\n";
-        }
-
-        // Writes the displacement field in the file
-
-        for(int i=0; i<mesh.nLen; i++){
-
-            double val = (disp[i+k*nLen]-min)/(max-min);
-            const char *species = FCT_atm_name(val);
-            uXYZ << species << " ";
-
-            // Extracts the u(x,y,z) values from the solution vector
-
-            for(int j=0; j<3; j++){uXYZ << mesh.data.nXYZ[i][j] << " ";}
-            uXYZ << disp[i+k*nLen] << " ";
-            uXYZ << "\n";
-        }
-    }
-
-    // Loops in the 6 dimensions (sxx, syy, szz, sxy, syz, szx)
-
-    for(int k=0; k<6; k++){
-
-        ofstream sXYZ("output/stress-"+sName[k]+".xyz");
-        double min = 0;
-        double max = 0;
-
-        // Computes the maximum and minimum stress
-
-        for(int i=0; i<eLen; i++){
-
-            if(sigma[i][k]>max){max = sigma[i][k];}
-            else if(sigma[i][k]<min){min = sigma[i][k];}
-        }
-
-        // Header parameters for Jmol
-
-        header[0] = "Stress field s"+sName[k];
-        header[14] = "select atomno="+to_string(1);
-        header[15] = "label "+to_string(min)+" GPa";
-        header[16] = "select atomno="+to_string(barLength);
-        header[17] = "label "+to_string(max)+" GPa";
-
-        // Writes the header and number of nodes
-
-        sXYZ << eLen+barLength << "\n";
-        for(string option:header){sXYZ << option << ";";}
-        sXYZ << "\n";
-
-        // Writes the legend colour bar in the file
-
-        for(int i=0; i<barLength; i++){
-
-            double val = i/(double)barLength;
-            sXYZ << FCT_atm_name(val) << " ";
-            sXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
-            sXYZ << "\n";
-        }
-
-        // Writes the stress field in the file
-
-        for(int i=0; i<mesh.eLen; i++){
-
-            array3d xyz = {0,0,0};
-            double val = (sigma[i][k]-min)/(max-min);
-            const char *species = FCT_atm_name(val);
-            sXYZ << species << " ";
-
-
-            // Coordinates of the center of the element
-
-            for(int j:mesh.data.eNode[i]){
-                for(int n=0; n<3; n++){
-                    xyz[n] += mesh.data.nXYZ[j][n]/sLen;
-                }
-            }
-
-            // Extracts the stress values from the solution vector
-
-            for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
-            sXYZ << sigma[i][k] << " ";
-            sXYZ << "\n";
-        }
-    }
 }

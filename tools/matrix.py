@@ -2,14 +2,6 @@ import numpy as np
 
 # %% Functions
 
-def kernel(x,y,d):
-    
-    norm = 1/(8*d*d*d)
-    dist = abs(x[0]-y[0])+abs(x[1]-y[1])+abs(x[2]-y[2])
-    k = norm*np.exp(-dist/d)
-    
-    return k
-
 def fixed(K,B,dim,node,val):
     
     nLen = B.shape[0]//3
@@ -24,8 +16,6 @@ def fixed(K,B,dim,node,val):
         K[i+dim*nLen,i+dim*nLen] = 1
     
     return K,B
-
-# Pair = [xi,xj] => xi' = xi-xj
 
 def delta(K,B,dim,pair):
     
@@ -67,35 +57,12 @@ def makeFull(K):
     K += K2
     return K
 
-
-def positive(K):
-    
-    ok = np.all(np.linalg.eigvals(K)>=0)
-    return ok
     
 # %% Load files
 
-U = np.loadtxt("output/disp.txt",delimiter=",")
-nXYZ = np.loadtxt("output/node.txt",delimiter=",")
-nLen = U.shape[0]
+U = np.loadtxt("../output/disp.txt",delimiter=",")
+nXYZ = np.loadtxt("../output/node.txt",delimiter=",")
 
-K = np.loadtxt("output/K.txt")
-B = np.loadtxt("output/B.txt")
-# M = np.loadtxt("output/M.txt")
-
-# K_old = np.loadtxt("output/K_old.txt")
-# M_old = np.loadtxt("output/M_old.txt")
-# B_old = np.loadtxt("output/B_old.txt")
-
-# Re-build the full matrix
-
-# K_old = makeFull(K_old)
-# K = makeFull(K)
-
-# sameK = np.allclose(K_old,K)
-# sameB = np.allclose(B_old,B)
-
-x = np.array([0,0,5])
-y = np.array([0,0,0])
-test = kernel(x,y,1)
-print(np.linalg.norm(y-x))
+K = np.loadtxt("../output/K.txt")
+B = np.loadtxt("../output/B.txt")
+# M = np.loadtxt("../output/M.txt")

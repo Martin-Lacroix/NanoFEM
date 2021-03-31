@@ -1,28 +1,15 @@
 #include "..\include\parser.h"
+#include "..\include\writer.h"
 #include "solvers.h"
 #include <direct.h>
 #include <fstream>
 #include <chrono>
 using namespace std;
 
-// ---------------------------------------------------------|
-// Structure storing the time data and initial conditions   |
-// ---------------------------------------------------------|
-
-struct timeStruct{
-
-    // Saving frequency and total number of time steps
-
-    darray u0;
-    double dt;
-    int nSave;
-    int nSteps;
-};
-
 // ------------------------------------------------|
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
-
+/*
 void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
     mkdir("output");
@@ -59,99 +46,12 @@ void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
         stress << s[s.length()-1] << "\n";
     }
 }
-
-// --------------------------------------------------|
-// Solves the linear system with wave propagation    |
-// --------------------------------------------------|
-
-vector<darray> solveWave(Mesh &mesh,timeStruct &wave){
-
-    auto stop = chrono::high_resolution_clock::now();
-    auto start = chrono::high_resolution_clock::now();
-    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBuilds the matrix --- ";
-
-    // Builds the full K and M matrices of the system
-
-    int nLen = 3*mesh.nLen;
-    double dt = pow(wave.dt,2);
-    int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
-
-    darray B;
-    sparse K,M,M1;
-    B.setlength(nLen);
-    alglib::sparsecreate(nLen,nLen,size,K);
-    math::zero(B);
-
-    mesh.totalM(M);
-    mesh.neumann(B);
-    mesh.totalKB(K,B);
-
-    alglib::sparseconverttocrs(K);
-    alglib::sparsecopytocrs(M,M1);
-
-    // Initializes the solution vector
-
-    vector<darray> u;
-    darray u1 = wave.u0;
-    darray x,y,u2 = wave.u0;
-    u.push_back(wave.u0);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
-    cout << "Time iterations --- ";
-
-    // Applies boundary conditions to M1 and B
-
-    for(int i=0; i<wave.nSteps; i++){
-
-        alglib::sparsecopytohashbuf(M1,M);
-
-        // Builds the right-hand-side of the equation
-
-        math::add(2,-1,u2,u1);
-        alglib::sparsesmv(M1,1,u1,x);
-        alglib::sparsesmv(K,1,u2,y);
-        math::add(1,-1,B,y);
-        math::add(1,dt,x,y);
-        u1 = u2;
-
-        // Sets the boundary conditions
-
-        mesh.delta(M,y);
-        mesh.coupling(M,y);
-        mesh.dirichlet(M,y);
-        alglib::sparseconverttocrs(M);
-
-        // Solves the symmetric linear system with Alglib
-
-        alglib::lincgreport rep;
-        alglib::lincgstate state;
-        alglib::lincgcreate(nLen,state);
-        alglib::lincgsolvesparse(state,M,1,y);
-        alglib::lincgresults(state,u2,rep);
-        mesh.complete(u2);
-        u.push_back(u2);
-    }
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
-    return u;
-}
-
+*/
 // -------------------------------------------------------|
 // Solves the linear system in quasistatic equilibrium    |
 // -------------------------------------------------------|
 
-darray solveStatic(Mesh &mesh){
+darray solve(Mesh &mesh){
 
     auto stop = chrono::high_resolution_clock::now();
     auto start = chrono::high_resolution_clock::now();
@@ -259,7 +159,7 @@ int main(){
     // Creates the mesh class and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    darray disp = solveStatic(mesh);
+    darray disp = solve(mesh);
     start = chrono::high_resolution_clock::now();
     cout << "Stress extraction --- ";
 
