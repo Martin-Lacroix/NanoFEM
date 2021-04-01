@@ -88,7 +88,7 @@ void Elem::updateJ(shapeStruct &shape){
 // This should normally free the memory of those vectors   |
 // --------------------------------------------------------|
 
-void Elem::freeJdN(){
+void Elem::freeQuad(){
 
     dvector().swap(detJ);
     vector<matrix>().swap(J);
@@ -161,31 +161,6 @@ matrix Elem::selfM(shapeStruct &shape,double rho){
         math::add(rho,1,Me,M);
     }
     return M;
-}
-
-// -----------------------------------------------------------|
-// Computes the elemental strain matrix S for non-local FEM   |
-// -----------------------------------------------------------|
-
-matrix Elem::selfS(shapeStruct &shape,array3d xyz,double range){
-
-    matrix S;
-    S.setlength(6,3*nLen);
-    math::zero(S);
-
-    // Performs the numerical integration
-
-    for(int i=0; i<shape.gLen; i++){
-        double k = math::kernel(xyz,gXYZ[i],range)*shape.weight[i]*detJ[i];
-
-        for(int j=0; j<nLen; j++){
-
-            S(0,j) = S(3,j+nLen) = S(5,j+2*nLen) += k*dN[0](j,i);
-            S(3,j) = S(1,j+nLen) = S(4,j+2*nLen) += k*dN[1](j,i);
-            S(5,j) = S(4,j+nLen) = S(2,j+2*nLen) += k*dN[2](j,i);
-        }
-    }
-    return S;
 }
 
 // -------------------------------------------------------------------|

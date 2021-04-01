@@ -6,128 +6,94 @@
 #include <chrono>
 using namespace std;
 
-// ------------------------------------------------|
-// Writes the simulation results in a text file    |
-// ------------------------------------------------|
-/*
-void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
+// -------------------------------------------|
+// Sets the starting time before a process    |
+// -------------------------------------------|
 
-    mkdir("output");
-    ofstream uXYZ("output/disp.txt");
-    ofstream elem("output/elem.txt");
-    ofstream node("output/node.txt");
-    ofstream stress("output/stress.txt");
+double startF(string text){
 
-    // Writes the displacement field in a text file
+    cout << text+" ... ";
+    fflush(stdout);
 
-    for(int i=0; i<mesh.nLen; i++){
-        for(int j=0; j<2; j++){uXYZ << disp[i+j*mesh.nLen] << ",";}
-        uXYZ << disp[i+2*mesh.nLen] << "\n";
-    }
+    // Gets the current clock time
 
-    // Writes the node coordinates as (x,y,z)
-
-    for(array3d nXYZ:mesh.data.nXYZ){
-        for(int i=0; i<nXYZ.size()-1; i++){node << nXYZ[i] << ",";}
-        node << nXYZ.back() << "\n";
-    }
-
-    // Writes the element nodes as (elem,node)
-
-    for(ivector eNode:mesh.data.eNode){
-        for(int i=0; i<eNode.size()-1; i++){elem << eNode[i] << ",";}
-        elem << eNode.back() << "\n";
-    }
-
-    // Writes the averaged elemental stress in a text file
-
-    for(darray s:sigma){
-        for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
-        stress << s[s.length()-1] << "\n";
-    }
+    auto time = std::chrono::system_clock::now();
+    auto now = std::chrono::duration<double>(time.time_since_epoch());
+    return now.count();
 }
-*/
+
+// --------------------------------------------|
+// Prints the computation time of a process    |
+// --------------------------------------------|
+
+void endF(double start){
+
+    auto time = std::chrono::system_clock::now();
+    auto now = std::chrono::duration<double>(time.time_since_epoch());
+    double laps = now.count()-start;
+
+    // Gets the elapsed computation time
+
+    int min = laps/60;
+    double sec = laps-min*60;
+
+    // Prints the computation time
+    
+    if(min>0){cout << "done in " << min << " min " << setprecision(2) << sec << " sec\n";}
+    else{cout << "done in " << setprecision(2) << sec << " sec\n";}
+    fflush(stdout);
+}
+
 // -------------------------------------------------------|
 // Solves the linear system in quasistatic equilibrium    |
 // -------------------------------------------------------|
 
 darray solve(Mesh &mesh){
 
-    auto stop = chrono::high_resolution_clock::now();
-    auto start = chrono::high_resolution_clock::now();
-    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nBuilds the matrix --- ";
-
-    // Builds the system matrix and vector
-
+    double time;
     int nLen = 3*mesh.nLen;
     int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
 
+    // Initializes the solver parameters
+
     sparse K;
     darray B;
+    darray u;
+
+    u.setlength(nLen);
     B.setlength(nLen);
-    alglib::sparsecreate(nLen,nLen,size,K);
     math::zero(B);
 
+    alglib::lincgreport rep;
+    alglib::lincgstate state;
+    alglib::sparsecreate(nLen,nLen,size,K);
+
+    // Builds the system matrix and vector
+
+    time = startF("Builds the matrix");
     mesh.totalKB(K,B);
     mesh.neumann(B);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
-    cout << "Boundary conditions --- ";
+    endF(time);
 
     // Applies boundary conditions to K and B
 
-    /*
-    ofstream Kfile("output/K.txt");
-    ofstream Bfile("output/B.txt");
-
-    for(int i=0; i<nLen; i++){
-        for(int j=0; j<nLen; j++){
-            
-            double val = alglib::sparseget(K,i,j);
-            Kfile << val << " ";
-        }
-        Kfile << "\n";
-        Bfile << B[i] << "\n";
-    }
-    */
-
+    time = startF("Boundary conditions");
 
     mesh.delta(K,B);
     mesh.coupling(K,B);
     mesh.dirichlet(K,B);
     alglib::sparseconverttocrs(K);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
-    cout << "Solves the system --- ";
+    endF(time);
     
     // Solves the symmetric linear system with Alglib
 
-    darray u;
-    u.setlength(nLen);
-    alglib::lincgreport rep;
-    alglib::lincgstate state;
+    time = startF("Solves the system");
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
+    endF(time);
 
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
     return u;
 }
 
@@ -137,70 +103,36 @@ darray solve(Mesh &mesh){
 
 int main(){
 
+    double time;
+    dataStruct data;
+    string path = "input.txt";
     alglib::setglobalthreading(alglib::parallel);
-    auto stop = chrono::high_resolution_clock::now();
-    auto start = chrono::high_resolution_clock::now();
-    auto clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << "\nReads the files --- ";
 
     // Reads the input files from Nascam
 
-    dataStruct data;
-    string path = "input.txt";
+    time = startF("\nReads the files");
     read(path,data);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec";
+    endF(time);
 
     // Creates the mesh class and solves with conjugate gradient
 
     Mesh mesh(move(data));
     darray disp = solve(mesh);
-    start = chrono::high_resolution_clock::now();
-    cout << "Stress extraction --- ";
 
     // Computes Von Mises stresses and updates the nodes
 
+    time = startF("Stress extraction");
     vector<darray> sigma = mesh.stress(disp);
     mesh.update(disp);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    start = chrono::high_resolution_clock::now();
-    cout << clock.count()/1e6 << " sec\n";
+    endF(time);
 
     // Writes the results in a text file
 
-    start = chrono::high_resolution_clock::now();
-    cout << "Writes the results --- ";
-    write(mesh,disp,sigma);
+    time = startF("Writes the results");
     writeJmol(mesh,disp,sigma);
-
-    // Prints the computation time of the operation
-
-    stop = chrono::high_resolution_clock::now();
-    clock = chrono::duration_cast<std::chrono::microseconds>(stop-start);
-    cout << clock.count()/1e6 << " sec\n\n";
-
-    /*
+    write(mesh,disp,sigma);
+    endF(time);
+    
     cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- ux = " << disp[i] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
-    }
-    cout << "\n";
-    */
+    return 0;
 }

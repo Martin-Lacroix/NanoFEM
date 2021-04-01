@@ -108,7 +108,7 @@ void Mesh::totalKB(sparse &K,darray &B){
 
         matrix Ke = elem[i].selfK(shape3D,data.LmR[i]);
         pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.LmS[i]);
-        elem[i].freeJdN();
+        elem[i].freeQuad();
 
         // Inserts the elemental vector into the global B vector
 
@@ -154,7 +154,7 @@ void Mesh::totalM(sparse &M){
         // Computes the elemental M matrices
 
         matrix Me = elem[i].selfM(shape3D,data.LmR[i][2]);
-        elem[i].freeJdN();
+        elem[i].freeQuad();
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -178,104 +178,6 @@ void Mesh::totalM(sparse &M){
             }
         }
     }
-}
-
-// -----------------------------------------------------------|
-// Computes the total stiffness matrix K for non-local FEM    |
-// -----------------------------------------------------------|
-
-void Mesh::nonLocalK(sparse &K){
-
-    int sLen = shape3D.N.rows();
-    for(int i=0; i<eLen; i++){
-
-        // Computes the elemental M matrices
-
-        matrix Ke = elemK(i);
-
-        // Inserts the elemental matrix into the global K matrix
-
-        for(int m=0; m<3; m++){
-            for(int n=0; n<3; n++){
-                for(int j=0; j<sLen; j++){
-                    for(int k=0; k<nLen; k++){
-
-                        int row = data.eNode[i][j]+m*nLen;
-                        int col = k+n*nLen;
-
-                        if(row<=col){
-
-                            double val = Ke[j+m*sLen][k+n*nLen];
-                            alglib::sparseadd(K,row,col,val);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// -----------------------------------------------------|
-// Computes the elemental non-local stiffness matrix    |
-// -----------------------------------------------------|
-
-matrix Mesh::elemK(int idx){
-
-    matrix B,K;
-    int sLen = elem[idx].nLen;
-    K.setlength(3*sLen,3*nLen);
-    B.setlength(3*sLen,6);
-    math::zero(B);
-    math::zero(K);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    elem[idx].updateJ(shape3D);
-    matrix D = math::stiffness(data.LmR[idx]);
-
-    // Performs the numerical integration
-
-    for(int i=0; i<shape3D.gLen; i++){
-        for(int j=0; j<sLen; j++){
-
-            B(j,0) = B(j+sLen,3) = B(j+2*sLen,5) = elem[idx].dN[0](j,i);
-            B(j,3) = B(j+sLen,1) = B(j+2*sLen,4) = elem[idx].dN[1](j,i);
-            B(j,5) = B(j+sLen,4) = B(j+2*sLen,2) = elem[idx].dN[2](j,i);
-        }
-
-        matrix S = totalS(elem[idx].gXYZ[i]);
-        matrix K1 = math::prod(shape3D.weight[i],B,D);
-        matrix K2 = math::prod(elem[idx].detJ[i],K1,S);
-        math::add(1,1,K2,K);
-    }
-    return K;
-}
-
-// ---------------------------------------------------------|
-// Evaluates the total non-local S matrix at a point xyz    |
-// ---------------------------------------------------------|
-
-matrix Mesh::totalS(array3d xyz){
-
-    matrix S;
-    S.setlength(6,3*nLen);
-    math::zero(S);
-
-    for(int i=0; i<eLen; i++){
-
-        int sLen = elem[i].nLen;
-        elem[i].updateJ(shape3D);
-        matrix Se = elem[i].selfS(shape3D,xyz,data.range);
-
-        for(int n=0; n<3; n++){
-            for(int j=0; j<6; j++){
-                for(int k=0; k<sLen; k++){
-                    S(j,data.eNode[i][k]+n*nLen) += Se(j,k+n*sLen);
-                }
-            }
-        }
-    }
-    return S;
 }
 
 // -------------------------------------------------------------|
@@ -509,9 +411,9 @@ void Mesh::update(darray &u){
     }
 }
 
-// ----------------------------------------------------------|
-// Computes the averaged Von Mises stress in each element    |
-// ----------------------------------------------------------|
+// --------------------------------------------------------------|
+// Computes the averaged bulk Von Mises stress in the element    |
+// --------------------------------------------------------------|
 
 vector<darray> Mesh::stress(darray &u){
 
@@ -536,7 +438,7 @@ vector<darray> Mesh::stress(darray &u){
         // Computes the averaged Von Mises stress
 
         sigma[i] = elem[i].stress(shape3D,data.LmR[i],ue);
-        elem[i].freeJdN();
+        elem[i].freeQuad();
     }
     return sigma;
 }

@@ -32,7 +32,7 @@ struct dataStruct{
     std::vector<ivector> coupNode[3];
     std::vector<std::pair<int,int>> deltaNode[3];
 
-    // Volume E-v-density and Surface E-v-tension
+    // Volume [λ μ ρ] and Surface [λs μs τ]
 
     std::vector<array3d> LmR;
     std::vector<array3d> LmS;
@@ -46,12 +46,6 @@ class Mesh{
 
     public:
     Mesh(dataStruct &&data);
-
-    // Functions flor non-local finite element
-
-    matrix elemK(int idx);
-    matrix totalS(array3d xyz);
-    void nonLocalK(sparse &K);
 
     // Functions for dynamic and local finite element
     

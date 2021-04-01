@@ -34,13 +34,11 @@ namespace math{
 
     matrix stiffness(array3d LmX);
     quadStruct legendre(int dim,int order);
-    double kernel(array3d x,array3d y,double range);
     dvector lagrange(int var,dvector node,dvector val);
 
     // Sparse or dense matrix-matrix or vector-vector addition
 
     void add(double k1,double k2,matrix &M1,matrix &M2);
-    void add(double k1,double k2,sparse &M1,sparse &M2);
     void add(double k1,double k2,darray &V1,darray &V2);
 
     // Matrix-matrix or matrix-array product

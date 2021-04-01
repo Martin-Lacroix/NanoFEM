@@ -26,7 +26,7 @@ class Elem{
 
     public:
 
-    void freeJdN();
+    void freeQuad();
     void updateJ(shapeStruct &shape);
 
     // Constructor and functions available in the elem.cpp file
@@ -39,7 +39,6 @@ class Elem{
 
     matrix selfM(shapeStruct &shape,double rho);
     matrix selfK(shapeStruct &shape,array3d LmR);
-    matrix selfS(shapeStruct &shape,array3d xyz,double range);
     std::pair<matrix,darray> selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d EvS);
 
     // Parameters specific to each element
