@@ -34,7 +34,6 @@ for i in range(height.shape[0]):
     
     FNULL = open(os.devnull,'w')
     subprocess.call(path+'Mechanics.exe',stdout=FNULL,stderr=subprocess.STDOUT,cwd=path)
-    subprocess.call(['python','cleaner.py'],stdout=FNULL,stderr=subprocess.STDOUT,cwd=path+'viewer/')
     
     # Moves the results
     
