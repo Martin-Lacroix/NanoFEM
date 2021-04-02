@@ -2,7 +2,6 @@
 #include "..\include\writer.h"
 #include "solvers.h"
 #include <direct.h>
-#include <fstream>
 #include <chrono>
 using namespace std;
 
@@ -10,13 +9,11 @@ using namespace std;
 // Sets the starting time before a process    |
 // -------------------------------------------|
 
-double startF(string text){
-
-    cout << text+" ... ";
-    fflush(stdout);
+double start(string text){
 
     // Gets the current clock time
 
+    cout << text << " ... " << std::flush;
     auto time = std::chrono::system_clock::now();
     auto now = std::chrono::duration<double>(time.time_since_epoch());
     return now.count();
@@ -26,7 +23,7 @@ double startF(string text){
 // Prints the computation time of a process    |
 // --------------------------------------------|
 
-void endF(double start){
+void end(double start){
 
     auto time = std::chrono::system_clock::now();
     auto now = std::chrono::duration<double>(time.time_since_epoch());
@@ -39,9 +36,9 @@ void endF(double start){
 
     // Prints the computation time
     
-    if(min>0){cout << "done in " << min << " min " << setprecision(2) << sec << " sec\n";}
-    else{cout << "done in " << setprecision(2) << sec << " sec\n";}
-    fflush(stdout);
+    if(min>0){cout << "done in " << min << " min " << setprecision(2) << sec << " sec";}
+    else{cout << "done in " << setprecision(2) << sec << " sec";}
+    cout << endl;
 }
 
 // -------------------------------------------------------|
@@ -57,9 +54,7 @@ darray solve(Mesh &mesh){
     // Initializes the solver parameters
 
     sparse K;
-    darray B;
-    darray u;
-
+    darray B,u;
     u.setlength(nLen);
     B.setlength(nLen);
     math::zero(B);
@@ -70,29 +65,29 @@ darray solve(Mesh &mesh){
 
     // Builds the system matrix and vector
 
-    time = startF("Builds the matrix");
+    time = start("Builds the matrix");
     mesh.totalKB(K,B);
     mesh.neumann(B);
-    endF(time);
+    end(time);
 
     // Applies boundary conditions to K and B
 
-    time = startF("Boundary conditions");
+    time = start("Boundary conditions");
 
     mesh.delta(K,B);
     mesh.coupling(K,B);
     mesh.dirichlet(K,B);
     alglib::sparseconverttocrs(K);
-    endF(time);
+    end(time);
     
     // Solves the symmetric linear system with Alglib
 
-    time = startF("Solves the system");
+    time = start("Solves the system");
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
-    endF(time);
+    end(time);
 
     return u;
 }
@@ -110,9 +105,14 @@ int main(){
 
     // Reads the input files from Nascam
 
-    time = startF("\nReads the files");
+    time = start("\nReads the files");
     read(path,data);
-    endF(time);
+    end(time);
+
+    cout << "\n----------------------\n";
+    cout << "FEM algorithm";
+    cout << "\n----------------------\n";
+    cout << endl;
 
     // Creates the mesh class and solves with conjugate gradient
 
@@ -121,18 +121,18 @@ int main(){
 
     // Computes Von Mises stresses and updates the nodes
 
-    time = startF("Stress extraction");
+    time = start("Stress extraction");
     vector<darray> sigma = mesh.stress(disp);
     mesh.update(disp);
-    endF(time);
+    end(time);
 
     // Writes the results in a text file
 
-    time = startF("Writes the results");
+    time = start("Writes the results");
     writeJmol(mesh,disp,sigma);
     write(mesh,disp,sigma);
-    endF(time);
+    end(time);
     
-    cout << "\n";
+    cout << endl;
     return 0;
 }

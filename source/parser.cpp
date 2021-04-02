@@ -5,6 +5,18 @@
 using namespace std;
 
 // -------------------------------------------|
+// Force prints some logs in the terminal     |
+// -------------------------------------------|
+
+template <class T>
+void logs(string text,T vec,double Lc){
+
+    cout << text << " = [";
+    cout << vec[0]*Lc << ", " << vec[1]*Lc << ", " << vec[2]*Lc << "]";
+    cout << endl;
+}
+
+// -------------------------------------------|
 // Input = [E,v] to Lamé parameters [λ,μ]     |
 // -------------------------------------------|
 
@@ -262,6 +274,15 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
         }
     }
     file.close();
+
+    // Prints some logs of the simulation
+
+    cout << "\n\n----------------------\n";
+    cout << "File logs";
+    cout << "\n----------------------\n\n";
+    logs("Element per dimension",read.dLen,1);
+    logs("Element size",read.eSize,read.Lc);
+    logs("Domain size",read.dSize,read.Lc);
 }
 
 // -------------------------------------------------------|
