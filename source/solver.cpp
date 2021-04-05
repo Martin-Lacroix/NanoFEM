@@ -1,7 +1,7 @@
 #include "..\include\parser.h"
 #include "..\include\writer.h"
 #include "solvers.h"
-#include <direct.h>
+#include <iomanip>
 #include <chrono>
 using namespace std;
 
@@ -13,9 +13,9 @@ double start(string text){
 
     // Gets the current clock time
 
-    cout << text << " ... " << std::flush;
-    auto time = std::chrono::system_clock::now();
-    auto now = std::chrono::duration<double>(time.time_since_epoch());
+    cout << text << " ... " << flush;
+    auto time = chrono::system_clock::now();
+    auto now = chrono::duration<double>(time.time_since_epoch());
     return now.count();
 }
 
@@ -25,8 +25,8 @@ double start(string text){
 
 void end(double start){
 
-    auto time = std::chrono::system_clock::now();
-    auto now = std::chrono::duration<double>(time.time_since_epoch());
+    auto time = chrono::system_clock::now();
+    auto now = chrono::duration<double>(time.time_since_epoch());
     double laps = now.count()-start;
 
     // Gets the elapsed computation time
@@ -114,7 +114,7 @@ int main(){
     cout << "\n----------------------\n";
     cout << endl;
 
-    // Creates the mesh class and solves with conjugate gradient
+    // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
     darray disp = solve(mesh);

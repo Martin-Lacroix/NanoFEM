@@ -1,7 +1,7 @@
-#include <bits/stdc++.h>
 #include <algorithm>
 #include "linalg.h"
 #include "stdafx.h"
+#include <array>
 
 #ifndef MATH_H
 #define MATH_H

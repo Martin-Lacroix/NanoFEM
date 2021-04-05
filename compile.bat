@@ -1,2 +1,3 @@
-g++ -O3 -I C:\ProgramData\Alglib\src -L C:\Users\ORBBE\Desktop\Plugin\include\ ^
-source\*.cpp C:\ProgramData\Alglib\src\*.cpp -o Mechanics.exe
+g++ -I C:\ProgramData\Alglib\src -o Mechanics.exe -O3 ^
+-DAE_OS=AE_WINDOWS -pthread -static -static-libgcc -static-libstdc++ ^
+C:\ProgramData\Alglib\src\*.cpp source\*.cpp

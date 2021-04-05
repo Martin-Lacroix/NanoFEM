@@ -1,5 +1,6 @@
 #include "..\include\writer.h"
 #include <direct.h>
+#include <fstream>
 using namespace std;
 
 // ------------------------------------------------|

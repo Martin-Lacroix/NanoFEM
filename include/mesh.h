@@ -9,7 +9,6 @@
 struct dataStruct{
 
     int order;
-    double range;
 
     // Main informations about the mesh
 

@@ -1,7 +1,8 @@
 #include "..\include\parser.h"
-#include <unordered_map>
-#include <direct.h>
+#include <iostream>
 #include <fstream>
+#include <sstream>
+#include <numeric>
 using namespace std;
 
 // -------------------------------------------|
