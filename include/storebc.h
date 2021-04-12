@@ -31,6 +31,7 @@ struct readStruct{
 
     // Type, value of the applied stress and ndex of the free surface
     
+    std::string defo;
     std::string type;
     std::string load;
     ivector free;

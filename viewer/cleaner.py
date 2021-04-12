@@ -5,7 +5,7 @@ import gmsh
 
 nXYZ = np.loadtxt(r"..\output\node.txt",delimiter=",")
 u = np.atleast_2d(np.loadtxt(r"..\output\disp.txt",delimiter=","))
-s = np.atleast_2d(np.loadtxt(r"..\output\stress.txt",delimiter=","))
+s = np.atleast_2d(np.loadtxt(r"..\output\spk.txt",delimiter=","))
 elem = np.atleast_2d(np.loadtxt(r"..\output\elem.txt",delimiter=",")+0.1).astype(int)
 
 # Computes the cubic domain size
@@ -129,12 +129,12 @@ gmsh.view.add("uz",3)
 
 # Stress field
 
-gmsh.view.add("sxx",4)
-gmsh.view.add("syy",5)
-gmsh.view.add("szz",6)
-gmsh.view.add("sxy",7)
-gmsh.view.add("syz",8)
-gmsh.view.add("szx",9)
+gmsh.view.add("Sxx",4)
+gmsh.view.add("Syy",5)
+gmsh.view.add("Szz",6)
+gmsh.view.add("Sxy",7)
+gmsh.view.add("Syz",8)
+gmsh.view.add("Szx",9)
 
 # Writes the displacement data in the model
     
@@ -155,9 +155,9 @@ gmsh.view.addModelData(7,0,"Nascam","ElementData",eTag,sxy)
 gmsh.view.addModelData(8,0,"Nascam","ElementData",eTag,syz)
 gmsh.view.addModelData(9,0,"Nascam","ElementData",eTag,szx)
 
-gmsh.view.write(4,r"..\output\stress-XX.msh")
-gmsh.view.write(5,r"..\output\stress-YY.msh")
-gmsh.view.write(6,r"..\output\stress-ZZ.msh")
-gmsh.view.write(7,r"..\output\stress-XY.msh")
-gmsh.view.write(8,r"..\output\stress-YZ.msh")
-gmsh.view.write(9,r"..\output\stress-ZX.msh")
+gmsh.view.write(4,r"..\output\spk-XX.msh")
+gmsh.view.write(5,r"..\output\spk-YY.msh")
+gmsh.view.write(6,r"..\output\spk-ZZ.msh")
+gmsh.view.write(7,r"..\output\spk-XY.msh")
+gmsh.view.write(8,r"..\output\spk-YZ.msh")
+gmsh.view.write(9,r"..\output\spk-ZX.msh")

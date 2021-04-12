@@ -7,13 +7,13 @@ using namespace std;
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
+void write(Mesh &mesh,darray &disp,vector<darray> &spk){
 
     mkdir("output");
     ofstream uXYZ("output/disp.txt");
     ofstream elem("output/elem.txt");
     ofstream node("output/node.txt");
-    ofstream stress("output/stress.txt");
+    ofstream stress("output/spk.txt");
 
     // Writes the displacement field in a text file
 
@@ -38,7 +38,7 @@ void write(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
     // Writes the averaged elemental stress in a text file
 
-    for(darray s:sigma){
+    for(darray s:spk){
         for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
         stress << s[s.length()-1] << "\n";
     }
@@ -188,11 +188,11 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
         }
     }
 
-    // Loops in the 6 dimensions (sxx, syy, szz, sxy, syz, szx)
+    // Loops in the 6 dimensions (Sxx, Syy, Szz, Sxy, Syz, Szx)
 
     for(int k=0; k<6; k++){
 
-        ofstream sXYZ("output/stress-"+sName[k]+".xyz");
+        ofstream sXYZ("output/spk-"+sName[k]+".xyz");
         double min = 0;
         double max = 0;
 
@@ -206,7 +206,7 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
 
         // Header parameters for Jmol
 
-        header[0] = "Stress field s"+sName[k];
+        header[0] = "Stress field S"+sName[k];
         header[14] = "select atomno="+to_string(1);
         header[15] = "label "+to_string(min)+" GPa";
         header[16] = "select atomno="+to_string(barLength);

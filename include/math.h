@@ -32,6 +32,7 @@ struct quadStruct{
 
 namespace math{
 
+    double norm(darray &V);
     matrix stiffness(array3d LmX);
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector val);

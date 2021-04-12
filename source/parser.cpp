@@ -53,95 +53,158 @@ dvector tovec(string input){
 // Reads the parameter from the input.txt file    |
 // -----------------------------------------------|
 
+
 string readInput(readStruct &read,dataStruct &data,string path){
 
     string input;
     ifstream file;
     string coating;
     file.open(path);
+    vector<string> vec;
 
-    // Gets the coating input file
+    // Stores the input parameters
 
-    getline(file,input,'\n');
-    transform(input.begin(),input.end(),input.begin(),::tolower);
+    while(getline(file,input,'\n')){
 
-    if(input=="manual selection"){
-
-        getline(file,input,'\n');
-        coating = input;
+        transform(input.begin(),input.end(),input.begin(),::tolower);
+        vec.push_back(input);
     }
-    else if(input=="all layers"){
-        coating = "input/coating.xyz";
+
+    // Large or small deformation and coating file
+
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!simulation type") != string::npos){
+
+            istringstream iss(vec[i]);
+
+            getline(iss,input,';');
+            if(input=="large strain"){read.defo = "large";}
+            else if(input=="small strain"){read.defo = "small";}
+
+            getline(iss,input,'!');
+            input.erase(input.find_last_not_of(" ")+1);
+            if(input=="manual selection"){coating = vec[i+1];}
+            else if(input=="whole structure"){coating = "input/coating.xyz";}
+            break;
+        }
     }
 
     // Reads the order of the quadrature rule
 
-    getline(file,input,';');
-    data.order = stoi(input);
-    getline(file,input,';');
-    read.Lc = stod(input);
-    getline(file,input,'!');
-    read.cropZ = stod(input);
-    getline(file,input,'\n');
-    read.cropZ /= read.Lc;
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!general parameters") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,';');
+            data.order = stoi(input);
+            getline(iss,input,';');
+            read.Lc = stod(input);
+
+            if(read.defo=="small"){
+
+                getline(iss,input,'!');
+                read.cropZ = stod(input)/read.Lc;
+            }
+            else if(read.defo=="large"){
+
+                getline(iss,input,';');
+                read.cropZ = stod(input)/read.Lc;
+                getline(iss,input,'!');
+                data.step = stod(input);
+            }
+            break;
+        }
+    }
 
     // Reads the parameters of empty elements
 
-    getline(file,input,'!');
-    read.emptyLmR = toLame(tovec(input));
-    getline(file,input,'\n');
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!hole parameters") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,'!');
+            read.emptyLmR = toLame(tovec(input));
+            break;
+        }
+    }
 
     // Reads the parameters of substrate element
-        
-    getline(file,input,'!');
-    read.LmS.push_back({0,0,0});
-    read.LmR.push_back(toLame(tovec(input)));
-    getline(file,input,'\n');
+
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!substrate parameters") != string::npos){
+            
+            istringstream iss(vec[i]);
+            getline(iss,input,'!');
+            read.LmS.push_back({0,0,0});
+            read.LmR.push_back(toLame(tovec(input)));
+            break;
+        }
+    }
 
     // Reads the type of applied stress
 
-    getline(file,input,'\n');
-    transform(input.begin(),input.end(),input.begin(),::tolower);
-    read.type = input;
-
-    // Reads the axis of applied stress
-
-    getline(file,input,';');
-    transform(input.begin(),input.end(),input.begin(),::tolower);
-    read.load = input;
-
-    for(int i=0; i<2; i++){
-
-        if(input=="all"){read.axis[i] = {0,1,2};}
-        else if(input[i+1]=='x'){read.axis[i] = {0};}
-        else if(input[i+1]=='y'){read.axis[i] = {1};}
-        else if(input[i+1]=='z'){read.axis[i] = {2};}
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!load type") != string::npos){
+            
+            istringstream iss(vec[i]);
+            getline(iss,input,'!');
+            input.erase(input.find_last_not_of(" ")+1);
+            read.type = input;
+            break;
+        }
     }
 
-    // reads the surface location
+    // Reads the axis, face and value of applied stress
 
-    getline(file,input,';');
-    transform(input.begin(),input.end(),input.begin(),::tolower);
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!load parameters") != string::npos){
+            
+            istringstream iss(vec[i]);
+            getline(iss,input,';');
+            read.load = input;
 
-    if(input=="top"){read.free = {1};}
-    else if(input=="bottom"){read.free = {0};}
-    else if(input=="both"){read.free = {0,1};}
-    else if(input=="None"){read.free = {};}
+            for(int i=0; i<2; i++){
 
-    // Reads the value of the stress
+                if(input=="all"){read.axis[i] = {0,1,2};}
+                else if(input[i+1]=='x'){read.axis[i] = {0};}
+                else if(input[i+1]=='y'){read.axis[i] = {1};}
+                else if(input[i+1]=='z'){read.axis[i] = {2};}
+            }
+        
+            getline(iss,input,';');
+            if(input=="top"){read.free = {1};}
+            else if(input=="bottom"){read.free = {0};}
+            else if(input=="both"){read.free = {0,1};}
+            else if(input=="None"){read.free = {};}
 
-    getline(file,input,'!');
-    read.Fval = stod(input);
-    getline(file,input,'\n');
+            getline(iss,input,'!');
+            read.Fval = stod(input);
+            break;
+        }
+    }
+
+    // Finds the index of the first layer
+
+    int idx;
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("! layer parameters-layer 1") != string::npos){
+
+            idx = i;
+            break;
+        }
+    }
 
     // Stores the Young modulus and Poisson ratio of the layers
 
-    while(getline(file,input,'!')){
+    for(int i=idx; i<vec.size(); i++){
+        if(vec[i].find("! layer parameters-layer") != string::npos){
 
-        dvector param = tovec(input);
-        read.LmR.push_back(toLame({param[0],param[1]}));
-        read.LmS.push_back({param[2],param[3],param[4]});
-        getline(file,input,'\n');
+            istringstream iss(vec[i]);
+            getline(iss,input,'!');
+            dvector param = tovec(input);
+            read.LmR.push_back(toLame({param[0],param[1]}));
+            if(read.defo=="small"){read.LmS.push_back({param[2],param[3],param[4]});}
+        }
     }
 
     return coating;
@@ -175,6 +238,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
             getline(iss,input,'>');
             getline(iss,input);
             read.eSize = tovec(input);
+            break;
         }
     }
 
@@ -187,6 +251,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
             getline(iss,input,'>');
             getline(iss,input);
             read.dSize = tovec(input);
+            break;
         }
     }
 
@@ -199,6 +264,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
             getline(iss,input,'>');
             getline(iss,input);
             read.zero = tovec(input);
+            break;
         }
     }
 
@@ -436,7 +502,7 @@ void surface(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-void read(string path,dataStruct &data){
+string read(string path,dataStruct &data){
 
     readStruct read;
     string coating = readInput(read,data,path);
@@ -516,10 +582,12 @@ void read(string path,dataStruct &data){
     dirichlet(read,data);
     neumann(read,data);
     surface(read,data);
-
+    
     // Rescales the data from lattice constant to nanometer
 
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
+    
+    return read.defo;
 }

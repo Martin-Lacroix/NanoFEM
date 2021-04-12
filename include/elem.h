@@ -26,10 +26,11 @@ class Elem{
 
     public:
 
-    void freeQuad();
+    void clean();
     void updateJ(shapeStruct &shape);
+    void updateF(shapeStruct &shape,darray u);
 
-    // Constructor and functions available in the elem.cpp file
+    // Constructor and functions available in the file
 
     Elem(std::vector<array3d> nXYZ,ivector surface);
     darray stress(shapeStruct &shape,array3d LmR,darray u);
@@ -41,11 +42,18 @@ class Elem{
     matrix selfK(shapeStruct &shape,array3d LmR);
     std::pair<matrix,darray> selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d EvS);
 
+    // Functions for large deformation elasticity
+
+    matrix selfKN(shapeStruct &shape,array3d LmR);
+    matrix selfKL(shapeStruct &shape,array3d LmR);
+    darray selfFX(shapeStruct &shape,array3d LmR);
+
     // Parameters specific to each element
 
     std::vector<array3d> nXYZ;
-    std::vector<array3d> gXYZ;
     std::vector<matrix> J;
+    std::vector<matrix> F;
+    std::vector<darray> E;
     ivector surface;
     dvector detJ;
     matrix dN[3];

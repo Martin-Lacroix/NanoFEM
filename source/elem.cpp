@@ -19,11 +19,8 @@ Elem::Elem(vector<array3d> inp1,ivector inp2) : nXYZ{inp1},surface{inp2}{
 
 void Elem::updateJ(shapeStruct &shape){
 
-    matrix coord;
     J.resize(shape.gLen);
     detJ.resize(shape.gLen);
-    gXYZ.resize(shape.gLen);
-    coord.setlength(nLen,3);
     vector<matrix> invJ(shape.gLen);
 
     // Resets the shape function derivative
@@ -70,30 +67,18 @@ void Elem::updateJ(shapeStruct &shape){
             }
         }
     }
-
-    // Global coordinates of the Gauss points
-
-    for(int i=0; i<nLen; i++){
-
-        coord(i,0) = nXYZ[i][0];
-        coord(i,1) = nXYZ[i][1];
-        coord(i,2) = nXYZ[i][2];
-    }
-
-    matrix M = math::prod(1,shape.N,coord,1);
-    for(int i=0; i<shape.gLen; i++){gXYZ[i] = {M(i,0),M(i,1),M(i,2)};}
 }
 
 // --------------------------------------------------------|
 // This should normally free the memory of those vectors   |
 // --------------------------------------------------------|
 
-void Elem::freeQuad(){
+void Elem::clean(){
 
     dvector().swap(detJ);
     vector<matrix>().swap(J);
-    vector<array3d>().swap(gXYZ);
     for(int i=0; i<3; i++){dN[i].setlength(0,0);}
+    for(int i=0; i<F.size(); i++){F[i].setlength(0,0);}
 }
 
 // ----------------------------------------------------------|
@@ -163,9 +148,9 @@ matrix Elem::selfM(shapeStruct &shape,double rho){
     return M;
 }
 
-// -------------------------------------------------------------------|
-// Computes the elemental surface stiffness matrix Ks for local FEM   |
-// -------------------------------------------------------------------|
+// ------------------------------------------------------------------|
+// Computes the surface stiffness matrix Ks and boundary vector Bs   |
+// ------------------------------------------------------------------|
 
 pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d LmS){
 
@@ -264,47 +249,232 @@ pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],arr
     return Kb;
 }
 
-// --------------------------------------------------------|
-// Computes the averaged Von Mises stress in the element   |
-// --------------------------------------------------------|
+// -----------------------------------------------------|
+// Computes the elemental deformation gradient tensor   |
+// -----------------------------------------------------|
 
-darray Elem::stress(shapeStruct &shape,array3d EvR,darray u){
+void Elem::updateF(shapeStruct &shape,darray u){
 
     matrix B;
-    darray sigma;
-    double volume = 0;
-    sigma.setlength(6);
+    B.setlength(3*nLen,9);
+    math::zero(B);
+
+    // Update the Jacobian and the deformation gradient
+
+    updateJ(shape);
+    F.resize(shape.gLen);
+    E.resize(shape.gLen);
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the linear shape functions derivative matrix
+            
+            B(j,0) = B(j+nLen,4) = B(j+2*nLen,7) = dN[0](j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,6) = dN[1](j,i);
+            B(j,8) = B(j+nLen,5) = B(j+2*nLen,2) = dN[2](j,i);
+        }
+
+        // Stores the deformation gradient tensor
+
+        F[i].setlength(3,3);
+        darray Fv =  math::prod(1,B,u,1);
+
+        F[i](0,0) = Fv[0]+1;
+        F[i](1,1) = Fv[1]+1;
+        F[i](2,2) = Fv[2]+1;
+        F[i](0,1) = Fv[3];
+        F[i](1,0) = Fv[4];
+        F[i](1,2) = Fv[5];
+        F[i](2,1) = Fv[6];
+        F[i](2,0) = Fv[7];
+        F[i](0,2) = Fv[8];
+
+        // Stores the Green-Lagrange strain tensor
+
+        E[i].setlength(6);
+        matrix Ev = math::prod(1,F[i],F[i],1,0);
+
+        E[i](0) = (Ev[0][0]-1)/2;
+        E[i](1) = (Ev[1][1]-1)/2;
+        E[i](2) = (Ev[2][2]-1)/2;
+        E[i](3) = Ev[0][1]/2;
+        E[i](4) = Ev[1][2]/2;
+        E[i](5) = Ev[2][0]/2;
+    }
+}
+
+// -------------------------------------------------------------|
+// Computes the non-linear stiffness matrix for finite strain   |
+// -------------------------------------------------------------|
+
+matrix Elem::selfKN(shapeStruct &shape,array3d LmR){
+
+    matrix K,B;
+    K.setlength(3*nLen,3*nLen);
     B.setlength(3*nLen,6);
-    math::zero(sigma);
+    math::zero(K);
     math::zero(B);
 
     // Update the Jacobian and builds the stiffness matrix
 
     updateJ(shape);
-    matrix D = math::stiffness(EvR);
+    matrix D = math::stiffness(LmR);
 
     // Performs the numerical integration
 
     for(int i=0; i<shape.gLen; i++){
         for(int j=0; j<nLen; j++){
 
-            // Computes the shape functions derivative matrix B
+            // Computes the non-linear shape functions derivative matrix
+
+            for(int k=0; k<3; k++){
             
-            B(j,0) = B(j+nLen,3) = B(j+2*nLen,5) = dN[0](j,i);
-            B(j,3) = B(j+nLen,1) = B(j+2*nLen,4) = dN[1](j,i);
-            B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dN[2](j,i);
+                B(j+k*nLen,0) = F[i](k,0)*dN[0](j,i);
+                B(j+k*nLen,1) = F[i](k,1)*dN[1](j,i);
+                B(j+k*nLen,2) = F[i](k,2)*dN[2](j,i);
+
+                B(j+k*nLen,3) = F[i](k,0)*dN[1](j,i)+F[i](k,1)*dN[0](j,i);
+                B(j+k*nLen,4) = F[i](k,1)*dN[2](j,i)+F[i](k,2)*dN[1](j,i);
+                B(j+k*nLen,5) = F[i](k,2)*dN[0](j,i)+F[i](k,0)*dN[2](j,i);
+            }
         }
 
-        // Volume and stress field at Gauss points
+        // Computes K by Gauss-Legendre quadrature
 
-        darray strain = math::prod(1,B,u,1);
-        darray stress = math::prod(1,D,strain,0);
-        math::add(shape.weight[i]*detJ[i],1,stress,sigma);
+        matrix K1 = math::prod(shape.weight[i],B,D);
+        matrix K2 = math::prod(detJ[i],K1,B,0,1);
+        math::add(1,1,K2,K);
+    }
+    return K;
+}
+
+// ---------------------------------------------------------|
+// Computes the linear stiffness matrix for finite strain   |
+// ---------------------------------------------------------|
+
+matrix Elem::selfKL(shapeStruct &shape,array3d LmR){
+
+    matrix K,B,S;
+    S.setlength(9,9);
+    B.setlength(3*nLen,9);
+    K.setlength(3*nLen,3*nLen);
+    math::zero(K);
+    math::zero(B);
+    math::zero(S);
+
+    // Update the Jacobian and builds the stiffness matrix
+
+    updateJ(shape);
+    matrix D = math::stiffness(LmR);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the linear shape functions derivative matrix
+            
+            B(j,0) = B(j+nLen,4) = B(j+2*nLen,7) = dN[0](j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,6) = dN[1](j,i);
+            B(j,8) = B(j+nLen,5) = B(j+2*nLen,2) = dN[2](j,i);
+        }
+
+        // Computes the matrix of second Piola-Kirchhoff components
+
+        darray Sv = math::prod(1,D,E[i]);
+
+        S(0,0) = S(4,4) = S(7,7) = Sv[0];
+        S(1,1) = S(3,3) = S(6,6) = Sv[1];
+        S(2,2) = S(5,5) = S(8,8) = Sv[2];
+        S(0,3) = S(1,4) = S(6,7) = Sv[3];
+        S(1,5) = S(2,6) = S(3,8) = Sv[4];
+        S(0,8) = S(2,7) = S(4,5) = Sv[5];
+
+        // Computes K by Gauss-Legendre quadrature
+
+        alglib::rmatrixenforcesymmetricity(S,9,1);
+        matrix K1 = math::prod(shape.weight[i],B,S);
+        matrix K2 = math::prod(detJ[i],K1,B,0,1);
+        math::add(1,1,K2,K);
+    }
+    return K;
+}
+
+// --------------------------------------------------------------|
+// Computes the non-linear equilibrium force for finite strain   |
+// --------------------------------------------------------------|
+
+darray Elem::selfFX(shapeStruct &shape,array3d LmR){
+
+    matrix B;
+    darray Fx;
+    Fx.setlength(3*nLen);
+    B.setlength(3*nLen,6);
+    math::zero(Fx);
+    math::zero(B);
+
+    // Update the Jacobian and builds the stiffness matrix
+
+    updateJ(shape);
+    matrix D = math::stiffness(LmR);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the non-linear shape functions derivative matrix
+
+            for(int k=0; k<3; k++){
+            
+                B(j+k*nLen,0) = F[i](k,0)*dN[0](j,i);
+                B(j+k*nLen,1) = F[i](k,1)*dN[1](j,i);
+                B(j+k*nLen,2) = F[i](k,2)*dN[2](j,i);
+
+                B(j+k*nLen,3) = F[i](k,0)*dN[1](j,i)+F[i](k,1)*dN[0](j,i);
+                B(j+k*nLen,4) = F[i](k,1)*dN[2](j,i)+F[i](k,2)*dN[1](j,i);
+                B(j+k*nLen,5) = F[i](k,2)*dN[0](j,i)+F[i](k,0)*dN[2](j,i);
+            }
+        }
+
+        // Computes K by Gauss-Legendre quadrature
+
+        darray F1 = math::prod(shape.weight[i],D,E[i]);
+        darray F2 = math::prod(detJ[i],B,F1);
+        math::add(1,1,F2,Fx);
+    }
+    return Fx;
+}
+
+// -----------------------------------------------------|
+// Computes the averaged Cauchy stress in the element   |
+// -----------------------------------------------------|
+
+darray Elem::stress(shapeStruct &shape,array3d LmR,darray u){
+
+    matrix B;
+    darray spk;
+    spk.setlength(6);
+    math::zero(spk);
+
+    // Update the Jacobian and builds the stiffness matrix
+
+    updateJ(shape);
+    double volume = 0;
+    matrix D = math::stiffness(LmR);
+
+    // Volume and stress field at Gauss points
+
+    for(int i=0; i<shape.gLen; i++){
+
+        darray Sv = math::prod(1,D,E[i]);
         volume += shape.weight[i]*detJ[i];
+        math::add(shape.weight[i]*detJ[i],1,Sv,spk);
     }
 
-    for(int i=0; i<6; i++){sigma[i] /= volume;}
-    return sigma;
+    for(int i=0; i<6; i++){spk[i] /= volume;}
+    return spk;
 }
 
 // -----------------------------------------------------------|

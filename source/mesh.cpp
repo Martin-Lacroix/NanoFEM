@@ -104,17 +104,20 @@ void Mesh::totalKB(sparse &K,darray &B){
     int sLen = shape3D.N.rows();
     for(int i=0; i<eLen; i++){
 
-        // Computes the elemental K matrices
+        // Computes the elemental matrices and vectors
 
         matrix Ke = elem[i].selfK(shape3D,data.LmR[i]);
         pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.LmS[i]);
-        elem[i].freeQuad();
+        matrix Ks; swap(Ks,Kb.first);
+        elem[i].clean();
 
         // Inserts the elemental vector into the global B vector
 
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
-                B(data.eNode[i][j]+k*nLen) += Kb.second(j+k*sLen);
+
+                int row = data.eNode[i][j]+k*nLen;
+                B(row) += Kb.second(j+k*sLen);
             }
         }
         
@@ -132,7 +135,71 @@ void Mesh::totalKB(sparse &K,darray &B){
 
                         if(row<=col){
 
-                            double val = Ke[j+m*sLen][k+n*sLen]+Kb.first[j+m*sLen][k+n*sLen];
+                            double val = Ke(j+m*sLen,k+n*sLen)+Ks(j+m*sLen,k+n*sLen);
+                            alglib::sparseadd(K,row,col,val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------|
+// Computes the total stiffness matrix K for local FEM    |
+// -------------------------------------------------------|
+
+void Mesh::totalKT(sparse &K,darray &B,darray &u){
+
+    darray ue;
+    int sLen = shape3D.N.rows();
+    ue.setlength(3*sLen);
+
+    for(int i=0; i<eLen; i++){
+
+        // Stores the nodal displacement of the element
+
+        for(int k=0; k<3; k++){
+            for(int j=0; j<sLen; j++){
+
+                int row = data.eNode[i][j]+k*nLen;
+                ue(j+k*sLen) = u(row);
+            }
+        }
+
+        // Computes the elemental matrices and vectors
+
+        elem[i].updateF(shape3D,ue);
+        matrix Kn = elem[i].selfKN(shape3D,data.LmR[i]);
+        matrix Kl = elem[i].selfKL(shape3D,data.LmR[i]);
+        darray F = elem[i].selfFX(shape3D,data.LmR[i]);
+        elem[i].clean();
+
+        // Inserts the elemental vector into the global B vector
+
+        for(int k=0; k<3; k++){
+            for(int j=0; j<sLen; j++){
+
+                int row = data.eNode[i][j]+k*nLen;
+                B(row) -= F(j+k*sLen);
+            }
+        }
+        
+        // Inserts the elemental matrix into the global K matrix
+
+        for(int m=0; m<3; m++){
+            for(int n=0; n<3; n++){
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
+
+                        int row = data.eNode[i][j]+m*nLen;
+                        int col = data.eNode[i][k]+n*nLen;
+
+                        // Adds the element only in the upper triangle
+
+                        if(row<=col){
+
+                            double val = Kn(j+m*sLen,k+n*sLen)+Kl(j+m*sLen,k+n*sLen);
                             alglib::sparseadd(K,row,col,val);
                         }
                     }
@@ -154,7 +221,7 @@ void Mesh::totalM(sparse &M){
         // Computes the elemental M matrices
 
         matrix Me = elem[i].selfM(shape3D,data.LmR[i][2]);
-        elem[i].freeQuad();
+        elem[i].clean();
 
         // Inserts the elemental matrix into the global M matrix
 
@@ -411,34 +478,36 @@ void Mesh::update(darray &u){
     }
 }
 
-// --------------------------------------------------------------|
-// Computes the averaged bulk Von Mises stress in the element    |
-// --------------------------------------------------------------|
+// ----------------------------------------------------------|
+// Averaged second Piola Kirchhoff stress in the elements    |
+// ----------------------------------------------------------|
 
 vector<darray> Mesh::stress(darray &u){
 
-    vector<darray> sigma(eLen);
+    darray ue;
+    vector<darray> spk(eLen);
     int sLen = shape3D.N.rows();
+    ue.setlength(3*sLen);
 
     // Coordinates of the nodes of the element
 
     for(int i=0; i<eLen; i++){
 
-        darray ue;
-        ue.setlength(3*sLen);
+        // Stores the nodal displacement of the element
 
-        // Stores the displacement of the curent element nodes
+        for(int k=0; k<3; k++){
+            for(int j=0; j<sLen; j++){
 
-        for(int j=0; j<sLen; j++){
-            for(int k=0; k<3; k++){
-                ue[j+k*sLen] = u(data.eNode[i][j]+k*nLen);
+                int row = data.eNode[i][j]+k*nLen;
+                ue(j+k*sLen) = u(row);
             }
         }
 
         // Computes the averaged Von Mises stress
 
-        sigma[i] = elem[i].stress(shape3D,data.LmR[i],ue);
-        elem[i].freeQuad();
+        elem[i].updateF(shape3D,ue);
+        spk[i] = elem[i].stress(shape3D,data.LmR[i],ue);
+        elem[i].clean();
     }
-    return sigma;
+    return spk;
 }

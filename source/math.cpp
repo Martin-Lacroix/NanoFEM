@@ -71,9 +71,9 @@ namespace math{
         return quad;
     }
 
-    // --------------------------------------------------------------------|
-    // Vector cross product V3 = V1 × V2, k = 1 means that V3 is normed    |
-    // --------------------------------------------------------------------|
+    // --------------------------------------------------|
+    // Performs the vector cross product V3 = V1 × V2    |
+    // --------------------------------------------------|
 
     array3d cross(array3d &V1,array3d &V2){
 
@@ -204,6 +204,18 @@ namespace math{
             }
         }
         return invM;
+    }
+
+    // ---------------------------------------------------|
+    // Computes the L2 vector norm of a general vector    |
+    // ---------------------------------------------------|
+
+    double norm(darray &V){
+
+        double norm = 0;
+        for(int i=0; i<V.length(); i++){norm += V[i]*V[i];}
+        norm = sqrt(norm);
+        return norm;
     }
 
     // -----------------------------------------------------------------------|

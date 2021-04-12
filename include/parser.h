@@ -8,7 +8,7 @@
 // ----------------------------------|
 
 dvector tovec(std::string input);
-void read(std::string path,dataStruct &data);
+std::string read(std::string path,dataStruct &data);
 
 // Functions to read the different input files
 

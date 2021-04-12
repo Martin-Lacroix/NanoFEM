@@ -16,11 +16,17 @@
 	
 	<userInput>
 		<group>
+			<param name="Simulation Type" type="LIST" ref="Defo">
+				<name>Deformation</name>
+				<element>Small strain</element>
+				<element>Large strain</element>
+				<default>Small strain</default>
+			</param>
 			<param type="LIST" ref="Layer">
 				<name>Studied layers</name>
-				<element>All layers</element>
+				<element>Whole structure</element>
 				<element>Manual selection</element>
-				<default>All layers</default>
+				<default>Whole structure</default>
 			</param>
 		</group>
 
@@ -30,7 +36,7 @@
 			</param>
 		</group>
 
-		<group name="General Parameters">
+		<group name="General Parameters" displayIf="Defo:Small strain">
 			<param type="INT">
 				<name>Element order</name>
 				<default>1</default>
@@ -45,6 +51,29 @@
 				<name>Smoothing depth</name>
 				<default>0</default>
 				<unit>nm</unit>
+			</param>
+		</group>
+
+		<group name="General Parameters" displayIf="Defo:Large strain">
+			<param type="INT">
+				<name>Element order</name>
+				<default>1</default>
+				<unit>-</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Lattice constant</name>
+				<default>1</default>
+				<unit>nm</unit>
+			</param>
+			<param type="DOUBLE">
+				<name>Smoothing depth</name>
+				<default>0</default>
+				<unit>nm</unit>
+			</param>
+			<param type="INT">
+				<name>Load steps</name>
+				<default>1</default>
+				<unit>-</unit>
 			</param>
 		</group>
 
@@ -75,7 +104,7 @@
 		</group>
 		
 		<group>
-			<param type="LIST" ref="Type">
+			<param name="Load Type" type="LIST" ref="Type">
 				<name>Load type</name>
 				<element>Axial stress</element>
 				<element>Shear stress</element>
@@ -150,13 +179,13 @@
 			</param>
 		</group>
 
-		<group name="Layer Parameters" type="LAYER_TABLE">
+		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Defo:Small strain">
 			<param type="DOUBLE" >
 				<name>Young modulus (GPa)</name>
 				<default>130</default>
 			</param>
 			<param type="DOUBLE" >
-				<name>Poisson ratio</name>
+				<name>Poisson ratio (-)</name>
 				<default>0.3</default>
 			</param>
 			<param type="DOUBLE" >
@@ -170,6 +199,17 @@
 			<param type="DOUBLE" >
 				<name>Surface tension (N/m)</name>
 				<default>0</default>
+			</param>
+		</group>
+
+		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Defo:Large strain">
+			<param type="DOUBLE" >
+				<name>Young modulus (GPa)</name>
+				<default>130</default>
+			</param>
+			<param type="DOUBLE" >
+				<name>Poisson ratio (-)</name>
+				<default>0.3</default>
 			</param>
 		</group>
 	</userInput>

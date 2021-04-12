@@ -8,6 +8,7 @@
 
 struct dataStruct{
 
+    int step;
     int order;
 
     // Main informations about the mesh
@@ -46,11 +47,15 @@ class Mesh{
     public:
     Mesh(dataStruct &&data);
 
-    // Functions for dynamic and local finite element
+    // Functions for finite element matrices
     
     void totalB(darray &B);
     void totalM(sparse &M);
     void totalKB(sparse &K,darray &B);
+    void totalKT(sparse &K,darray &B,darray &u);
+
+    // COmputes the shape functions and stress
+    
     shapeStruct shape(quadStruct &quad);
     std::vector<darray> stress(darray &u);
 

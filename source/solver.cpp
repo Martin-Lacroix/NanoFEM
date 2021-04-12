@@ -36,16 +36,16 @@ void end(double start){
 
     // Prints the computation time
     
-    if(min>0){cout << "done in " << min << " min " << setprecision(2) << sec << " sec";}
-    else{cout << "done in " << setprecision(2) << sec << " sec";}
+    if(min>0){cout << "Done in " << min << " min " << setprecision(2) << sec << " sec";}
+    else{cout << "Done in " << setprecision(2) << sec << " sec";}
     cout << endl;
 }
 
-// -------------------------------------------------------|
-// Solves the linear system in quasistatic equilibrium    |
-// -------------------------------------------------------|
+// ---------------------------------------------------|
+// Solves the linear system for small deformations    |
+// ---------------------------------------------------|
 
-darray solve(Mesh &mesh){
+darray solveS(Mesh &mesh){
 
     double time;
     int nLen = 3*mesh.nLen;
@@ -92,6 +92,87 @@ darray solve(Mesh &mesh){
     return u;
 }
 
+// -------------------------------------------------------|
+// Solves the non-linear system for large deformations    |
+// -------------------------------------------------------|
+
+darray solveL(Mesh &mesh){
+
+    double time;
+    int max = 20;
+    int nLen = 3*mesh.nLen;
+    int step = mesh.data.step;
+    int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
+    vector<darray> neuVal = mesh.data.neuVal;
+
+    // Initializes the solver parameters
+
+    darray u,du;
+    u.setlength(nLen);
+    du.setlength(nLen);
+    math::zero(u);
+
+    // Performs the load iterations
+
+    for(int i=0; i<step; i++){
+        double norm1,norm2=1;
+
+        // Updates the surface traction vector
+
+        for(int k=0; k<3; k++){
+            for(int j=0; j<neuVal.size(); j++){
+                mesh.data.neuVal[j](k) = (i+1)*neuVal[j][k]/step;
+            }
+        }
+
+        for(int j=0; j<max; j++){
+            
+            cout << "[" << i+1 << "/" << step;
+            cout << "] - Newton step " << j+1 << endl;
+
+            // Performs a Newton-Raphson iteration
+
+            sparse K;
+            darray B;
+            B.setlength(nLen);
+            math::zero(B);
+
+            alglib::lincgreport rep;
+            alglib::lincgstate state;
+            alglib::sparsecreate(nLen,nLen,size,K);
+
+            // Builds the system matrix and vector
+
+            mesh.totalKT(K,B,u);
+            mesh.neumann(B);
+
+            // Applies boundary conditions to K and B
+
+            mesh.delta(K,B);
+            mesh.coupling(K,B);
+            mesh.dirichlet(K,B);
+            alglib::sparseconverttocrs(K);
+            
+            // Solves the symmetric linear system with Alglib
+
+            alglib::lincgcreate(nLen,state);
+            alglib::lincgsolvesparse(state,K,1,B);
+            alglib::lincgresults(state,du,rep);
+
+            mesh.complete(du);
+            math::add(1,1,du,u);
+
+            // Check the convergence criteria
+
+            norm1 = norm2;
+            norm2 = math::norm(u);
+            if(abs(norm2-norm1)/norm1<1e-12){break;}
+        }
+        cout << endl;
+    }
+    return u;
+}
+
 // ------------------------------------------|
 // Main code of the finite element solver    |
 // ------------------------------------------|
@@ -99,6 +180,7 @@ darray solve(Mesh &mesh){
 int main(){
 
     double time;
+    darray disp;
     dataStruct data;
     string path = "input.txt";
     alglib::setglobalthreading(alglib::parallel);
@@ -106,7 +188,7 @@ int main(){
     // Reads the input files from Nascam
 
     time = start("\nReads the files");
-    read(path,data);
+    string type = read(path,data);
     end(time);
 
     cout << "\n----------------------\n";
@@ -117,22 +199,40 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    darray disp = solve(mesh);
+    if(type=="small"){disp = solveS(mesh);}
+    if(type=="large"){disp = solveL(mesh);}
 
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    vector<darray> sigma = mesh.stress(disp);
+    vector<darray> spk = mesh.stress(disp);
     mesh.update(disp);
     end(time);
 
     // Writes the results in a text file
 
     time = start("Writes the results");
-    writeJmol(mesh,disp,sigma);
-    write(mesh,disp,sigma);
+    writeJmol(mesh,disp,spk);
+    write(mesh,disp,spk);
     end(time);
     
     cout << endl;
+
+    /*
+    cout << "\n";
+    for(int i=0; i<mesh.nLen; i++){
+        cout << "Node " << i << " -- ux = " << disp[i] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.nLen; i++){
+        cout << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
+    }
+    cout << "\n";
+    for(int i=0; i<mesh.nLen; i++){
+        cout << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
+    }
+    cout << "\n";
+    */
+    
     return 0;
 }
