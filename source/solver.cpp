@@ -77,12 +77,12 @@ darray solveS(Mesh &mesh){
     mesh.delta(K,B);
     mesh.coupling(K,B);
     mesh.dirichlet(K,B);
-    alglib::sparseconverttocrs(K);
     end(time);
     
     // Solves the symmetric linear system with Alglib
 
     time = start("Solves the system");
+    alglib::sparseconverttocrs(K);
     alglib::lincgcreate(nLen,state);
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
@@ -151,10 +151,10 @@ darray solveL(Mesh &mesh){
             mesh.delta(K,B);
             mesh.coupling(K,B);
             mesh.dirichlet(K,B);
-            alglib::sparseconverttocrs(K);
             
             // Solves the symmetric linear system with Alglib
 
+            alglib::sparseconverttocrs(K);
             alglib::lincgcreate(nLen,state);
             alglib::lincgsolvesparse(state,K,1,B);
             alglib::lincgresults(state,du,rep);
