@@ -106,9 +106,11 @@ void Mesh::totalKB(sparse &K,darray &B){
 
         // Computes the elemental matrices and vectors
 
+        elem[i].updateS(shapeS);
+        elem[i].updateJ(shape3D);
         matrix Ke = elem[i].selfK(shape3D,data.LmR[i]);
-        pair<matrix,darray> Kb = elem[i].selfKB(shape2D,shapeS,data.LmS[i]);
-        matrix Ks; swap(Ks,Kb.first);
+        matrix Ks = elem[i].selfKS(shapeS,data.LmS[i]);
+        darray Fs = elem[i].selfFS(shapeS,data.LmS[i]);
         elem[i].clean();
 
         // Inserts the elemental vector into the global B vector
@@ -117,7 +119,7 @@ void Mesh::totalKB(sparse &K,darray &B){
             for(int j=0; j<sLen; j++){
 
                 int row = data.eNode[i][j]+k*nLen;
-                B(row) += Kb.second(j+k*sLen);
+                B(row) += Fs(j+k*sLen);
             }
         }
         
@@ -169,6 +171,7 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
 
         // Computes the elemental matrices and vectors
 
+        elem[i].updateJ(shape3D);
         elem[i].updateF(shape3D,ue);
         matrix Kn = elem[i].selfKN(shape3D,data.LmR[i]);
         matrix Kl = elem[i].selfKL(shape3D,data.LmR[i]);
@@ -220,6 +223,7 @@ void Mesh::totalM(sparse &M){
 
         // Computes the elemental M matrices
 
+        elem[i].updateJ(shape3D);
         matrix Me = elem[i].selfM(shape3D,data.LmR[i][2]);
         elem[i].clean();
 
@@ -492,6 +496,8 @@ vector<darray> Mesh::stress(darray &u){
     // Coordinates of the nodes of the element
 
     for(int i=0; i<eLen; i++){
+
+        elem[i].updateJ(shape3D);
 
         // Stores the nodal displacement of the element
 

@@ -28,6 +28,7 @@ class Elem{
 
     void clean();
     void updateJ(shapeStruct &shape);
+    void updateS(shapeStruct (&shape)[6]);
     void updateF(shapeStruct &shape,darray u);
 
     // Constructor and functions available in the file
@@ -40,7 +41,8 @@ class Elem{
 
     matrix selfM(shapeStruct &shape,double rho);
     matrix selfK(shapeStruct &shape,array3d LmR);
-    std::pair<matrix,darray> selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d EvS);
+    darray selfFS(shapeStruct (&shape)[6],array3d LmS);
+    matrix selfKS(shapeStruct (&shape)[6],array3d LmS);
 
     // Functions for large deformation elasticity
 
@@ -48,17 +50,25 @@ class Elem{
     matrix selfKL(shapeStruct &shape,array3d LmR);
     darray selfFX(shapeStruct &shape,array3d LmR);
 
+    matrix selfKNS(shapeStruct (&shape)[6],array3d LmR);
+    matrix selfKLS(shapeStruct (&shape)[6],array3d LmR);
+
     // Parameters specific to each element
 
     std::vector<array3d> nXYZ;
-    std::vector<matrix> J;
-    std::vector<matrix> F;
-    std::vector<darray> E;
     ivector surface;
-    dvector detJ;
-    matrix dN[3];
     int sLen;
     int nLen;
+
+    // Parameters at quadrature nodes
+
+    std::vector<array3d> norm[6];
+    std::vector<matrix> F;
+    std::vector<darray> E;
+    dvector detJ2D[6];
+    matrix dNs[6][3];
+    dvector detJ;
+    matrix dN[3];
 };
 
 // --------------------------------------------------|

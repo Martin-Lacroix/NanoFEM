@@ -218,6 +218,18 @@ namespace math{
         return norm;
     }
 
+    // ------------------------------------------------------|
+    // Computes the L2 vector norm of a general 3D vector    |
+    // ------------------------------------------------------|
+
+    double norm(array3d &V){
+
+        double norm = 0;
+        for(int i=0; i<3; i++){norm += V[i]*V[i];}
+        norm = sqrt(norm);
+        return norm;
+    }
+
     // -----------------------------------------------------------------------|
     // Cleans and stores the non-zero indices of a sparse symmetric matrix    |
     // -----------------------------------------------------------------------|

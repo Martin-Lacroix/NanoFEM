@@ -15,8 +15,8 @@
 	</requiredFiles>
 	
 	<userInput>
-		<group>
-			<param name="Simulation Type" type="LIST" ref="Defo">
+		<group name="Simulation Type">
+			<param type="LIST" ref="Defo">
 				<name>Deformation</name>
 				<element>Small strain</element>
 				<element>Large strain</element>
@@ -30,7 +30,7 @@
 			</param>
 		</group>
 
-		<group displayIf="Layer:Manual selection">
+		<group name="Input File" displayIf="Layer:Manual selection">
 			<param type="FILE" toPath="true">
 				<name>Coating file path</name>
 			</param>
@@ -103,8 +103,8 @@
 			</param>
 		</group>
 		
-		<group>
-			<param name="Load Type" type="LIST" ref="Type">
+		<group name="Load Type" >
+			<param type="LIST" ref="Type">
 				<name>Load type</name>
 				<element>Axial stress</element>
 				<element>Shear stress</element>

@@ -65,4 +65,3 @@ nXYZ = np.loadtxt("../output/node.txt",delimiter=",")
 
 K = np.loadtxt("../output/K.txt")
 B = np.loadtxt("../output/B.txt")
-# M = np.loadtxt("../output/M.txt")

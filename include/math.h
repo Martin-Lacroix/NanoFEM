@@ -26,13 +26,12 @@ struct quadStruct{
     std::vector<dvector> gRST;
 };
 
-// -------------------------------------------|
-// Functions available in the math.cpp file   |
-// -------------------------------------------|
+// ---------------------------------------|
+// Functions available in the math file   |
+// ---------------------------------------|
 
 namespace math{
 
-    double norm(darray &V);
     matrix stiffness(array3d LmX);
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector val);
@@ -51,6 +50,11 @@ namespace math{
 
     void zero(darray &V);
     void zero(matrix &M);
+
+    // Computes the L2 norm of a vector
+
+    double norm(darray &V);
+    double norm(array3d &V);
 
     // Other general fiunctions for sparse or dense matrices
     

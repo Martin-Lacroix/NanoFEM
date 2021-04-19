@@ -99,7 +99,7 @@ darray solveS(Mesh &mesh){
 darray solveL(Mesh &mesh){
 
     double time;
-    int max = 20;
+    int max = 30;
     int nLen = 3*mesh.nLen;
     int step = mesh.data.step;
     int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
@@ -127,8 +127,8 @@ darray solveL(Mesh &mesh){
 
         for(int j=0; j<max; j++){
             
-            cout << "[" << i+1 << "/" << step;
-            cout << "] - Newton step " << j+1 << endl;
+            cout << "[" << i+1 << "/" << step << "] - Newton step ";
+            time = start(to_string(j+1));
 
             // Performs a Newton-Raphson iteration
 
@@ -161,13 +161,17 @@ darray solveL(Mesh &mesh){
 
             mesh.complete(du);
             math::add(1,1,du,u);
+            end(time);
 
             // Check the convergence criteria
 
             norm1 = norm2;
             norm2 = math::norm(u);
-            if(abs(norm2-norm1)/norm1<1e-12){break;}
+            double rez = abs(norm2-norm1)/norm1;
+            cout << "Relative Correction = " << rez << endl;
+            if(rez<1e-12){break;}
         }
+        cout << "uz = " << setprecision(7) << u(nLen-1) << endl;
         cout << endl;
     }
     return u;
@@ -218,21 +222,22 @@ int main(){
     
     cout << endl;
 
-    /*
+    
+/*
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- ux = " << disp[i] << "\n";
+        cout << setprecision(7) << "Node " << i << " -- ux = " << disp[i] << "\n";
     }
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
+        cout << setprecision(7) << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
     }
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
-        cout << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
+        cout << setprecision(7) << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
     */
-    
+   
     return 0;
 }

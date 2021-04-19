@@ -2,7 +2,7 @@
 using namespace std;
 
 // -----------------------------------------------------------|
-// Class of hexahedron isoparametric lagrange element in 3D   |
+// Class of hexahedron isoparametric Lagrange element in 3D   |
 // -----------------------------------------------------------|
 
 Elem::Elem(vector<array3d> inp1,ivector inp2) : nXYZ{inp1},surface{inp2}{
@@ -13,14 +13,14 @@ Elem::Elem(vector<array3d> inp1,ivector inp2) : nXYZ{inp1},surface{inp2}{
     sLen = cbrt(nLen+1e-5);
 }
 
-// -----------------------------------------------------------|
-// Evaluates the Jacobian and derivative of shape functions   |
-// -----------------------------------------------------------|
+// ---------------------------------------------------------|
+// Jacobian and derivative of shape functions in the bulk   |
+// ---------------------------------------------------------|
 
 void Elem::updateJ(shapeStruct &shape){
 
-    J.resize(shape.gLen);
     detJ.resize(shape.gLen);
+    vector<matrix> J(shape.gLen);
     vector<matrix> invJ(shape.gLen);
 
     // Resets the shape function derivative
@@ -61,8 +61,105 @@ void Elem::updateJ(shapeStruct &shape){
         for(int j=0; j<nLen; j++){
             for(int k=0; k<3; k++){
                 for(int n=0; n<3; n++){
-
                     dN[k](j,i) += shape.dN[n](j,i)*invJ[i](n,k);
+                }
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------|
+// Jacobian and derivative of shape functions at the surface   |
+// ------------------------------------------------------------|
+
+void Elem::updateS(shapeStruct (&shape)[6]){
+
+    for(int s:surface){
+
+        array3d v;
+        norm[s].resize(shape[s].gLen);
+        detJ2D[s].resize(shape[s].gLen);
+        vector<matrix> J(shape[s].gLen);
+        vector<matrix> invJ(shape[s].gLen);
+
+        // Resets the shape function derivative
+
+        for(int i=0; i<3; i++){
+            
+            dNs[s][i].setlength(nLen,shape[s].gLen);
+            math::zero(dNs[s][i]);
+        }
+
+        // Builds the Jacobian matrix and global coordinates
+
+        for(int i=0; i<shape[s].gLen; i++){
+
+            J[i].setlength(3,3);
+            math::zero(J[i]);
+
+            // Computes the Jacobian matrix at this Gauss point
+
+            for(int j=0; j<nLen; j++){
+                for(int k=0; k<3; k++){
+                    for(int n=0; n<3; n++){
+                        J[i](n,k) += shape[s].dN[n](j,i)*nXYZ[j][k];
+                    }
+                }
+            }
+
+            // Normal to the s-th surface of the element
+
+            array3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
+            array3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
+            array3d vt = {J[i](2,0),J[i](2,1),J[i](2,2)};
+
+            switch(s){
+            case 0:
+                v = math::dotsub(vs,vr);
+                norm[s][i] = math::cross(vs,v);
+                break;
+            case 1:
+                v = math::dotsub(vs,vr);
+                norm[s][i] = math::cross(v,vs);
+                break;
+            case 2:
+                v = math::dotsub(vr,vt);
+                norm[s][i] = math::cross(v,vr);
+                break;
+            case 3:
+                v = math::dotsub(vr,vt);
+                norm[s][i] = math::cross(vr,v);
+                break;
+            case 4:
+                v = math::dotsub(vt,vs);
+                norm[s][i] = math::cross(vt,v);
+                break;
+            case 5:
+                v = math::dotsub(vt,vs);
+                norm[s][i] = math::cross(v,vt);
+                break;
+            }
+        }
+
+        // Determinant and inverse of the Jacobian matrix
+
+        for(int i=0; i<shape[s].gLen; i++){
+
+            double detJ = alglib::rmatrixdet(J[i],3);
+            invJ[i] = math::invert(J[i],detJ);
+
+            // 2D Jacobian determinant and the surface normal
+
+            detJ2D[s][i] = math::norm(norm[s][i]);
+            for(int j=0; j<3; j++){norm[s][i][j] /= detJ2D[s][i];}
+
+            // Global derivatives of shape functions
+
+            for(int j=0; j<nLen; j++){
+                for(int k=0; k<3; k++){
+                    for(int n=0; n<3; n++){
+                        dNs[s][k](j,i) += shape[s].dN[n](j,i)*invJ[i](n,k);
+                    }
                 }
             }
         }
@@ -75,10 +172,21 @@ void Elem::updateJ(shapeStruct &shape){
 
 void Elem::clean(){
 
+    // Clear bulk Jacobian and parameters
+
     dvector().swap(detJ);
-    vector<matrix>().swap(J);
+    vector<darray>().swap(E);
+    vector<matrix>().swap(F);
     for(int i=0; i<3; i++){dN[i].setlength(0,0);}
-    for(int i=0; i<F.size(); i++){F[i].setlength(0,0);}
+
+    // Clear surface Jacobian and parameters
+
+    for(int s:surface){
+        
+        dvector().swap(detJ2D[s]);
+        vector<array3d>().swap(norm[s]);
+        for(int i=0; i<3; i++){dNs[s][i].setlength(0,0);}
+    }
 }
 
 // ----------------------------------------------------------|
@@ -90,13 +198,9 @@ matrix Elem::selfK(shapeStruct &shape,array3d LmR){
     matrix B,K;
     B.setlength(3*nLen,6);
     K.setlength(3*nLen,3*nLen);
+    matrix D = math::stiffness(LmR);
     math::zero(B);
     math::zero(K);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    updateJ(shape);
-    matrix D = math::stiffness(LmR);
 
     // Performs the numerical integration
 
@@ -126,7 +230,6 @@ matrix Elem::selfK(shapeStruct &shape,array3d LmR){
 matrix Elem::selfM(shapeStruct &shape,double rho){
 
     matrix N,M;
-    updateJ(shape);
     N.setlength(3*nLen,3);
     M.setlength(3*nLen,3*nLen);
     math::zero(N);
@@ -148,105 +251,92 @@ matrix Elem::selfM(shapeStruct &shape,double rho){
     return M;
 }
 
-// ------------------------------------------------------------------|
-// Computes the surface stiffness matrix Ks and boundary vector Bs   |
-// ------------------------------------------------------------------|
+// ---------------------------------------------------------|
+// Computes the surface stiffness matrix Ks for local FEM   |
+// ---------------------------------------------------------|
 
-pair<matrix,darray> Elem::selfKB(shapeStruct &shape,shapeStruct (&shapeS)[6],array3d LmS){
+matrix Elem::selfKS(shapeStruct (&shape)[6],array3d LmS){
 
-    darray BS;
     matrix B,K;
-    array3d v,norm;
-    BS.setlength(3*nLen);
     B.setlength(3*nLen,6);
     K.setlength(3*nLen,3*nLen);
-    math::zero(BS);
-    math::zero(K);
-
-    // Surface traction vector and stiffness matrix
-
-    darray tau;
     matrix D = math::stiffness(LmS);
-    double tauS[6] = {LmS[2],LmS[2],LmS[2],0,0,0};
-    tau.setcontent(6,tauS);
+    math::zero(K);
 
     // Update the Jacobian and numerical integration
 
     for(int k:surface){
-
         math::zero(B);
-        updateJ(shapeS[k]);
 
-        for(int i=0; i<shapeS[k].gLen; i++){
+        for(int i=0; i<shape[k].gLen; i++){
             for(int j=0; j<nLen; j++){
 
                 // Computes the shape functions derivative matrix B
                 
-                B(j,0) = B(j+nLen,3) = B(j+2*nLen,5) = dN[0](j,i);
-                B(j,3) = B(j+nLen,1) = B(j+2*nLen,4) = dN[1](j,i);
-                B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dN[2](j,i);
+                B(j,0) = B(j+nLen,3) = B(j+2*nLen,5) = dNs[k][0](j,i);
+                B(j,3) = B(j+nLen,1) = B(j+2*nLen,4) = dNs[k][1](j,i);
+                B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dNs[k][2](j,i);
             }
-
-            // Computes the dirrector vectors of the surface
-
-            array3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
-            array3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
-            array3d vt = {J[i](2,0),J[i](2,1),J[i](2,2)};
-
-            switch(k){
-            case 0:
-                v = math::dotsub(vs,vr);
-                norm = math::cross(vs,v);
-                break;
-            case 1:
-                v = math::dotsub(vs,vr);
-                norm = math::cross(v,vs);
-                break;
-            case 2:
-                v = math::dotsub(vr,vt);
-                norm = math::cross(v,vr);
-                break;
-            case 3:
-                v = math::dotsub(vr,vt);
-                norm = math::cross(vr,v);
-                break;
-            case 4:
-                v = math::dotsub(vt,vs);
-                norm = math::cross(vt,v);
-                break;
-            case 5:
-                v = math::dotsub(vt,vs);
-                norm = math::cross(v,vt);
-                break;
-            }
-
-            // Computes the Jacobian determinant and the normal
-            
-            double detJ2D = sqrt(norm[0]*norm[0]+norm[1]*norm[1]+norm[2]*norm[2]);
-            for(int j=0; j<3; j++){norm[j] /= detJ2D;}
 
             // Computes the isotropic surface stiffness tensor
 
-            matrix T = math::projection(norm);
+            matrix T = math::projection(norm[k][i]);
             matrix S = math::prod(1,T,D);
             S = math::prod(1,S,T,0,1);
 
             // Computes K by Gauss-Legendre quadrature
 
             matrix BT = math::prod(1,B,T);
-            matrix K1 = math::prod(shape.weight[i],BT,S);
-            matrix K2 = math::prod(detJ2D,K1,BT,0,1);
+            matrix K1 = math::prod(shape[k].weight[i],BT,S);
+            matrix K2 = math::prod(detJ2D[k][i],K1,BT,0,1);
             math::add(1,1,K2,K);
-
-            // Computes B by Gauss-Legendre quadrature
-
-            darray Be = math::prod(shape.weight[i],BT,tau);
-            math::add(-detJ2D,1,Be,BS);
         }
     }
+    return K;
+}
 
-    pair<matrix,darray> Kb = {K,BS};
-    return Kb;
+// --------------------------------------------------------|
+// Computes the surface boundary vector Bs for local FEM   |
+// --------------------------------------------------------|
+
+darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
+
+    matrix B;
+    darray F;
+    F.setlength(3*nLen);
+    B.setlength(3*nLen,6);
+    math::zero(F);
+
+    // Surface traction vector and stiffness matrix
+
+    darray tau;
+    double tauS[6] = {LmS[2],LmS[2],LmS[2],0,0,0};
+    tau.setcontent(6,tauS);
+
+    // Update the Jacobian and numerical integration
+
+    for(int s:surface){
+        math::zero(B);
+
+        for(int i=0; i<shape[s].gLen; i++){
+            for(int j=0; j<nLen; j++){
+
+                // Computes the shape functions derivative matrix B
+                
+                B(j,0) = B(j+nLen,3) = B(j+2*nLen,5) = dNs[s][0](j,i);
+                B(j,3) = B(j+nLen,1) = B(j+2*nLen,4) = dNs[s][1](j,i);
+                B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dNs[s][2](j,i);
+            }
+
+            // Computes the surface tension by Gauss-Legendre quadrature
+
+            matrix T = math::projection(norm[s][i]);
+            matrix BT = math::prod(1,B,T);
+            darray Fe = math::prod(shape[s].weight[i],BT,tau);
+            math::add(-detJ2D[s][i],1,Fe,F);
+        }
+    }
+    return F;
 }
 
 // -----------------------------------------------------|
@@ -261,7 +351,6 @@ void Elem::updateF(shapeStruct &shape,darray u){
 
     // Update the Jacobian and the deformation gradient
 
-    updateJ(shape);
     F.resize(shape.gLen);
     E.resize(shape.gLen);
 
@@ -311,15 +400,11 @@ void Elem::updateF(shapeStruct &shape,darray u){
 matrix Elem::selfKN(shapeStruct &shape,array3d LmR){
 
     matrix K,B;
-    K.setlength(3*nLen,3*nLen);
     B.setlength(3*nLen,6);
+    K.setlength(3*nLen,3*nLen);
+    matrix D = math::stiffness(LmR);
     math::zero(K);
     math::zero(B);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    updateJ(shape);
-    matrix D = math::stiffness(LmR);
 
     // Performs the numerical integration
 
@@ -359,14 +444,10 @@ matrix Elem::selfKL(shapeStruct &shape,array3d LmR){
     S.setlength(9,9);
     B.setlength(3*nLen,9);
     K.setlength(3*nLen,3*nLen);
+    matrix D = math::stiffness(LmR);
     math::zero(K);
     math::zero(B);
     math::zero(S);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    updateJ(shape);
-    matrix D = math::stiffness(LmR);
 
     // Performs the numerical integration
 
@@ -411,13 +492,9 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
     darray Fx;
     Fx.setlength(3*nLen);
     B.setlength(3*nLen,6);
+    matrix D = math::stiffness(LmR);
     math::zero(Fx);
     math::zero(B);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    updateJ(shape);
-    matrix D = math::stiffness(LmR);
 
     // Performs the numerical integration
 
@@ -460,7 +537,6 @@ darray Elem::stress(shapeStruct &shape,array3d LmR,darray u){
 
     // Update the Jacobian and builds the stiffness matrix
 
-    updateJ(shape);
     double volume = 0;
     matrix D = math::stiffness(LmR);
 
