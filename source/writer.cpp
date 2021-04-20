@@ -7,13 +7,13 @@ using namespace std;
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void write(Mesh &mesh,darray &disp,vector<darray> &spk){
+void write(Mesh &mesh,darray &disp,dvector &VM){
 
     mkdir("output");
     ofstream uXYZ("output/disp.txt");
     ofstream elem("output/elem.txt");
     ofstream node("output/node.txt");
-    ofstream stress("output/spk.txt");
+    ofstream stress("output/stress.txt");
 
     // Writes the displacement field in a text file
 
@@ -36,11 +36,10 @@ void write(Mesh &mesh,darray &disp,vector<darray> &spk){
         elem << eNode.back() << "\n";
     }
 
-    // Writes the averaged elemental stress in a text file
+    // Writes the averaged elemental Von Mises stress
 
-    for(darray s:spk){
-        for(int i=0; i<s.length()-1; i++){stress << s[i] << ",";}
-        stress << s[s.length()-1] << "\n";
+    for(int i=0; i<mesh.eLen; i++){
+        stress << VM[i] << "\n";
     }
 }
 
@@ -96,7 +95,7 @@ const char* FCT_atm_name(double norm){
 // Writes the output displacement file compatible with Jmol    |
 // ------------------------------------------------------------|
 
-void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
+void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
 
     mkdir("output");
     int nLen = mesh.nLen;
@@ -188,69 +187,66 @@ void writeJmol(Mesh &mesh,darray &disp,vector<darray> &sigma){
         }
     }
 
-    // Loops in the 6 dimensions (Sxx, Syy, Szz, Sxy, Syz, Szx)
+    // Writes the Von Mises stresses
 
-    for(int k=0; k<6; k++){
+    ofstream sXYZ("output/stress.xyz");
+    double min = 0;
+    double max = 0;
 
-        ofstream sXYZ("output/spk-"+sName[k]+".xyz");
-        double min = 0;
-        double max = 0;
+    // Computes the maximum and minimum stress
 
-        // Computes the maximum and minimum stress
+    for(int i=0; i<eLen; i++){
 
-        for(int i=0; i<eLen; i++){
+        if(VM[i]>max){max = VM[i];}
+        else if(VM[i]<min){min = VM[i];}
+    }
 
-            if(sigma[i][k]>max){max = sigma[i][k];}
-            else if(sigma[i][k]<min){min = sigma[i][k];}
-        }
+    // Header parameters for Jmol
 
-        // Header parameters for Jmol
+    header[0] = "Von Mises stress field";
+    header[14] = "select atomno="+to_string(1);
+    header[15] = "label "+to_string(min)+" GPa";
+    header[16] = "select atomno="+to_string(barLength);
+    header[17] = "label "+to_string(max)+" GPa";
 
-        header[0] = "Stress field S"+sName[k];
-        header[14] = "select atomno="+to_string(1);
-        header[15] = "label "+to_string(min)+" GPa";
-        header[16] = "select atomno="+to_string(barLength);
-        header[17] = "label "+to_string(max)+" GPa";
+    // Writes the header and number of nodes
 
-        // Writes the header and number of nodes
+    sXYZ << eLen+barLength << "\n";
+    for(string option:header){sXYZ << option << ";";}
+    sXYZ << "\n";
 
-        sXYZ << eLen+barLength << "\n";
-        for(string option:header){sXYZ << option << ";";}
+    // Writes the legend colour bar in the file
+
+    for(int i=0; i<barLength; i++){
+
+        double val = i/(double)barLength;
+        sXYZ << FCT_atm_name(val) << " ";
+        sXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
         sXYZ << "\n";
+    }
 
-        // Writes the legend colour bar in the file
+    // Writes the stress field in the file
 
-        for(int i=0; i<barLength; i++){
+    for(int i=0; i<mesh.eLen; i++){
 
-            double val = i/(double)barLength;
-            sXYZ << FCT_atm_name(val) << " ";
-            sXYZ << xLoc << " " << yLoc << " " << zMin+zMax*i/(double)barLength;
-            sXYZ << "\n";
-        }
-
-        // Writes the stress field in the file
-
-        for(int i=0; i<mesh.eLen; i++){
-
-            array3d xyz = {0,0,0};
-            double val = (sigma[i][k]-min)/(max-min);
-            const char *species = FCT_atm_name(val);
-            sXYZ << species << " ";
+        array3d xyz = {0,0,0};
+        double val = (VM[i]-min)/(max-min);
+        const char *species = FCT_atm_name(val);
+        sXYZ << species << " ";
 
 
-            // Coordinates of the center of the element
+        // Coordinates of the center of the element
 
-            for(int j:mesh.data.eNode[i]){
-                for(int n=0; n<3; n++){
-                    xyz[n] += mesh.data.nXYZ[j][n]/sLen;
-                }
+        for(int j:mesh.data.eNode[i]){
+            for(int n=0; n<3; n++){
+                xyz[n] += mesh.data.nXYZ[j][n]/sLen;
             }
-
-            // Extracts the stress values from the solution vector
-
-            for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
-            sXYZ << sigma[i][k] << " ";
-            sXYZ << "\n";
         }
+
+        // Extracts the stress values from the solution vector
+
+        for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
+        sXYZ << VM[i] << " ";
+        sXYZ << "\n";
     }
 }

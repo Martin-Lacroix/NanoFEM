@@ -34,7 +34,7 @@ class Elem{
     // Constructor and functions available in the file
 
     Elem(std::vector<array3d> nXYZ,ivector surface);
-    darray stress(shapeStruct &shape,array3d LmR,darray u);
+    double stress(shapeStruct &shape,array3d LmR,darray u);
     dvector surfaceJ(shapeStruct &shape,ivector &node,int index);
 
     // Functions of elemental stiffness and mass matrices
@@ -82,7 +82,7 @@ class Face{
     // Constructor and functions available in the elem.cpp file
 
     Face(std::vector<array3d> nXYZ,shapeStruct &shape);
-    darray selfB(shapeStruct &shape,darray F);
+    darray selfFT(shapeStruct &shape,darray F);
     dvector detJ2D;
     int nLen;
 };

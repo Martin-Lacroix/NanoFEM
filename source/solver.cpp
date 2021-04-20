@@ -209,15 +209,15 @@ int main(){
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    vector<darray> spk = mesh.stress(disp);
+    dvector VM = mesh.stress(disp);
     mesh.update(disp);
     end(time);
 
     // Writes the results in a text file
 
     time = start("Writes the results");
-    writeJmol(mesh,disp,spk);
-    write(mesh,disp,spk);
+    writeJmol(mesh,disp,VM);
+    write(mesh,disp,VM);
     end(time);
     
     cout << endl;

@@ -7,7 +7,7 @@
 // -----------------------------------------|
 
 const char* FCT_atm_name(double norm);
-void write(Mesh &mesh,darray &disp,std::vector<darray> &sigma);
-void writeJmol(Mesh &mesh,darray &disp,std::vector<darray> &sigma);
+void write(Mesh &mesh,darray &disp,dvector &VM);
+void writeJmol(Mesh &mesh,darray &disp,dvector &VM);
 
 #endif

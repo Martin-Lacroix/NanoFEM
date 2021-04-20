@@ -528,16 +528,11 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
 // Computes the averaged Cauchy stress in the element   |
 // -----------------------------------------------------|
 
-darray Elem::stress(shapeStruct &shape,array3d LmR,darray u){
+double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
 
-    matrix B;
-    darray spk;
-    spk.setlength(6);
-    math::zero(spk);
-
-    // Update the Jacobian and builds the stiffness matrix
-
-    double volume = 0;
+    matrix S;
+    S.setlength(3,3);
+    double VM = 0,volume=0;
     matrix D = math::stiffness(LmR);
 
     // Volume and stress field at Gauss points
@@ -545,12 +540,35 @@ darray Elem::stress(shapeStruct &shape,array3d LmR,darray u){
     for(int i=0; i<shape.gLen; i++){
 
         darray Sv = math::prod(1,D,E[i]);
+
+        // Biuilds the second Pila Kirchhoff stress tensor
+
+        S(0,0) = Sv(0);
+        S(1,1) = Sv(1);
+        S(2,2) = Sv(2);
+        S(0,1) = S(1,0) = Sv(3);
+        S(1,2) = S(2,1) = Sv(4);
+        S(2,0) = S(0,2) = Sv(5);
+
+        // Builds the Cauchy stress tensor
+
+        double detF = alglib::rmatrixdet(F[i],3);
+        matrix C = math::prod(detF,F[i],S);
+        C = math::prod(1,S,F[i],0,1);
+
+        // Computes the square of the Von Mises stress
+
+        double VMe = (pow(C(0,0)-C(1,1),2)+pow(C(1,1)-C(2,2),2)+pow(C(2,2)-C(0,0),2))/2;
+        VMe += 3*(C[0][1]*C[0][1]+C[1][2]*C[1][2]+C[2][0]*C[2][0]);
+
+        // Integration ov the volume and the stress
+
         volume += shape.weight[i]*detJ[i];
-        math::add(shape.weight[i]*detJ[i],1,Sv,spk);
+        VM += shape.weight[i]*detJ[i]*sqrt(VMe);
     }
 
-    for(int i=0; i<6; i++){spk[i] /= volume;}
-    return spk;
+    VM /= volume;
+    return VM;
 }
 
 // -----------------------------------------------------------|
@@ -591,14 +609,14 @@ Face::Face(vector<array3d> nXYZ,shapeStruct &shape){
 // Integrates the matrix of shape functions N over the element   |
 // --------------------------------------------------------------|
 
-darray Face::selfB(shapeStruct &shape,darray F){
+darray Face::selfFT(shapeStruct &shape,darray F){
 
     matrix N;
-    darray B;
-    B.setlength(3*nLen);
+    darray FT;
+    FT.setlength(3*nLen);
     N.setlength(3*nLen,3);
+    math::zero(FT);
     math::zero(N);
-    math::zero(B);
 
     // Integrates the matrix of local shape functions
 
@@ -610,8 +628,8 @@ darray Face::selfB(shapeStruct &shape,darray F){
         // Computes M by Gauss-Legendre quadrature
 
         double wdetJ = shape.weight[i]*detJ2D[i];
-        darray Be = math::prod(wdetJ,N,F,0);
-        math::add(1,1,Be,B);
+        darray Fe = math::prod(wdetJ,N,F,0);
+        math::add(1,1,Fe,FT);
     }
-    return B;
+    return FT;
 }

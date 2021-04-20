@@ -57,7 +57,7 @@ class Mesh{
     // COmputes the shape functions and stress
     
     shapeStruct shape(quadStruct &quad);
-    std::vector<darray> stress(darray &u);
+    dvector stress(darray &u);
 
     // Boundary conditions on the total system
     

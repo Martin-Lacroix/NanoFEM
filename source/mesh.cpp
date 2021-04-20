@@ -268,13 +268,13 @@ void Mesh::neumann(darray &B){
         // Computes the elemental B vectors
 
         Face face(eXYZ,shape2D);
-        darray B1 = face.selfB(shape2D,data.neuVal[i]);
+        darray Fe = face.selfFT(shape2D,data.neuVal[i]);
 
         // Inserts the elemental vectors into the global B vector
 
         for(int j=0; j<sLen; j++){
             for(int k=0; k<3; k++){
-                B(data.neuFace[i][j]+k*nLen) += B1(j+k*sLen);
+                B(data.neuFace[i][j]+k*nLen) += Fe(j+k*sLen);
             }
         }
     }
@@ -486,10 +486,10 @@ void Mesh::update(darray &u){
 // Averaged second Piola Kirchhoff stress in the elements    |
 // ----------------------------------------------------------|
 
-vector<darray> Mesh::stress(darray &u){
+dvector Mesh::stress(darray &u){
 
     darray ue;
-    vector<darray> spk(eLen);
+    dvector VM(eLen);
     int sLen = shape3D.N.rows();
     ue.setlength(3*sLen);
 
@@ -498,6 +498,7 @@ vector<darray> Mesh::stress(darray &u){
     for(int i=0; i<eLen; i++){
 
         elem[i].updateJ(shape3D);
+        elem[i].updateF(shape3D,ue);
 
         // Stores the nodal displacement of the element
 
@@ -511,9 +512,8 @@ vector<darray> Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
-        elem[i].updateF(shape3D,ue);
-        spk[i] = elem[i].stress(shape3D,data.LmR[i],ue);
+        VM[i] = elem[i].stress(shape3D,data.LmR[i],ue);
         elem[i].clean();
     }
-    return spk;
+    return VM;
 }
