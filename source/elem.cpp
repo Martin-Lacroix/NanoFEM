@@ -524,9 +524,9 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
     return Fx;
 }
 
-// -----------------------------------------------------|
-// Computes the averaged Cauchy stress in the element   |
-// -----------------------------------------------------|
+// --------------------------------------------------------|
+// Computes the averaged Vin Mises stress in the element   |
+// --------------------------------------------------------|
 
 double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
 
