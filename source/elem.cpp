@@ -561,7 +561,7 @@ double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
         double VMe = (pow(C(0,0)-C(1,1),2)+pow(C(1,1)-C(2,2),2)+pow(C(2,2)-C(0,0),2))/2;
         VMe += 3*(C[0][1]*C[0][1]+C[1][2]*C[1][2]+C[2][0]*C[2][0]);
 
-        // Integration ov the volume and the stress
+        // Integration of the volume and the stress
 
         volume += shape.weight[i]*detJ[i];
         VM += shape.weight[i]*detJ[i]*sqrt(VMe);
