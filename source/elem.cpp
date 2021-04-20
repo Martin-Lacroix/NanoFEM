@@ -553,7 +553,7 @@ double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
         // Builds the Cauchy stress tensor
 
         double detF = alglib::rmatrixdet(F[i],3);
-        matrix C = math::prod(detF,F[i],S);
+        matrix C = math::prod(1/detF,F[i],S);
         C = math::prod(1,S,F[i],0,1);
 
         // Computes the square of the Von Mises stress
