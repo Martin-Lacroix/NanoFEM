@@ -250,3 +250,46 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
         sXYZ << "\n";
     }
 }
+
+// ------------------------------------------------|
+// Writes the simulation results in a text file    |
+// ------------------------------------------------|
+
+void graph(Mesh &mesh,darray &disp,int step){
+
+    mkdir("output");
+    double stress = 0;
+    int nLen = mesh.nLen;
+    array3d strain;
+
+    // Computes the total average applied stress
+
+    for(int i=0; i<mesh.fLen; i++){
+        stress += math::norm(mesh.data.neuVal[i])/mesh.fLen;
+    }
+
+    // Computes the strain along (x,y,z)
+
+    for(int i=0; i<3; i++){
+
+        double u = disp[(i+1)*nLen-1]-disp[i*nLen];
+        double L = mesh.data.nXYZ[nLen-1][i];
+        strain[i] = (u/L)*100;
+    }
+
+    // Writes the stress-strain relation
+
+    if(step==0){
+
+        ofstream graph("output/stress-strain.csv");
+        graph << "Applied stress (GPa);Strain along X (%);Strain along Y (%);Strain along Z (%)\n";
+        graph << 0 << ";" << 0 << "\n";
+        graph << stress << ";" << strain[0] << ";" << strain[1] << ";" << strain[2] << "\n";
+    }
+    else{
+
+        ofstream graph("output/stress-strain.csv",ios::app);
+        graph << stress << ";" << strain[0] << ";" << strain[1] << ";" << strain[2] << "\n";
+    }
+
+}

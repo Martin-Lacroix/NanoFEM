@@ -10,6 +10,7 @@ struct dataStruct{
 
     int step;
     int order;
+    double tol;
 
     // Main informations about the mesh
 
@@ -27,7 +28,7 @@ struct dataStruct{
     ivector dirNode[3];
     dvector dirVal[3];
 
-    // Nodes with the same displacement or Δu
+    // Nodes with same displacement or (u1,u2) => (u1-u2,u2)
 
     std::vector<ivector> coupNode[3];
     std::vector<std::pair<int,int>> deltaNode[3];

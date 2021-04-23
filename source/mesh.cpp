@@ -379,9 +379,9 @@ void Mesh::coupling(sparse &K,darray &B){
     }
 }
 
-// -------------------------------------------------------------------|
-// Edits the matrix K and vector B for a change of variable u = Δu    |
-// -------------------------------------------------------------------|
+// --------------------------------------------------------------------|
+// Edits the matrix K and vector B for a change of variable u => Δu    |
+// --------------------------------------------------------------------|
 
 void Mesh::delta(sparse &K,darray &B){
 
@@ -482,9 +482,9 @@ void Mesh::update(darray &u){
     }
 }
 
-// ----------------------------------------------------------|
-// Averaged second Piola Kirchhoff stress in the elements    |
-// ----------------------------------------------------------|
+// -----------------------------------------------------------|
+// Averaged second Von Mises Stress stress in the elements    |
+// -----------------------------------------------------------|
 
 dvector Mesh::stress(darray &u){
 
@@ -496,9 +496,6 @@ dvector Mesh::stress(darray &u){
     // Coordinates of the nodes of the element
 
     for(int i=0; i<eLen; i++){
-
-        elem[i].updateJ(shape3D);
-        elem[i].updateF(shape3D,ue);
 
         // Stores the nodal displacement of the element
 
@@ -512,6 +509,8 @@ dvector Mesh::stress(darray &u){
 
         // Computes the averaged Von Mises stress
 
+        elem[i].updateJ(shape3D);
+        elem[i].updateF(shape3D,ue);
         VM[i] = elem[i].stress(shape3D,data.LmR[i],ue);
         elem[i].clean();
     }

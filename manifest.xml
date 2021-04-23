@@ -75,6 +75,11 @@
 				<default>1</default>
 				<unit>-</unit>
 			</param>
+			<param type="DOUBLE">
+				<name>Tolerance</name>
+				<default>1e-12</default>
+				<unit>-</unit>
+			</param>
 		</group>
 
 		<group name="Hole Parameters">
@@ -103,67 +108,13 @@
 			</param>
 		</group>
 		
-		<group name="Load Type" >
-			<param type="LIST" ref="Type">
+		<group name="Boundary Conditions" >
+			<param type="LIST">
 				<name>Load type</name>
-				<element>Axial stress</element>
-				<element>Shear stress</element>
-				<element>Hydrostatic</element>
-				<default>Axial stress</default>
-			</param>
-		</group>
-
-		<group name="Load Parameters" displayIf="Type:Axial stress">
-			<param type="LIST">
-				<name>Dimension</name>
-				<element>eXX</element>
-				<element>eYY</element>
-				<element>eZZ</element>
-				<default>eXX</default>
-			</param>
-			<param type="LIST">
-				<name>Free surface</name>
-				<element>Top</element>
-				<element>Bottom</element>
-				<element>Both</element>
-			</param>
-			<param type="DOUBLE">
-				<name>Axial stress</name>
-				<default>1</default>
-				<unit>GPa</unit>
-			</param>
-		</group>
-
-		<group name="Load Parameters" displayIf="Type:Shear stress">
-			<param type="LIST">
-				<name>Dimension</name>
-				<element>eXY</element>
-				<element>eYX</element>
-				<element>eZY</element>
-				<element>eZX</element>
-				<default>eXY</default>
-			</param>
-			<param type="LIST">
-				<name>Free surface</name>
-				<element>Top</element>
-				<element>Bottom</element>
-				<element>Both</element>
-			</param>
-			<param type="DOUBLE">
-				<name>Shear stress</name>
-				<default>1</default>
-				<unit>GPa</unit>
-			</param>
-		</group>
-
-		<group name="Load Parameters" displayIf="Type:Hydrostatic">
-			<param type="LIST">
-				<name>Dimension</name>
-				<element>All</element>
-				<element>eXX</element>
-				<element>eYY</element>
-				<element>eZZ</element>
-				<default>All</default>
+				<element>Z-axis</element>
+				<element>Y-axis</element>
+				<element>X-axis</element>
+				<default>Z-axis</default>
 			</param>
 			<param type="LIST">
 				<name>Free surface</name>
@@ -171,9 +122,16 @@
 				<element>Bottom</element>
 				<element>Both</element>
 				<element>None</element>
+				<default>Top</default>
+			</param>
+			<param type="LIST">
+				<name>Substrate</name>
+				<element>Deformable</element>
+				<element>Undeformable</element>
+				<default>Deformable</default>
 			</param>
 			<param type="DOUBLE">
-				<name>Normal stress</name>
+				<name>Applied stress</name>
 				<default>1</default>
 				<unit>GPa</unit>
 			</param>

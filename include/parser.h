@@ -1,7 +1,50 @@
 #include <unordered_set>
-#include "storebc.h"
+#include "writer.h"
 #ifndef PARSER_H
 #define PARSER_H
+
+// --------------------------------------------------------------|
+// Structure storing temporary parameters from the input files   |
+// --------------------------------------------------------------|
+
+struct readStruct{
+
+    // Young modulus and Poisson ratio of each type of element
+    
+    array3d emptyLmR;
+    std::vector<bool> empty;
+    std::vector<array3d> LmR;
+    std::vector<array3d> LmS;
+
+    // Number of elements and size of the domain in each dimension
+
+    dvector eSize;
+    dvector dSize;
+    ivector dLen;
+    dvector zero;
+    double cropZ;
+    double Lc;
+
+    // Neumann boundary conditions
+
+    std::string axis;
+    double Fval;
+
+    // Stores the boundary condition parameters
+
+    std::vector<ivector> neighbour;
+    std::string deformation;
+    std::string substrate;
+    ivector opposite;
+    ivector free;
+
+    // list of coupled and delta displacement (face,axis)
+
+    std::vector<int> delta;
+    std::vector<std::pair<int,int>> coupled;
+    std::vector<std::pair<int,int>> lockBot;
+    std::vector<std::pair<int,int>> uniform;
+};
 
 // ----------------------------------|
 // Functions available in the file   |

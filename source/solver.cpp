@@ -1,5 +1,4 @@
 #include "..\include\parser.h"
-#include "..\include\writer.h"
 #include "solvers.h"
 #include <iomanip>
 #include <chrono>
@@ -169,9 +168,10 @@ darray solveL(Mesh &mesh){
             norm2 = math::norm(u);
             double rez = abs(norm2-norm1)/norm1;
             cout << "Relative Correction = " << rez << endl;
-            if(rez<1e-12){break;}
+            if(rez<mesh.data.tol){break;}
         }
-        cout << "uz = " << setprecision(7) << u(nLen-1) << endl;
+
+        graph(mesh,u,i);
         cout << endl;
     }
     return u;
@@ -223,7 +223,7 @@ int main(){
     cout << endl;
 
     
-/*
+
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
         cout << setprecision(7) << "Node " << i << " -- ux = " << disp[i] << "\n";
@@ -237,7 +237,7 @@ int main(){
         cout << setprecision(7) << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
-    */
+    
    
     return 0;
 }

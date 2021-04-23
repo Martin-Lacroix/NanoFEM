@@ -78,8 +78,8 @@ string readInput(readStruct &read,dataStruct &data,string path){
             istringstream iss(vec[i]);
 
             getline(iss,input,';');
-            if(input=="large strain"){read.defo = "large";}
-            else if(input=="small strain"){read.defo = "small";}
+            if(input=="large strain"){read.deformation = "large";}
+            else if(input=="small strain"){read.deformation = "small";}
 
             getline(iss,input,'!');
             input.erase(input.find_last_not_of(" ")+1);
@@ -89,28 +89,37 @@ string readInput(readStruct &read,dataStruct &data,string path){
         }
     }
 
-    // Reads the order of the quadrature rule
+    // Reads the general parameters
 
     for(int i=0; i<vec.size(); i++){
         if(vec[i].find("!general parameters") != string::npos){
 
+            // Order of the elements and quadrature
+
             istringstream iss(vec[i]);
             getline(iss,input,';');
             data.order = stoi(input);
+
+            // Reads the lattice constant
+
             getline(iss,input,';');
             read.Lc = stod(input);
 
-            if(read.defo=="small"){
+            // Depending on the deformation type
+
+            if(read.deformation=="small"){
 
                 getline(iss,input,'!');
                 read.cropZ = stod(input)/read.Lc;
             }
-            else if(read.defo=="large"){
+            else if(read.deformation=="large"){
 
                 getline(iss,input,';');
                 read.cropZ = stod(input)/read.Lc;
-                getline(iss,input,'!');
+                getline(iss,input,';');
                 data.step = stod(input);
+                getline(iss,input,'!');
+                data.tol = stod(input);
             }
             break;
         }
@@ -141,41 +150,35 @@ string readInput(readStruct &read,dataStruct &data,string path){
         }
     }
 
-    // Reads the type of applied stress
+    // Reads the boundary consitions
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!load type") != string::npos){
+        if(vec[i].find("!boundary conditions") != string::npos){
             
             istringstream iss(vec[i]);
-            getline(iss,input,'!');
+
+            // Reads the axis of the load
+
+            getline(iss,input,';');
             input.erase(input.find_last_not_of(" ")+1);
-            read.type = input;
-            break;
-        }
-    }
+            read.axis = input;
 
-    // Reads the axis, face and value of applied stress
+            // Position of the free surface
 
-    for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!load parameters") != string::npos){
-            
-            istringstream iss(vec[i]);
             getline(iss,input,';');
-            read.load = input;
-
-            for(int i=0; i<2; i++){
-
-                if(input=="all"){read.axis[i] = {0,1,2};}
-                else if(input[i+1]=='x'){read.axis[i] = {0};}
-                else if(input[i+1]=='y'){read.axis[i] = {1};}
-                else if(input[i+1]=='z'){read.axis[i] = {2};}
-            }
-        
-            getline(iss,input,';');
+            input.erase(input.find_last_not_of(" ")+1);
             if(input=="top"){read.free = {1};}
             else if(input=="bottom"){read.free = {0};}
             else if(input=="both"){read.free = {0,1};}
             else if(input=="None"){read.free = {};}
+
+            // Substrate deformation
+
+            getline(iss,input,';');
+            input.erase(input.find_last_not_of(" ")+1);
+            read.substrate = input;
+
+            // Value of the applied stress
 
             getline(iss,input,'!');
             read.Fval = stod(input);
@@ -203,7 +206,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
             getline(iss,input,'!');
             dvector param = tovec(input);
             read.LmR.push_back(toLame({param[0],param[1]}));
-            if(read.defo=="small"){read.LmS.push_back({param[2],param[3],param[4]});}
+            if(read.deformation=="small"){read.LmS.push_back({param[2],param[3],param[4]});}
         }
     }
 
@@ -340,6 +343,11 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
             }
         }
     }
+
+    // Computes the node offset between opposed faces
+
+    for(int i=0; i<3; i++){dLen[i] *= data.order;}
+    read.opposite = {dLen[0]*(dLen[1]+1)*(dLen[2]+1),dLen[1]*(dLen[2]+1),dLen[2]};
     file.close();
 
     // Prints some logs of the simulation
@@ -498,6 +506,230 @@ void surface(readStruct &read,dataStruct &data){
     }
 }
 
+// --------------------------------------------------|
+// Stores the displacement constrains on the nodes   |
+// --------------------------------------------------|
+
+void dirichlet(readStruct &read,dataStruct &data){
+
+    // Tolerance to check if a node is at a boundary
+
+    dvector tol = read.eSize;
+    vector<ivector> rowLoc(3,ivector(data.nXYZ.size(),-1));
+    for(int i=0; i<3; i++){tol[i] = read.eSize[i]/(data.order+1);}
+
+    // Initialization and lock the node (0,0,0) at the origin
+
+    for(int i=0; i<3; i++){
+        
+        data.dirNode[i].push_back(0);
+        data.dirVal[i].push_back(0);
+        data.coupNode[i].resize(1);
+    }
+
+    // Uniform (j,k) : sets the displacement along k of the top face j uniform
+
+    for(pair<int,int> pair:read.uniform){
+
+        int j = pair.first;
+        int k = pair.second;
+
+        // For each node at the top surface of the dimension j
+
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+
+                // Adds the node to coupNode[k] if not already there
+
+                if(rowLoc[k][i]<0){
+
+                    data.coupNode[k][0].push_back(i);
+                    rowLoc[k][i] = 0;
+                }
+            }
+        }
+    }
+
+    // LockBot (j,k) : locks the displacement along k of the bottom face j at 0
+
+    for(pair<int,int> pair:read.lockBot){
+
+        int j = pair.first;
+        int k = pair.second;
+
+        // For each node at the bottom surface of the dimension j
+
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
+
+                data.dirNode[k].push_back(i);
+                data.dirVal[k].push_back(0);
+            }
+        }
+    }
+
+    // Coupled (j,k) : coupled u along k of opposite nodes of the top-bottom faces j
+
+    for(int i=0; i<data.nXYZ.size(); i++){
+        for(pair<int,int> pair:read.coupled){
+
+            int j = pair.first;
+            int k = pair.second;
+            int loc1 = rowLoc[k][i];
+            int loc2 = rowLoc[k][i+read.opposite[j]];
+
+            // For each node at the bottom surface of the dimension j
+
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
+
+                // Check whether the first or second node is already in the list
+
+                if(loc1>=0 && loc2<0){
+
+                    data.coupNode[k][loc1].push_back(i+read.opposite[j]);
+                    rowLoc[k][i+read.opposite[j]] = loc1;
+                }
+                else if(loc1<0 && loc2>=0){
+
+                    data.coupNode[k][loc2].push_back(i);
+                    rowLoc[k][i] = loc2;
+                }
+                else if(loc1<0 && loc2<0){
+
+                    data.coupNode[k].push_back({i,i+read.opposite[j]});
+                    rowLoc[k][i+read.opposite[j]] = data.coupNode[k].size()-1;
+                    rowLoc[k][i] = data.coupNode[k].size()-1;
+                }
+            }
+        }
+    }
+
+    for(int i=0; i<3; i++){
+        for(int j=0; j<data.coupNode[i].size(); j++){
+            reverse(data.coupNode[i][j].begin(),data.coupNode[i][j].end());
+        }
+    }
+
+    // Delta (j,k) : set (ut,ub) => (ut-ub,ub) of opposite faces along the j-axis
+
+    for(int i=0; i<data.nXYZ.size(); i++){
+        for(int j:read.delta){
+
+            // Change of variable u => Δu for the other nodes of the face
+
+            if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
+                data.deltaNode[j].push_back(make_pair(i+read.opposite[j],i));
+            }
+        }
+    }
+}
+
+// ------------------------------------------|
+// Stores the Neumann boundary conditions    |
+// ------------------------------------------|
+
+void neumann(readStruct &read,dataStruct &data){
+
+    int order = data.order;
+    int sLen = data.order+1;
+
+    // Axial stress along the z-axis
+
+    if(read.axis=="z-axis"){
+        for(int i=0; i<data.eNode.size(); i++){
+            if(read.neighbour[i][1]==-1){
+
+                // Computes the nodes of the face without neighbour
+
+                ivector face;
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
+
+                        int idx = j*sLen*sLen+k*sLen+order;
+                        face.push_back(data.eNode[i][idx]);
+                    }
+                }
+
+                // Stores the applied axial stress on the right face
+                                
+                data.neuFace.push_back(face);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[2] = read.Fval;
+            }
+        }
+    }
+
+    // Axial stress along the y-axis
+
+    if(read.axis=="y-axis"){
+        for(int i=0; i<data.eNode.size(); i++){
+            if(read.neighbour[i][3]==-1){
+
+                // Computes the nodes of the face without neighbour
+
+                ivector face1;
+                ivector face2;
+
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
+
+                        int idx = j+k*sLen*sLen+order*sLen;
+                        face1.push_back(data.eNode[i][idx]);
+                        face2.push_back(data.eNode[i][idx]-read.opposite[1]);
+                    }
+                }
+
+                // Stores the applied axial stress on the right face
+                                
+                data.neuFace.push_back(face1);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[1] = read.Fval;
+
+                // Stores the applied axial stress on the left face
+                                
+                data.neuFace.push_back(face2);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[1] = -read.Fval;
+            }
+        }
+    }
+
+    // Axial stress along the x-axis
+
+    if(read.axis=="x-axis"){
+        for(int i=0; i<data.eNode.size(); i++){
+            if(read.neighbour[i][3]==-1){
+
+                // Computes the nodes of the face without neighbour
+
+                ivector face1;
+                ivector face2;
+
+                for(int j=0; j<sLen; j++){
+                    for(int k=0; k<sLen; k++){
+
+                        int idx = j*sLen+k+order*sLen*sLen;
+                        face1.push_back(data.eNode[i][idx]);
+                        face2.push_back(data.eNode[i][idx]-read.opposite[0]);
+                    }
+                }
+
+                // Stores the applied axial stress on the right face
+                                
+                data.neuFace.push_back(face1);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[1] = read.Fval;
+
+                // Stores the applied axial stress on the left face
+                                
+                data.neuFace.push_back(face2);
+                data.neuVal.push_back("[0,0,0]");
+                data.neuVal.back()[1] = -read.Fval;
+            }
+        }
+    }
+}
+
 // -------------------------------------------------------|
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
@@ -511,70 +743,15 @@ string read(string path,dataStruct &data){
 
     // Sets the boundary conditions parameters
 
-    if(read.type=="axial stress"){
+    read.delta = {0,1};
+    read.lockBot = {make_pair(2,2)};
+    read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+    read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
 
-        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
-        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
-    }
-    else if(read.type=="shear stress" && read.load=="exy"){
+    if(read.substrate=="undeformable"){
 
-        read.uniform = {make_pair(0,1)};
-        read.lockTop = {make_pair(0,0),make_pair(0,2)};
-        read.lockBot = {make_pair(0,0),make_pair(0,1),make_pair(0,2),make_pair(2,2)};
-        read.coupled = {make_pair(1,0),make_pair(1,2)};
-        read.deltaZero = {make_pair(1,0)};
-    }
-    else if(read.type=="shear stress" && read.load=="eyx"){
-
-        read.uniform = {make_pair(1,0)};
-        read.lockTop = {make_pair(1,1),make_pair(1,2)};
-        read.lockBot = {make_pair(1,0),make_pair(1,1),make_pair(1,2),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2)};
-        read.deltaZero = {make_pair(0,1)};
-    }
-    else if(read.type=="shear stress" && read.load=="ezy"){
-        
-        read.uniform = {make_pair(2,1)};
-        read.lockTop = {make_pair(2,0),make_pair(2,2)};
-        read.lockBot = {make_pair(2,0),make_pair(2,1),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
-        read.deltaZero = {make_pair(0,2),make_pair(1,2)};
-    }
-    else if(read.type=="shear stress" && read.load=="ezx"){
-
-        read.uniform = {make_pair(2,0)};
-        read.lockTop = {make_pair(2,1),make_pair(2,2)};
-        read.lockBot = {make_pair(2,0),make_pair(2,1),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
-        read.deltaZero = {make_pair(0,2),make_pair(1,2)};
-    }
-    else if(read.type=="hydrostatic" && read.load=="all"){
-        
-        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
-        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
-    }
-    else if(read.type=="hydrostatic" && read.load=="exx"){
-        
-        read.uniform = {make_pair(0,0)};
-        read.lockTop = {make_pair(1,1),make_pair(2,2)};
-        read.lockBot = {make_pair(0,0),make_pair(0,1),make_pair(0,2),make_pair(1,1),make_pair(2,2)};
-        read.coupled = {make_pair(1,0),make_pair(1,2)};
-    }
-    else if(read.type=="hydrostatic" && read.load=="eyy"){
-        
-        read.uniform = {make_pair(1,1)};
-        read.lockTop = {make_pair(0,0),make_pair(2,2)};
-        read.lockBot = {make_pair(0,0),make_pair(1,0),make_pair(1,1),make_pair(1,1),make_pair(2,2)};
-        read.coupled = {make_pair(0,1),make_pair(0,2)};
-    }
-    else if(read.type=="hydrostatic" && read.load=="ezz"){
-        
-        read.uniform = {make_pair(2,2)};
-        read.lockTop = {make_pair(0,0),make_pair(1,1)};
-        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2),make_pair(2,0),make_pair(2,1)};
-        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+        vector<pair<int,int>> vec = {make_pair(2,0),make_pair(2,1)};
+        read.lockBot.insert(read.lockBot.end(),vec.begin(),vec.end());
     }
 
     // Sets the boundary conditions in the data
@@ -582,12 +759,12 @@ string read(string path,dataStruct &data){
     dirichlet(read,data);
     neumann(read,data);
     surface(read,data);
-    
+
     // Rescales the data from lattice constant to nanometer
 
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
-    
-    return read.defo;
+        
+    return read.deformation;
 }

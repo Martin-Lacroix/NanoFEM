@@ -124,7 +124,7 @@ gmsh.view.add("uz",3)
 
 # Stress field
 
-gmsh.view.add("",4)
+gmsh.view.add("vm",4)
 
 # Writes the displacement data in the model
     
