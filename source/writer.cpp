@@ -1,6 +1,4 @@
 #include "..\include\writer.h"
-#include <direct.h>
-#include <fstream>
 using namespace std;
 
 // ------------------------------------------------|
@@ -9,7 +7,6 @@ using namespace std;
 
 void write(Mesh &mesh,darray &disp,dvector &VM){
 
-    mkdir("output");
     ofstream uXYZ("output/disp.txt");
     ofstream elem("output/elem.txt");
     ofstream node("output/node.txt");
@@ -97,7 +94,6 @@ const char* FCT_atm_name(double norm){
 
 void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
 
-    mkdir("output");
     int nLen = mesh.nLen;
     int eLen = mesh.eLen;
     int sLen = mesh.shape3D.N.cols();
@@ -255,11 +251,11 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void graph(Mesh &mesh,darray &disp,int step){
+void graph(Mesh &mesh,darray &disp,ivector opposite){
 
-    mkdir("output");
     double stress = 0;
     int nLen = mesh.nLen;
+    int test = cbrt(nLen)+0.1;
     array3d strain;
 
     // Computes the total average applied stress
@@ -272,24 +268,14 @@ void graph(Mesh &mesh,darray &disp,int step){
 
     for(int i=0; i<3; i++){
 
-        double u = disp[(i+1)*nLen-1]-disp[i*nLen];
-        double L = mesh.data.nXYZ[nLen-1][i];
-        strain[i] = (u/L)*100;
+        double u = disp[i*nLen+opposite[i]]-disp[i*nLen];
+        double L = mesh.data.nXYZ.back()[i]-mesh.data.nXYZ[0][i];
+        strain[i] = abs(u/L)*100;
     }
 
     // Writes the stress-strain relation
 
-    if(step==0){
-
-        ofstream graph("output/stress-strain.csv");
-        graph << "Applied stress (GPa);Strain along X (%);Strain along Y (%);Strain along Z (%)\n";
-        graph << 0 << ";" << 0 << "\n";
-        graph << stress << ";" << strain[0] << ";" << strain[1] << ";" << strain[2] << "\n";
-    }
-    else{
-
-        ofstream graph("output/stress-strain.csv",ios::app);
-        graph << stress << ";" << strain[0] << ";" << strain[1] << ";" << strain[2] << "\n";
-    }
-
+    ofstream graph("output/stress-strain.csv",ios::app);
+    graph << stress << ";" << strain[0] << ";" << strain[1] << ";" << strain[2] << "\n";
+    graph.close();
 }

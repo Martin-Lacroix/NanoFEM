@@ -44,7 +44,7 @@ void end(double start){
 // Solves the linear system for small deformations    |
 // ---------------------------------------------------|
 
-darray solveS(Mesh &mesh){
+darray solveS(Mesh &mesh,ivector opposite){
 
     double time;
     int nLen = 3*mesh.nLen;
@@ -88,6 +88,8 @@ darray solveS(Mesh &mesh){
     mesh.complete(u);
     end(time);
 
+    graph(mesh,u,opposite);
+
     return u;
 }
 
@@ -95,7 +97,7 @@ darray solveS(Mesh &mesh){
 // Solves the non-linear system for large deformations    |
 // -------------------------------------------------------|
 
-darray solveL(Mesh &mesh){
+darray solveL(Mesh &mesh,ivector opposite){
 
     double time;
     int max = 30;
@@ -171,7 +173,7 @@ darray solveL(Mesh &mesh){
             if(rez<mesh.data.tol){break;}
         }
 
-        graph(mesh,u,i);
+        graph(mesh,u,opposite);
         cout << endl;
     }
     return u;
@@ -185,26 +187,40 @@ int main(){
 
     double time;
     darray disp;
+    string type;
     dataStruct data;
+    ivector opposite;
     string path = "input.txt";
     alglib::setglobalthreading(alglib::parallel);
 
     // Reads the input files from Nascam
 
-    time = start("\nReads the files");
-    string type = read(path,data);
-    end(time);
+    {
+        time = start("\nReads the files");
+        readStruct param = read(path,data);
+        opposite = param.opposite;
+        type = param.deformation;
+        end(time);
+    }
+
+    // Writes some outputs and logs
 
     cout << "\n----------------------\n";
     cout << "FEM algorithm";
     cout << "\n----------------------\n";
     cout << endl;
 
+    mkdir("output");
+    ofstream graph("output/stress-strain.csv");
+    graph << "Absolute stress (GPa);Absolute strain X (%);Absolute strain Y (%);Absolute strain Z (%)\n";
+    graph << 0 << ";" << 0 << ";" << 0 << ";" << 0 << "\n";
+    graph.close();
+
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(type=="small"){disp = solveS(mesh);}
-    if(type=="large"){disp = solveL(mesh);}
+    if(type=="small"){disp = solveS(mesh,opposite);}
+    if(type=="large"){disp = solveL(mesh,opposite);}
 
     // Computes Von Mises stresses and updates the nodes
 
@@ -223,7 +239,7 @@ int main(){
     cout << endl;
 
     
-
+/*
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
         cout << setprecision(7) << "Node " << i << " -- ux = " << disp[i] << "\n";
@@ -237,6 +253,7 @@ int main(){
         cout << setprecision(7) << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
     }
     cout << "\n";
+    */
     
    
     return 0;
