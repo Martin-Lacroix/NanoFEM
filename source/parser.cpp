@@ -76,10 +76,8 @@ string readInput(readStruct &read,dataStruct &data,string path){
         if(vec[i].find("!simulation type") != string::npos){
 
             istringstream iss(vec[i]);
-
             getline(iss,input,';');
-            if(input=="large strain"){read.deformation = "large";}
-            else if(input=="small strain"){read.deformation = "small";}
+            read.deformation = input;
 
             getline(iss,input,'!');
             input.erase(input.find_last_not_of(" ")+1);
@@ -94,32 +92,18 @@ string readInput(readStruct &read,dataStruct &data,string path){
     for(int i=0; i<vec.size(); i++){
         if(vec[i].find("!general parameters") != string::npos){
 
-            // Order of the elements and quadrature
-
             istringstream iss(vec[i]);
-            getline(iss,input,';');
-            data.order = stoi(input);
+            getline(iss,input,'!');
+            dvector test = tovec(input);
 
-            // Reads the lattice constant
+            read.Lc = test[1];
+            data.order = 0.1+test[0];
+            read.cropZ = test[2]/read.Lc;
 
-            getline(iss,input,';');
-            read.Lc = stod(input);
+            if(read.deformation=="large strain"){
 
-            // Depending on the deformation type
-
-            if(read.deformation=="small"){
-
-                getline(iss,input,'!');
-                read.cropZ = stod(input)/read.Lc;
-            }
-            else if(read.deformation=="large"){
-
-                getline(iss,input,';');
-                read.cropZ = stod(input)/read.Lc;
-                getline(iss,input,';');
-                data.step = stod(input);
-                getline(iss,input,'!');
-                data.tol = stod(input);
+                data.step = 0.1+test[3];
+                data.tol = test[4];
             }
             break;
         }
@@ -176,7 +160,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
 
             getline(iss,input,';');
             input.erase(input.find_last_not_of(" ")+1);
-            read.substrate = input;
+            read.transverse = input;
 
             // Value of the applied stress
 
@@ -743,15 +727,20 @@ readStruct read(string path,dataStruct &data){
 
     // Sets the boundary conditions parameters
 
-    read.delta = {0,1};
-    read.lockBot = {make_pair(2,2)};
-    read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
-    read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    if(read.transverse=="allowed"){
 
-    if(read.substrate=="undeformable"){
+        read.delta = {0,1};
+        read.lockBot = {make_pair(2,2)};
+        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
 
-        vector<pair<int,int>> vec = {make_pair(2,0),make_pair(2,1)};
-        read.lockBot.insert(read.lockBot.end(),vec.begin(),vec.end());
+    if(read.transverse=="locked"){
+
+        read.lockBot = {make_pair(2,2)};
+        read.uniform = {make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2),
+        make_pair(1,0),make_pair(1,2),make_pair(0,0),make_pair(1,1)};
     }
 
     // Sets the boundary conditions in the data
@@ -765,6 +754,112 @@ readStruct read(string path,dataStruct &data){
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
+
+
+
+
+
+/*
+    cout << "\n\nNodes\n";
+    for(int i=0; i<data.nXYZ.size(); i++){
+        for(int j=0; j<data.nXYZ[i].size(); j++){
+            cout << data.nXYZ[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nElements\n";
+    for(int i=0; i<data.eNode.size(); i++){
+        for(int j=0; j<data.eNode[i].size(); j++){
+            cout << data.eNode[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nNeighbour\n";
+    for(int i=0; i<read.neighbour.size(); i++){
+        for(int j=0; j<read.neighbour[i].size(); j++){
+            cout << read.neighbour[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nEmpty\n";
+    for(int i=0; i<read.empty.size(); i++){
+        cout << "Elem " << i << " -- " << read.empty[i] << "\n";
+    
+    }
+
+    cout << "\n\neSurf\n";
+    for(int i=0; i<data.eSurf.size(); i++){
+        cout << "Elem " << i << " -- ";
+        for(int j=0; j<data.eSurf[i].size(); j++){
+            cout << data.eSurf[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nFaces\n";
+    for(int i=0; i<data.neuFace.size(); i++){
+        for(int j=0; j<data.neuFace[i].size(); j++){
+            cout << data.neuFace[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\nForce\n";
+    for(int i=0; i<data.neuVal.size(); i++){
+        for(int j=0; j<data.neuVal[i].length(); j++){
+            cout << data.neuVal[i][j] << ", ";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ndirNode\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<data.dirNode[i].size(); j++){
+            cout << data.dirNode[i][j] << ",";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ndirVal\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<data.dirVal[i].size(); j++){
+            cout << data.dirVal[i][j] << ",";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ncoupNode\n";
+    for(int i=0; i<3; i++){
+        for(int j=0; j<data.coupNode[i].size(); j++){
+            cout << "dim " << i << " -- ";
+            for(int k=0; k<data.coupNode[i][j].size(); k++){
+                cout << data.coupNode[i][j][k] << ",";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+    }
+
+    cout << "\n\ndeltaNode\n";
+    for(int i=0; i<3; i++){
+        cout << "dim " << i << " -- ";
+        for(int j=0; j<data.deltaNode[i].size(); j++){
+            cout << "(" << data.deltaNode[i][j].first << "," << data.deltaNode[i][j].second << ") ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+
+*/
+
+
+
+
     
     return read;
 }

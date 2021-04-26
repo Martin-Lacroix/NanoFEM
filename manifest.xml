@@ -125,10 +125,10 @@
 				<default>Top</default>
 			</param>
 			<param type="LIST">
-				<name>Substrate</name>
-				<element>Deformable</element>
-				<element>Undeformable</element>
-				<default>Deformable</default>
+				<name>Transversal strain</name>
+				<element>Allowed</element>
+				<element>Locked</element>
+				<default>Allowed</default>
 			</param>
 			<param type="DOUBLE">
 				<name>Applied stress</name>

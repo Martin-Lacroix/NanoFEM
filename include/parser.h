@@ -34,7 +34,7 @@ struct readStruct{
 
     std::vector<ivector> neighbour;
     std::string deformation;
-    std::string substrate;
+    std::string transverse;
     ivector opposite;
     ivector free;
 

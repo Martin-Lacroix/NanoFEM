@@ -89,7 +89,6 @@ darray solveS(Mesh &mesh,ivector opposite){
     end(time);
 
     graph(mesh,u,opposite);
-
     return u;
 }
 
@@ -219,8 +218,8 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(type=="small"){disp = solveS(mesh,opposite);}
-    if(type=="large"){disp = solveL(mesh,opposite);}
+    if(type=="small strain"){disp = solveS(mesh,opposite);}
+    if(type=="large strain"){disp = solveL(mesh,opposite);}
 
     // Computes Von Mises stresses and updates the nodes
 
