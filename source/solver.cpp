@@ -86,9 +86,12 @@ darray solveS(Mesh &mesh,ivector opposite){
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
-    end(time);
 
+    // Prints if the solver success or not
+
+    cout << "[" << int(rep.terminationtype) << "] ";
     graph(mesh,u,opposite);
+    end(time);
     return u;
 }
 
@@ -159,8 +162,11 @@ darray solveL(Mesh &mesh,ivector opposite){
             alglib::lincgsolvesparse(state,K,1,B);
             alglib::lincgresults(state,du,rep);
 
+            // Update solution and success state
+
             mesh.complete(du);
             math::add(1,1,du,u);
+            cout << "[" << int(rep.terminationtype) << "] ";
             end(time);
 
             // Check the convergence criteria

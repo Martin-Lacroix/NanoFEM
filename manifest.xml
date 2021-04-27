@@ -85,7 +85,7 @@
 		<group name="Hole Parameters">
 			<param type="DOUBLE">
 				<name>Young modulus</name>
-				<default>0</default>
+				<default>1e-3</default>
 				<unit>GPa</unit>
 			</param>
 			<param type="DOUBLE">
