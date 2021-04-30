@@ -3,7 +3,7 @@ import gmsh
 
 # %% Load Data
 
-s = np.loadtxt(r"..\output\stress.txt")
+s = np.atleast_1d(np.loadtxt(r"..\output\stress.txt"))
 nXYZ = np.loadtxt(r"..\output\node.txt",delimiter=",")
 u = np.atleast_2d(np.loadtxt(r"..\output\disp.txt",delimiter=","))
 elem = np.atleast_2d(np.loadtxt(r"..\output\elem.txt",delimiter=","))

@@ -128,7 +128,7 @@
 				<name>Transversal strain</name>
 				<element>Allowed</element>
 				<element>Locked</element>
-				<default>Allowed</default>
+				<default>Locked</default>
 			</param>
 			<param type="DOUBLE">
 				<name>Applied stress</name>

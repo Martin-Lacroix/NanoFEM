@@ -1,5 +1,6 @@
 #include "..\include\parser.h"
 #include "solvers.h"
+#include <windows.h>
 #include <iomanip>
 #include <chrono>
 using namespace std;
@@ -102,7 +103,7 @@ darray solveS(Mesh &mesh,ivector opposite){
 darray solveL(Mesh &mesh,ivector opposite){
 
     double time;
-    int max = 30;
+    int max = 20;
     int nLen = 3*mesh.nLen;
     int step = mesh.data.step;
     int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
@@ -243,7 +244,7 @@ int main(){
     
     cout << endl;
 
-    
+
 /*
     cout << "\n";
     for(int i=0; i<mesh.nLen; i++){
@@ -259,7 +260,6 @@ int main(){
     }
     cout << "\n";
     */
-    
-   
+
     return 0;
 }
