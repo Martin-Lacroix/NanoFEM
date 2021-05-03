@@ -23,6 +23,7 @@ struct readStruct{
     ivector dLen;
     dvector zero;
     double cropZ;
+    double frac;
     double Lc;
 
     // Neumann boundary conditions
@@ -43,6 +44,7 @@ struct readStruct{
     std::vector<int> delta;
     std::vector<std::pair<int,int>> coupled;
     std::vector<std::pair<int,int>> lockBot;
+    std::vector<std::pair<int,int>> lockTop;
     std::vector<std::pair<int,int>> uniform;
 };
 

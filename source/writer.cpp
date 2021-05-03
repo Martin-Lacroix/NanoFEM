@@ -92,7 +92,7 @@ const char* FCT_atm_name(double norm){
 // Writes the output displacement file compatible with Jmol    |
 // ------------------------------------------------------------|
 
-void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
+void writeJmol(Mesh &mesh,darray &disp,dvector &VM,vector<bool> &empty){
 
     int nLen = mesh.nLen;
     int eLen = mesh.eLen;
@@ -102,6 +102,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
     vector<string> header(18);
     vector<string> uName = {"X","Y","Z"};
     vector<string> sName = {"XX","YY","ZZ","XY","YZ","ZX"};
+    vector<bool> free(nLen,1);
 
     // Parameters for the colour legend
 
@@ -126,6 +127,18 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
     header[11] = "color label white";
     header[12] = "font label 30 serif";
     header[13] = "select all";
+
+    // Lists and counts the nodes unrelated to plain elements
+
+    for(int i=0; i<eLen; i++){
+        for(int j=0; j<mesh.data.eNode[i].size(); j++){
+            if(empty[i]==0){free[mesh.data.eNode[i][j]] = 0;
+            }
+        }
+    }
+    
+    int nCount = count(free.begin(),free.end(),0);
+    int eCount = count(empty.begin(),empty.end(),0);
 
     // Loops in the 3 dimensions (ux, uy, uz)
 
@@ -153,7 +166,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
 
         // Writes the header and number of nodes
 
-        uXYZ << nLen+barLength << "\n";
+        uXYZ << nCount+barLength << "\n";
         for(string option:header){uXYZ << option << ";";}
         uXYZ << "\n";
 
@@ -170,16 +183,18 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
         // Writes the displacement field in the file
 
         for(int i=0; i<mesh.nLen; i++){
+            if(free[i]==0){
 
-            double val = (disp[i+k*nLen]-min)/(max-min);
-            const char *species = FCT_atm_name(val);
-            uXYZ << species << " ";
+                double val = (disp[i+k*nLen]-min)/(max-min);
+                const char *species = FCT_atm_name(val);
+                uXYZ << species << " ";
 
-            // Extracts the u(x,y,z) values from the solution vector
+                // Extracts the u(x,y,z) values from the solution vector
 
-            for(int j=0; j<3; j++){uXYZ << mesh.data.nXYZ[i][j] << " ";}
-            uXYZ << disp[i+k*nLen] << " ";
-            uXYZ << "\n";
+                for(int j=0; j<3; j++){uXYZ << mesh.data.nXYZ[i][j] << " ";}
+                uXYZ << disp[i+k*nLen] << " ";
+                uXYZ << "\n";
+            }
         }
     }
 
@@ -207,7 +222,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
 
     // Writes the header and number of nodes
 
-    sXYZ << eLen+barLength << "\n";
+    sXYZ << eCount+barLength << "\n";
     for(string option:header){sXYZ << option << ";";}
     sXYZ << "\n";
 
@@ -224,26 +239,27 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM){
     // Writes the stress field in the file
 
     for(int i=0; i<mesh.eLen; i++){
+        if(empty[i]==0){
 
-        array3d xyz = {0,0,0};
-        double val = (VM[i]-min)/(max-min);
-        const char *species = FCT_atm_name(val);
-        sXYZ << species << " ";
+            array3d xyz = {0,0,0};
+            double val = (VM[i]-min)/(max-min);
+            const char *species = FCT_atm_name(val);
+            sXYZ << species << " ";
 
+            // Coordinates of the center of the element
 
-        // Coordinates of the center of the element
-
-        for(int j:mesh.data.eNode[i]){
-            for(int n=0; n<3; n++){
-                xyz[n] += mesh.data.nXYZ[j][n]/sLen;
+            for(int j:mesh.data.eNode[i]){
+                for(int n=0; n<3; n++){
+                    xyz[n] += mesh.data.nXYZ[j][n]/sLen;
+                }
             }
+
+            // Extracts the stress values from the solution vector
+
+            for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
+            sXYZ << VM[i] << " ";
+            sXYZ << "\n";
         }
-
-        // Extracts the stress values from the solution vector
-
-        for(int j=0; j<3; j++){sXYZ << xyz[j] << " ";}
-        sXYZ << VM[i] << " ";
-        sXYZ << "\n";
     }
 }
 

@@ -175,7 +175,7 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
         elem[i].updateF(shape3D,ue);
         matrix Kn = elem[i].selfKN(shape3D,data.LmR[i]);
         matrix Kl = elem[i].selfKL(shape3D,data.LmR[i]);
-        darray F = elem[i].selfFX(shape3D,data.LmR[i]);
+        darray Fx = elem[i].selfFX(shape3D,data.LmR[i]);
         elem[i].clean();
 
         // Inserts the elemental vector into the global B vector
@@ -184,7 +184,7 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
             for(int j=0; j<sLen; j++){
 
                 int row = data.eNode[i][j]+k*nLen;
-                B(row) -= F(j+k*sLen);
+                B(row) -= Fx(j+k*sLen);
             }
         }
         
@@ -201,7 +201,7 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
                         // Adds the element only in the upper triangle
 
                         if(row<=col){
-
+                            
                             double val = Kn(j+m*sLen,k+n*sLen)+Kl(j+m*sLen,k+n*sLen);
                             alglib::sparseadd(K,row,col,val);
                         }

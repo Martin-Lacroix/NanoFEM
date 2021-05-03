@@ -196,16 +196,17 @@ int main(){
     string type;
     dataStruct data;
     ivector opposite;
-    string path = "input.txt";
+    vector<bool> empty;
     alglib::setglobalthreading(alglib::parallel);
 
     // Reads the input files from Nascam
 
     {
         time = start("\nReads the files");
-        readStruct param = read(path,data);
+        readStruct param = read("input.txt",data);
         opposite = param.opposite;
         type = param.deformation;
+        empty = param.empty;
         end(time);
     }
 
@@ -225,8 +226,8 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(type=="small strain"){disp = solveS(mesh,opposite);}
-    if(type=="large strain"){disp = solveL(mesh,opposite);}
+    if(type=="smallstrain"){disp = solveS(mesh,opposite);}
+    if(type=="largestrain"){disp = solveL(mesh,opposite);}
 
     // Computes Von Mises stresses and updates the nodes
 
@@ -238,7 +239,7 @@ int main(){
     // Writes the results in a text file
 
     time = start("Writes the results");
-    writeJmol(mesh,disp,VM);
+    writeJmol(mesh,disp,VM,empty);
     write(mesh,disp,VM);
     end(time);
     

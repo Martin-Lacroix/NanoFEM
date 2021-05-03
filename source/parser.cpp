@@ -67,22 +67,22 @@ string readInput(readStruct &read,dataStruct &data,string path){
     while(getline(file,input,'\n')){
 
         transform(input.begin(),input.end(),input.begin(),::tolower);
+        input.erase(remove_if(input.begin(),input.end(),::isspace),input.end());
         vec.push_back(input);
     }
 
     // Large or small deformation and coating file
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!simulation type") != string::npos){
+        if(vec[i].find("!simulationtype") != string::npos){
 
             istringstream iss(vec[i]);
             getline(iss,input,';');
             read.deformation = input;
 
             getline(iss,input,'!');
-            input.erase(input.find_last_not_of(" ")+1);
-            if(input=="manual selection"){coating = vec[i+1];}
-            else if(input=="whole structure"){coating = "input/coating.xyz";}
+            if(input=="manualselection"){coating = vec[i+1];}
+            else if(input=="wholestructure"){coating = "input/coating.xyz";}
             break;
         }
     }
@@ -90,7 +90,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Reads the general parameters
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!general parameters") != string::npos){
+        if(vec[i].find("!generalparameters") != string::npos){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
@@ -100,7 +100,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
             data.order = 0.1+test[0];
             read.cropZ = test[2]/read.Lc;
 
-            if(read.deformation=="large strain"){
+            if(read.deformation=="largestrain"){
 
                 data.step = 0.1+test[3];
                 data.tol = test[4];
@@ -112,11 +112,14 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Reads the parameters of empty elements
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!hole parameters") != string::npos){
+        if(vec[i].find("!holeparameters") != string::npos){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
-            read.emptyLmR = toLame(tovec(input));
+            dvector vec = tovec(input);
+
+            read.emptyLmR = toLame({vec[0],vec[1]});
+            read.frac = vec[2];
             break;
         }
     }
@@ -124,7 +127,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Reads the parameters of substrate element
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!substrate parameters") != string::npos){
+        if(vec[i].find("!substrateparameters") != string::npos){
             
             istringstream iss(vec[i]);
             getline(iss,input,'!');
@@ -137,20 +140,18 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Reads the boundary consitions
 
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("!boundary conditions") != string::npos){
+        if(vec[i].find("!boundaryconditions") != string::npos){
             
             istringstream iss(vec[i]);
 
             // Reads the axis of the load
 
             getline(iss,input,';');
-            input.erase(input.find_last_not_of(" ")+1);
             read.axis = input;
 
             // Position of the free surface
 
             getline(iss,input,';');
-            input.erase(input.find_last_not_of(" ")+1);
             if(input=="top"){read.free = {1};}
             else if(input=="bottom"){read.free = {0};}
             else if(input=="both"){read.free = {0,1};}
@@ -159,7 +160,6 @@ string readInput(readStruct &read,dataStruct &data,string path){
             // Substrate deformation
 
             getline(iss,input,';');
-            input.erase(input.find_last_not_of(" ")+1);
             read.transverse = input;
 
             // Value of the applied stress
@@ -174,7 +174,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
 
     int idx;
     for(int i=0; i<vec.size(); i++){
-        if(vec[i].find("! layer parameters-layer 1") != string::npos){
+        if(vec[i].find("!layerparameters-layer1") != string::npos){
 
             idx = i;
             break;
@@ -184,13 +184,18 @@ string readInput(readStruct &read,dataStruct &data,string path){
     // Stores the Young modulus and Poisson ratio of the layers
 
     for(int i=idx; i<vec.size(); i++){
-        if(vec[i].find("! layer parameters-layer") != string::npos){
+        if(vec[i].find("!layerparameters-layer") != string::npos){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
             dvector param = tovec(input);
             read.LmR.push_back(toLame({param[0],param[1]}));
-            if(read.deformation=="small"){read.LmS.push_back({param[2],param[3],param[4]});}
+
+            // Adds the surface parameter in small strain
+
+            if(read.deformation=="smallstrain"){
+                read.LmS.push_back({param[2],param[3],param[4]});
+            }
         }
     }
 
@@ -350,6 +355,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
 
 unordered_set<int> locSpecies(readStruct &read,dvector coord){
 
+    double d;
     unordered_set<int> eList;
     ivector dLen = read.dLen;
     dvector zero = read.zero;
@@ -357,23 +363,26 @@ unordered_set<int> locSpecies(readStruct &read,dvector coord){
 
     for(int i=0; i<2; i++){
 
-        // Slightly moves the species along y axis
+        // Slightly moves the species along x axis
 
-        int dx = dLen[0]*(coord[0]-zero[0])/read.dSize[0]+tol[i];
+        d = dLen[0]*(coord[0]-zero[0])/read.dSize[0]+tol[i];
+        if(d<0){d -= 1;} int dx = static_cast<int>(d);
         if(dx>=dLen[0] || dx<0){continue;}
 
         // Slightly moves the species along y axis
 
         for(int j=0; j<2; j++){
 
-            int dy = dLen[1]*(coord[1]-zero[1])/read.dSize[1]+tol[j];
+            d = dLen[1]*(coord[1]-zero[1])/read.dSize[1]+tol[j];
+            if(d<0){d -= 1;} int dy = static_cast<int>(d);
             if(dy>=dLen[1] || dy<0){continue;}
 
             // Slightly moves the species along z axis
 
             for(int k=0; k<2; k++){
-                        
-                int dz = dLen[2]*(coord[2]-zero[2])/read.dSize[2]+tol[k];
+
+                d = dLen[2]*(coord[2]-zero[2])/read.dSize[2]+tol[k];
+                if(d<0){d -= 1;} int dz = static_cast<int>(d);
                 if(dz<dLen[2] && dz>=0){eList.insert(dx*dLen[1]*dLen[2]+dy*dLen[2]+dz);}
             }
         }
@@ -425,7 +434,7 @@ void readSpecies(readStruct &read,dataStruct &data,string path){
     for(int i=0; i<eLen; i++){
         double sum = accumulate(frac[i].begin(),frac[i].end(),0.0);
 
-        if(sum<0.5){
+        if(sum<read.frac){
             data.LmR[i] = read.emptyLmR;
             data.LmS[i] = {0,0,0};
             read.empty[i] = 1;
@@ -534,7 +543,7 @@ void dirichlet(readStruct &read,dataStruct &data){
         }
     }
 
-    // LockBot (j,k) : locks the displacement along k of the bottom face j at 0
+    // LockBot (j,k) : locks the displacement along k of the bottom face j
 
     for(pair<int,int> pair:read.lockBot){
 
@@ -552,6 +561,24 @@ void dirichlet(readStruct &read,dataStruct &data){
         }
     }
 
+    // LockTop (j,k) : locks the displacement along k of the bottom face j
+
+    for(pair<int,int> pair:read.lockTop){
+
+        int j = pair.first;
+        int k = pair.second;
+
+        // For each node at the top surface of the dimension j
+
+        for(int i=0; i<data.nXYZ.size(); i++){
+            if(abs(data.nXYZ[i][j]-read.zero[j]-read.dSize[j])<tol[j]){
+
+                data.dirNode[k].push_back(i);
+                data.dirVal[k].push_back(0);
+            }
+        }
+    }
+
     // Coupled (j,k) : coupled u along k of opposite nodes of the top-bottom faces j
 
     for(int i=0; i<data.nXYZ.size(); i++){
@@ -559,12 +586,13 @@ void dirichlet(readStruct &read,dataStruct &data){
 
             int j = pair.first;
             int k = pair.second;
-            int loc1 = rowLoc[k][i];
-            int loc2 = rowLoc[k][i+read.opposite[j]];
 
             // For each node at the bottom surface of the dimension j
 
             if(abs(data.nXYZ[i][j]-read.zero[j])<tol[j]){
+
+                int loc1 = rowLoc[k][i];
+                int loc2 = rowLoc[k][i+read.opposite[j]];
 
                 // Check whether the first or second node is already in the list
 
@@ -682,7 +710,7 @@ void neumann(readStruct &read,dataStruct &data){
 
     if(read.axis=="x-axis"){
         for(int i=0; i<data.eNode.size(); i++){
-            if(read.neighbour[i][3]==-1){
+            if(read.neighbour[i][5]==-1){
 
                 // Computes the nodes of the face without neighbour
 
@@ -727,20 +755,31 @@ readStruct read(string path,dataStruct &data){
 
     // Sets the boundary conditions parameters
 
-    if(read.transverse=="allowed"){
+    if(read.transverse=="periodicstrain"){
 
         read.delta = {0,1};
         read.lockBot = {make_pair(2,2)};
         read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
     }
-
-    if(read.transverse=="locked"){
+    if(read.transverse=="periodic(nostrain)"){
 
         read.lockBot = {make_pair(2,2)};
         read.uniform = {make_pair(2,2)};
         read.coupled = {make_pair(0,1),make_pair(0,2),
         make_pair(1,0),make_pair(1,2),make_pair(0,0),make_pair(1,1)};
+    }
+    if(read.transverse=="uniformstrain"){
+
+        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.coupled = {make_pair(0,1),make_pair(0,2),make_pair(1,0),make_pair(1,2)};
+    }
+    if(read.transverse=="uniform(nostrain)"){
+
+        read.lockBot = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.uniform = {make_pair(0,0),make_pair(1,1),make_pair(2,2)};
+        read.lockTop = {make_pair(0,0),make_pair(1,1)};
     }
 
     // Sets the boundary conditions in the data
@@ -754,7 +793,6 @@ readStruct read(string path,dataStruct &data){
     for(int i=0; i<data.nXYZ.size(); i++){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
-
 
 
 
@@ -787,7 +825,6 @@ readStruct read(string path,dataStruct &data){
     cout << "\n\nEmpty\n";
     for(int i=0; i<read.empty.size(); i++){
         cout << "Elem " << i << " -- " << read.empty[i] << "\n";
-    
     }
 
     cout << "\n\neSurf\n";
@@ -854,10 +891,7 @@ readStruct read(string path,dataStruct &data){
         cout << "\n";
     }
     cout << "\n";
-
 */
-
-
 
 
     
