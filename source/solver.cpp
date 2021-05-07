@@ -120,8 +120,8 @@ darray solveL(Mesh &mesh,ivector opposite){
     // Performs the load iterations
 
     for(int i=0; i<step; i++){
-        double norm = numeric_limits<double>::infinity();
-
+        double norm = 0;
+        
         // Updates the surface traction vector
 
         for(int k=0; k<3; k++){
@@ -174,14 +174,10 @@ darray solveL(Mesh &mesh,ivector opposite){
 
             double prec = norm;
             norm = math::norm(u);
-            double rez = abs(norm-prec)/prec;
+            double rez = abs(norm-prec)/norm;
             cout << "Output of the solver = " << int(rep.terminationtype) << endl;
             cout << "Relative correction = " << rez << endl;
-
-            // End the algorithm according to the correction
-
             if(rez<mesh.data.tol){break;}
-            if(prec<norm){break;}
         }
 
         graph(mesh,u,opposite);
