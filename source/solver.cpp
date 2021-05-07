@@ -87,12 +87,13 @@ darray solveS(Mesh &mesh,ivector opposite){
     alglib::lincgsolvesparse(state,K,1,B);
     alglib::lincgresults(state,u,rep);
     mesh.complete(u);
+    end(time);
 
     // Prints if the solver success or not
 
-    cout << "[" << int(rep.terminationtype) << "] ";
     graph(mesh,u,opposite);
-    end(time);
+    cout << "Output of the solver = " << int(rep.terminationtype);
+    cout << "\n" << endl;
     return u;
 }
 
@@ -119,7 +120,7 @@ darray solveL(Mesh &mesh,ivector opposite){
     // Performs the load iterations
 
     for(int i=0; i<step; i++){
-        double norm1,norm2=1;
+        double norm = numeric_limits<double>::infinity();
 
         // Updates the surface traction vector
 
@@ -166,17 +167,21 @@ darray solveL(Mesh &mesh,ivector opposite){
             // Update solution and success state
 
             mesh.complete(du);
-            math::add(1,1,du,u);
-            cout << "[" << int(rep.terminationtype) << "] ";
+            alglib::vadd(&u[0],1,&du[0],1,nLen);
             end(time);
 
             // Check the convergence criteria
 
-            norm1 = norm2;
-            norm2 = math::norm(u);
-            double rez = abs(norm2-norm1)/norm1;
-            cout << "Relative Correction = " << rez << endl;
+            double prec = norm;
+            norm = math::norm(u);
+            double rez = abs(norm-prec)/prec;
+            cout << "Output of the solver = " << int(rep.terminationtype) << endl;
+            cout << "Relative correction = " << rez << endl;
+
+            // End the algorithm according to the correction
+
             if(rez<mesh.data.tol){break;}
+            if(prec<norm){break;}
         }
 
         graph(mesh,u,opposite);

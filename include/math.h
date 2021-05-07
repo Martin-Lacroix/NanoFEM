@@ -36,16 +36,12 @@ namespace math{
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector val);
 
-    // Sparse or dense matrix-matrix or vector-vector addition
+    // Matrix-matrix or matrix-array operations
 
     void add(double k1,double k2,matrix &M1,matrix &M2);
-    void add(double k1,double k2,darray &V1,darray &V2);
-
-    // Matrix-matrix or matrix-array product
-
     darray prod(double k,matrix &M1,darray &V1,int t1=0);
     matrix prod(double k,matrix &M1,matrix &M2,int t1=0,int t2=0);
-
+    
     // Fills a matrix or an array with zeros
 
     void zero(darray &V);

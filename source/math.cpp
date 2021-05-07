@@ -109,17 +109,6 @@ namespace math{
         alglib::rmatrixgencopy(m,n,k1,M1,0,0,k2,M2,0,0);
     }
 
-    // ------------------------------------------------------|
-    // Standard vector-vector addition V2 = k1 V1 + k2 V2    |
-    // ------------------------------------------------------|
-
-    void add(double k1,double k2,darray &V1,darray &V2){
-
-        for(int i=0; i<V1.length(); i++){
-            V2(i) = k1*V1(i) + k2*V2(i);
-        }
-    }
-
     // --------------------------------------------------------------------------|
     // Matrix-matrix product M3 = k M1 M2, tj = 1 means that Mj is transposed    |
     // --------------------------------------------------------------------------|
@@ -178,10 +167,6 @@ namespace math{
         }
     }
 
-    // -------------------------------------------------|
-    // Fills an initialized dense array V with zeros    |
-    // -------------------------------------------------|
-
     void zero(darray &V){
         for(int i=0; i<V.length(); i++){V(i) = 0;}
     }
@@ -206,9 +191,9 @@ namespace math{
         return invM;
     }
 
-    // ---------------------------------------------------|
-    // Computes the L2 vector norm of a general vector    |
-    // ---------------------------------------------------|
+    // -----------------------------------------------------|
+    // Computes the L2 norm of a general vector or array    |
+    // -----------------------------------------------------|
 
     double norm(darray &V){
 
@@ -217,10 +202,6 @@ namespace math{
         norm = sqrt(norm);
         return norm;
     }
-
-    // ------------------------------------------------------|
-    // Computes the L2 vector norm of a general 3D vector    |
-    // ------------------------------------------------------|
 
     double norm(array3d &V){
 

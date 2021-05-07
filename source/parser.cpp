@@ -345,8 +345,8 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     cout << "File logs";
     cout << "\n----------------------\n\n";
     logs("Element per dimension",read.dLen,1);
-    logs("Element size",read.eSize,read.Lc);
-    logs("Domain size",read.dSize,read.Lc);
+    logs("Element size (nm)",read.eSize,read.Lc);
+    logs("Domain size (nm)",read.dSize,read.Lc);
 }
 
 // -------------------------------------------------------|
@@ -726,17 +726,17 @@ void neumann(readStruct &read,dataStruct &data){
                     }
                 }
 
-                // Stores the applied axial stress on the right face
+                // Stores the applied axial stress on the top face
                                 
                 data.neuFace.push_back(face1);
                 data.neuVal.push_back("[0,0,0]");
-                data.neuVal.back()[1] = read.Fval;
+                data.neuVal.back()[0] = read.Fval;
 
-                // Stores the applied axial stress on the left face
+                // Stores the applied axial stress on the bottom face
                                 
                 data.neuFace.push_back(face2);
                 data.neuVal.push_back("[0,0,0]");
-                data.neuVal.back()[1] = -read.Fval;
+                data.neuVal.back()[0] = -read.Fval;
             }
         }
     }
@@ -794,6 +794,8 @@ readStruct read(string path,dataStruct &data){
         for(double &n:data.nXYZ[i]){n *= read.Lc;}
     }
 
+
+    
 
 
 

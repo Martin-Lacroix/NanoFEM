@@ -296,7 +296,7 @@ matrix Elem::selfKS(shapeStruct (&shape)[6],array3d LmS){
 }
 
 // --------------------------------------------------------|
-// Computes the surface boundary vector Bs for local FEM   |
+// Computes the surface boundary vector Fs for local FEM   |
 // --------------------------------------------------------|
 
 darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
@@ -333,7 +333,7 @@ darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
             matrix T = math::projection(norm[s][i]);
             matrix BT = math::prod(1,B,T);
             darray Fe = math::prod(shape[s].weight[i],BT,tau);
-            math::add(-detJ2D[s][i],1,Fe,F);
+            alglib::vsub(&F[0],&Fe[0],3*nLen,detJ2D[s][i]);
         }
     }
     return F;
@@ -519,7 +519,7 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
 
         darray F1 = math::prod(shape.weight[i],D,E[i]);
         darray F2 = math::prod(detJ[i],B,F1);
-        math::add(1,1,F2,Fx);
+        alglib::vadd(&Fx[0],&F2[0],3*nLen);
     }
     return Fx;
 }
@@ -629,7 +629,7 @@ darray Face::selfFT(shapeStruct &shape,darray F){
 
         double wdetJ = shape.weight[i]*detJ2D[i];
         darray Fe = math::prod(wdetJ,N,F,0);
-        math::add(1,1,Fe,FT);
+        alglib::vadd(&FT[0],&Fe[0],3*nLen);
     }
     return FT;
 }
