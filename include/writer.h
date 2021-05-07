@@ -10,7 +10,7 @@
 
 const char* FCT_atm_name(double norm);
 void write(Mesh &mesh,darray &disp,dvector &VM);
-void graph(Mesh &mesh,darray &disp,ivector opposite);
+void graph(Mesh &mesh,darray &disp,ivector &opposite);
 void writeJmol(Mesh &mesh,darray &disp,dvector &VM,std::vector<bool> &empty);
 
 #endif

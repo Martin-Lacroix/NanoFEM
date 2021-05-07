@@ -101,7 +101,7 @@ darray solveS(Mesh &mesh,ivector opposite){
 // Solves the non-linear system for large deformations    |
 // -------------------------------------------------------|
 
-darray solveL(Mesh &mesh,ivector opposite){
+darray solveL(Mesh &mesh,ivector &opposite){
 
     double time;
     int max = 20;

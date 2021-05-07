@@ -267,7 +267,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM,vector<bool> &empty){
 // Writes the simulation results in a text file    |
 // ------------------------------------------------|
 
-void graph(Mesh &mesh,darray &disp,ivector opposite){
+void graph(Mesh &mesh,darray &disp,ivector &opposite){
 
     double stress = 0;
     int nLen = mesh.nLen;
