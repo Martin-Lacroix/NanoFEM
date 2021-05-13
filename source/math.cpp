@@ -197,8 +197,7 @@ namespace math{
 
     double norm(darray &V){
 
-        double norm = 0;
-        for(int i=0; i<V.length(); i++){norm += V[i]*V[i];}
+        double norm = alglib::vdotproduct(&V[0],&V[0],V.length());
         norm = sqrt(norm);
         return norm;
     }

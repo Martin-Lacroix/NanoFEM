@@ -96,14 +96,14 @@ string readInput(readStruct &read,dataStruct &data,string path){
             getline(iss,input,'!');
             dvector test = tovec(input);
 
-            read.Lc = test[1];
-            data.order = 0.1+test[0];
-            read.cropZ = test[2]/read.Lc;
+            read.Lc = abs(test[1]);
+            data.order = abs(0.1+test[0]);
+            read.cropZ = abs(test[2]/read.Lc);
 
             if(read.deformation=="largestrain"){
 
-                data.step = 0.1+test[3];
-                data.tol = test[4];
+                data.step = abs(0.1+test[3]);
+                data.tol = abs(test[4]);
             }
             break;
         }
