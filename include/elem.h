@@ -31,10 +31,14 @@ class Elem{
     void updateS(shapeStruct (&shape)[6]);
     void updateF(shapeStruct &shape,darray u);
 
+    // Stress extraction functions
+
+    double stress(shapeStruct &shape,array3d LmR);
+    double stress(shapeStruct &shape,array3d LmR,darray u);
+
     // Constructor and functions available in the file
 
     Elem(std::vector<array3d> nXYZ,ivector surface);
-    double stress(shapeStruct &shape,array3d LmR,darray u);
     dvector surfaceJ(shapeStruct &shape,ivector &node,int index);
 
     // Functions of elemental stiffness and mass matrices
@@ -69,6 +73,8 @@ class Elem{
     matrix dNs[6][3];
     dvector detJ;
     matrix dN[3];
+
+    std::vector<matrix> E2;
 };
 
 // --------------------------------------------------|

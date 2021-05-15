@@ -166,6 +166,64 @@ void Elem::updateS(shapeStruct (&shape)[6]){
     }
 }
 
+// -----------------------------------------------------|
+// Computes the elemental deformation gradient tensor   |
+// -----------------------------------------------------|
+
+void Elem::updateF(shapeStruct &shape,darray u){
+
+    matrix B;
+    B.setlength(3*nLen,9);
+    math::zero(B);
+
+    // Update the Jacobian and the deformation gradient
+
+    F.resize(shape.gLen);
+    E.resize(shape.gLen);
+
+    E2.resize(shape.gLen);
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the linear shape functions derivative matrix
+            
+            B(j,0) = B(j+nLen,4) = B(j+2*nLen,7) = dN[0](j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,6) = dN[1](j,i);
+            B(j,8) = B(j+nLen,5) = B(j+2*nLen,2) = dN[2](j,i);
+        }
+
+        // Stores the deformation gradient tensor
+
+        F[i].setlength(3,3);
+        darray Fv =  math::prod(1,B,u,1);
+
+        F[i](0,0) = Fv[0]+1;
+        F[i](1,1) = Fv[1]+1;
+        F[i](2,2) = Fv[2]+1;
+        F[i](0,1) = Fv[3];
+        F[i](1,0) = Fv[4];
+        F[i](1,2) = Fv[5];
+        F[i](2,1) = Fv[6];
+        F[i](2,0) = Fv[7];
+        F[i](0,2) = Fv[8];
+
+        // Stores the Green-Lagrange strain tensor
+
+        E[i].setlength(6);
+        matrix Ev = math::prod(1,F[i],F[i],1,0);
+
+        E[i](0) = (Ev[0][0]-1)/2;
+        E[i](1) = (Ev[1][1]-1)/2;
+        E[i](2) = (Ev[2][2]-1)/2;
+        E[i](3) = Ev[0][1]/2;
+        E[i](4) = Ev[1][2]/2;
+        E[i](5) = Ev[2][0]/2;
+
+        E2[i] = Ev;
+    }
+}
+
 // --------------------------------------------------------|
 // This should normally free the memory of those vectors   |
 // --------------------------------------------------------|
@@ -339,60 +397,6 @@ darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
     return F;
 }
 
-// -----------------------------------------------------|
-// Computes the elemental deformation gradient tensor   |
-// -----------------------------------------------------|
-
-void Elem::updateF(shapeStruct &shape,darray u){
-
-    matrix B;
-    B.setlength(3*nLen,9);
-    math::zero(B);
-
-    // Update the Jacobian and the deformation gradient
-
-    F.resize(shape.gLen);
-    E.resize(shape.gLen);
-
-    for(int i=0; i<shape.gLen; i++){
-        for(int j=0; j<nLen; j++){
-
-            // Computes the linear shape functions derivative matrix
-            
-            B(j,0) = B(j+nLen,4) = B(j+2*nLen,7) = dN[0](j,i);
-            B(j,3) = B(j+nLen,1) = B(j+2*nLen,6) = dN[1](j,i);
-            B(j,8) = B(j+nLen,5) = B(j+2*nLen,2) = dN[2](j,i);
-        }
-
-        // Stores the deformation gradient tensor
-
-        F[i].setlength(3,3);
-        darray Fv =  math::prod(1,B,u,1);
-
-        F[i](0,0) = Fv[0]+1;
-        F[i](1,1) = Fv[1]+1;
-        F[i](2,2) = Fv[2]+1;
-        F[i](0,1) = Fv[3];
-        F[i](1,0) = Fv[4];
-        F[i](1,2) = Fv[5];
-        F[i](2,1) = Fv[6];
-        F[i](2,0) = Fv[7];
-        F[i](0,2) = Fv[8];
-
-        // Stores the Green-Lagrange strain tensor
-
-        E[i].setlength(6);
-        matrix Ev = math::prod(1,F[i],F[i],1,0);
-
-        E[i](0) = (Ev[0][0]-1)/2;
-        E[i](1) = (Ev[1][1]-1)/2;
-        E[i](2) = (Ev[2][2]-1)/2;
-        E[i](3) = Ev[0][1]/2;
-        E[i](4) = Ev[1][2]/2;
-        E[i](5) = Ev[2][0]/2;
-    }
-}
-
 // -------------------------------------------------------------|
 // Computes the non-linear stiffness matrix for finite strain   |
 // -------------------------------------------------------------|
@@ -524,11 +528,11 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
     return Fx;
 }
 
-// --------------------------------------------------------|
-// Computes the averaged Vin Mises stress in the element   |
-// --------------------------------------------------------|
+// -----------------------------------------------------------|
+// Averaged Von Mises stress in the element in large strain   |
+// -----------------------------------------------------------|
 
-double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
+double Elem::stress(shapeStruct &shape,array3d LmR){
 
     matrix S;
     S.setlength(3,3);
@@ -553,13 +557,13 @@ double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
         // Builds the Cauchy stress tensor
 
         double detF = alglib::rmatrixdet(F[i],3);
-        matrix C = math::prod(1/detF,F[i],S);
-        C = math::prod(1,S,F[i],0,1);
+        S = math::prod(1/detF,F[i],S);
+        S = math::prod(1,S,F[i],0,1);
 
         // Computes the square of the Von Mises stress
 
-        double VMe = (pow(C(0,0)-C(1,1),2)+pow(C(1,1)-C(2,2),2)+pow(C(2,2)-C(0,0),2))/2;
-        VMe += 3*(C[0][1]*C[0][1]+C[1][2]*C[1][2]+C[2][0]*C[2][0]);
+        double VMe = (pow(S(0,0)-S(1,1),2)+pow(S(1,1)-S(2,2),2)+pow(S(2,2)-S(0,0),2))/2;
+        VMe += 3*(S[0][1]*S[0][1]+S[1][2]*S[1][2]+S[2][0]*S[2][0]);
 
         // Integration of the volume and the stress
 
@@ -570,6 +574,51 @@ double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
     VM /= volume;
     return VM;
 }
+
+// -----------------------------------------------------------|
+// Averaged Von Mises stress in the element in small strain   |
+// -----------------------------------------------------------|
+
+double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
+
+    matrix B;
+    B.setlength(3*nLen,6);
+    double VM = 0,volume=0;
+    matrix D = math::stiffness(LmR);
+    math::zero(B);
+
+    // Performs the numerical integration
+
+    for(int i=0; i<shape.gLen; i++){
+        for(int j=0; j<nLen; j++){
+
+            // Computes the shape functions derivative matrix B
+            
+            B(j,0) = B(j+nLen,3) = B(j+2*nLen,5) = dN[0](j,i);
+            B(j,3) = B(j+nLen,1) = B(j+2*nLen,4) = dN[1](j,i);
+            B(j,5) = B(j+nLen,4) = B(j+2*nLen,2) = dN[2](j,i);
+        }
+        
+        // Builds the Cauchy stress tensor
+
+        darray S = math::prod(1,B,u,1);
+        S = math::prod(1,D,S);
+
+        // Computes the square of the Von Mises stress
+
+        double VMe = (pow(S[0]-S[1],2)+pow(S[1]-S[2],2)+pow(S[2]-S[0],2))/2;
+        VMe += 3*(S[3]*S[3]+S[4]*S[4]+S[5]*S[5]);
+
+        // Integration of the volume and the stress
+
+        volume += shape.weight[i]*detJ[i];
+        VM += shape.weight[i]*detJ[i]*sqrt(VMe);
+    }
+
+    VM /= volume;
+    return VM;
+}
+
 
 // -----------------------------------------------------------|
 // Class of quadrangle isoparametric lagrange element in 2D   |

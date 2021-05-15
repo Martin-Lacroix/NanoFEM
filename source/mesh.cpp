@@ -1,6 +1,8 @@
 #include "..\include\mesh.h"
 using namespace std;
 
+#include <iomanip>
+
 // -------------------------------------------------------------|
 // Builds the elements list, shape functions and quadratures    |
 // -------------------------------------------------------------|
@@ -118,8 +120,8 @@ void Mesh::totalKB(sparse &K,darray &B){
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
 
-                int row = data.eNode[i][j]+k*nLen;
-                B(row) += Fs(j+k*sLen);
+                int idx = data.eNode[i][j]+k*nLen;
+                B(idx) += Fs(j+k*sLen);
             }
         }
         
@@ -164,8 +166,8 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
 
-                int row = data.eNode[i][j]+k*nLen;
-                ue(j+k*sLen) = u(row);
+                int idx = data.eNode[i][j]+k*nLen;
+                ue(j+k*sLen) = u(idx);
             }
         }
 
@@ -183,8 +185,8 @@ void Mesh::totalKT(sparse &K,darray &B,darray &u){
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
 
-                int row = data.eNode[i][j]+k*nLen;
-                B(row) -= Fx(j+k*sLen);
+                int idx = data.eNode[i][j]+k*nLen;
+                B(idx) -= Fx(j+k*sLen);
             }
         }
         
@@ -486,7 +488,7 @@ void Mesh::update(darray &u){
 // Averaged second Von Mises Stress stress in the elements    |
 // -----------------------------------------------------------|
 
-dvector Mesh::stress(darray &u){
+dvector Mesh::stress(darray &u,int large){
 
     darray ue;
     dvector VM(eLen);
@@ -502,17 +504,26 @@ dvector Mesh::stress(darray &u){
         for(int k=0; k<3; k++){
             for(int j=0; j<sLen; j++){
 
-                int row = data.eNode[i][j]+k*nLen;
-                ue(j+k*sLen) = u(row);
+                int idx = data.eNode[i][j]+k*nLen;
+                ue(j+k*sLen) = u(idx);
             }
         }
 
         // Computes the averaged Von Mises stress
 
-        elem[i].updateJ(shape3D);
-        elem[i].updateF(shape3D,ue);
-        VM[i] = elem[i].stress(shape3D,data.LmR[i],ue);
-        elem[i].clean();
+        if(large){
+
+            elem[i].updateJ(shape3D);
+            elem[i].updateF(shape3D,ue);
+            VM[i] = elem[i].stress(shape3D,data.LmR[i]);
+            elem[i].clean();
+        }
+        else{
+
+            elem[i].updateJ(shape3D);
+            VM[i] = elem[i].stress(shape3D,data.LmR[i],ue);
+            elem[i].clean();
+        }
     }
     return VM;
 }

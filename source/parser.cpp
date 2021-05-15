@@ -795,9 +795,6 @@ readStruct read(string path,dataStruct &data){
     }
 
 
-    
-
-
 
 /*
     cout << "\n\nNodes\n";

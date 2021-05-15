@@ -104,7 +104,7 @@ darray solveS(Mesh &mesh,ivector opposite){
 darray solveL(Mesh &mesh,ivector &opposite){
 
     double time;
-    int max = 20;
+    int max = 30;
     int nLen = 3*mesh.nLen;
     int step = mesh.data.step;
     int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
@@ -192,6 +192,7 @@ darray solveL(Mesh &mesh,ivector &opposite){
 
 int main(){
 
+    dvector VM;
     double time;
     darray disp;
     string type;
@@ -233,7 +234,8 @@ int main(){
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    dvector VM = mesh.stress(disp);
+    if(type=="smallstrain"){VM = mesh.stress(disp,0);}
+    if(type=="largestrain"){VM = mesh.stress(disp,1);}
     mesh.update(disp);
     end(time);
 
