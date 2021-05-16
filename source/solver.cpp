@@ -195,22 +195,14 @@ int main(){
     dvector VM;
     double time;
     darray disp;
-    string type;
     dataStruct data;
-    ivector opposite;
-    vector<bool> empty;
     alglib::setglobalthreading(alglib::parallel);
 
     // Reads the input files from Nascam
 
-    {
-        time = start("\nReads the files");
-        readStruct param = read("input.txt",data);
-        opposite = param.opposite;
-        type = param.deformation;
-        empty = param.empty;
-        end(time);
-    }
+    time = start("\nReads the files");
+    readStruct read = reader("input.txt",data);
+    end(time);
 
     // Writes some outputs and logs
 
@@ -228,21 +220,21 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(type=="smallstrain"){disp = solveS(mesh,opposite);}
-    if(type=="largestrain"){disp = solveL(mesh,opposite);}
+    if(read.deformation=="smallstrain"){disp = solveS(mesh,read.opposite);}
+    if(read.deformation=="largestrain"){disp = solveL(mesh,read.opposite);}
 
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    if(type=="smallstrain"){VM = mesh.stress(disp,0);}
-    if(type=="largestrain"){VM = mesh.stress(disp,1);}
+    if(read.deformation=="smallstrain"){VM = mesh.stress(disp,0);}
+    if(read.deformation=="largestrain"){VM = mesh.stress(disp,1);}
     mesh.update(disp);
     end(time);
 
     // Writes the results in a text file
 
     time = start("Writes the results");
-    writeJmol(mesh,disp,VM,empty);
+    writeJmol(mesh,disp,VM,read.empty);
     write(mesh,disp,VM);
     end(time);
     

@@ -53,7 +53,7 @@ struct readStruct{
 // ----------------------------------|
 
 dvector tovec(std::string input);
-readStruct read(std::string path,dataStruct &data);
+readStruct reader(std::string path,dataStruct &data);
 
 // Functions to read the different input files
 

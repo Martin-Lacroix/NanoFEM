@@ -746,7 +746,7 @@ void neumann(readStruct &read,dataStruct &data){
 // Reads the Nascam input files to build the mesh data    |
 // -------------------------------------------------------|
 
-readStruct read(string path,dataStruct &data){
+readStruct reader(string path,dataStruct &data){
 
     readStruct read;
     string coating = readInput(read,data,path);
