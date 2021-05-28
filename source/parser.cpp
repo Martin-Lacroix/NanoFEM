@@ -266,6 +266,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     // Truncates the size of the domain to the closest element
 
     for(int i=0; i<3; i++){
+        read.dSize[i] += read.eSize[i]/5;
         read.dSize[i] -= fmod(read.dSize[i],eSize[i]);
     }
 
