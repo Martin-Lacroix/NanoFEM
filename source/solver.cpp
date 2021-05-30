@@ -220,14 +220,14 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(read.deformation=="smallstrain"){disp = solveS(mesh,read.opposite);}
-    if(read.deformation=="largestrain"){disp = solveL(mesh,read.opposite);}
+    if(read.model=="linearset/sstmodel"){disp = solveS(mesh,read.opposite);}
+    if(read.model=="saintvenant-kirchhoff"){disp = solveL(mesh,read.opposite);}
 
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    if(read.deformation=="smallstrain"){VM = mesh.stress(disp,0);}
-    if(read.deformation=="largestrain"){VM = mesh.stress(disp,1);}
+    if(read.model=="linearset/sstmodel"){VM = mesh.stress(disp,0);}
+    if(read.model=="saintvenant-kirchhoff"){VM = mesh.stress(disp,1);}
     mesh.update(disp);
     end(time);
 

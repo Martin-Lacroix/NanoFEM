@@ -35,8 +35,8 @@ struct readStruct{
     // Stores the boundary condition parameters
 
     std::vector<ivector> neighbour;
-    std::string deformation;
     std::string transverse;
+    std::string model;
     ivector opposite;
     ivector free;
 

@@ -16,11 +16,11 @@
 	
 	<userInput>
 		<group name="Simulation Type">
-			<param type="LIST" ref="Defo">
-				<name>Deformation</name>
-				<element>Small strain</element>
-				<element>Large strain</element>
-				<default>Small strain</default>
+			<param type="LIST" ref="Model">
+				<name>Material Model</name>
+				<element>Linear SET/SST Model</element>
+				<element>Saint Venant-Kirchhoff</element>
+				<default>Linear SET/SST Model</default>
 			</param>
 			<param type="LIST" ref="Layer">
 				<name>Studied layers</name>
@@ -36,7 +36,7 @@
 			</param>
 		</group>
 
-		<group name="General Parameters" displayIf="Defo:Small strain">
+		<group name="General Parameters" displayIf="Model:Linear SET/SST Model">
 			<param type="DOUBLE">
 				<name>Lattice constant</name>
 				<default>1</default>
@@ -49,7 +49,7 @@
 			</param>
 		</group>
 
-		<group name="General Parameters" displayIf="Defo:Large strain">
+		<group name="General Parameters" displayIf="Model:Saint Venant-Kirchhoff">
 			<param type="DOUBLE">
 				<name>Lattice constant</name>
 				<default>1</default>
@@ -67,7 +67,7 @@
 			</param>
 			<param type="DOUBLE">
 				<name>Tolerance Newton</name>
-				<default>1e-12</default>
+				<default>1e-6</default>
 				<unit>-</unit>
 			</param>
 		</group>
@@ -157,7 +157,7 @@
 			</param>
 		</group>
 
-		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Defo:Small strain">
+		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Model:Linear SET/SST Model">
 			<param type="DOUBLE" >
 				<name>Young modulus (GPa)</name>
 				<default>130</default>
@@ -180,7 +180,7 @@
 			</param>
 		</group>
 
-		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Defo:Large strain">
+		<group name="Layer Parameters" type="LAYER_TABLE" displayIf="Model:Saint Venant-Kirchhoff">
 			<param type="DOUBLE" >
 				<name>Young modulus (GPa)</name>
 				<default>130</default>

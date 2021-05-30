@@ -71,14 +71,14 @@ string readInput(readStruct &read,dataStruct &data,string path){
         vec.push_back(input);
     }
 
-    // Large or small deformation and coating file
+    // Material model and coating file
 
     for(int i=0; i<vec.size(); i++){
         if(vec[i].find("!simulationtype") != string::npos){
 
             istringstream iss(vec[i]);
             getline(iss,input,';');
-            read.deformation = input;
+            read.model = input;
 
             getline(iss,input,'!');
             if(input=="manualselection"){coating = vec[i+1];}
@@ -99,7 +99,7 @@ string readInput(readStruct &read,dataStruct &data,string path){
             read.Lc = abs(inp[0]);
             read.cropZ = abs(inp[1]);
 
-            if(read.deformation=="largestrain"){
+            if(read.model=="saintvenant-kirchhoff"){
 
                 data.step = abs(inp[2]+1e-5);
                 data.tol = abs(inp[3]);
@@ -204,9 +204,9 @@ string readInput(readStruct &read,dataStruct &data,string path){
             dvector inp = tovec(input);
             read.LmR.push_back(toLame({inp[0],inp[1]}));
 
-            // Adds the surface parameter in small strain
+            // Adds the surface parameter in SET/SST
 
-            if(read.deformation=="smallstrain"){
+            if(read.model=="linearset/sstmodel"){
                 read.LmS.push_back({inp[2],inp[3],inp[4]});
             }
         }
