@@ -22,6 +22,7 @@ struct readStruct{
     dvector dSize;
     ivector dLen;
     dvector zero;
+    double scale;
     double cropZ;
     double frac;
     double Lc;

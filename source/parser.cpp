@@ -94,17 +94,31 @@ string readInput(readStruct &read,dataStruct &data,string path){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
-            dvector test = tovec(input);
+            dvector inp = tovec(input);
 
-            read.Lc = abs(test[1]);
-            data.order = abs(0.1+test[0]);
-            read.cropZ = abs(test[2]/read.Lc);
+            read.Lc = abs(inp[0]);
+            read.cropZ = abs(inp[1]);
 
             if(read.deformation=="largestrain"){
 
-                data.step = abs(0.1+test[3]);
-                data.tol = abs(test[4]);
+                data.step = abs(inp[2]+1e-5);
+                data.tol = abs(inp[3]);
             }
+            break;
+        }
+    }
+
+    // Reads the parameters of Lagrange hexahedrons
+
+    for(int i=0; i<vec.size(); i++){
+        if(vec[i].find("!finiteelements") != string::npos){
+
+            istringstream iss(vec[i]);
+            getline(iss,input,'!');
+            dvector inp = tovec(input);
+
+            data.order = abs(inp[0]+1e-5);
+            for(int j=1; j<4; j++){read.eSize.push_back(abs(inp[j]));}
             break;
         }
     }
@@ -116,10 +130,10 @@ string readInput(readStruct &read,dataStruct &data,string path){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
-            dvector vec = tovec(input);
+            dvector inp = tovec(input);
 
-            read.emptyLmR = toLame({vec[0],vec[1]});
-            read.frac = vec[2];
+            read.emptyLmR = toLame({inp[0],inp[1]});
+            read.frac = inp[2];
             break;
         }
     }
@@ -155,7 +169,6 @@ string readInput(readStruct &read,dataStruct &data,string path){
             if(input=="top"){read.free = {1};}
             else if(input=="bottom"){read.free = {0};}
             else if(input=="both"){read.free = {0,1};}
-            else if(input=="None"){read.free = {};}
 
             // Substrate deformation
 
@@ -188,13 +201,13 @@ string readInput(readStruct &read,dataStruct &data,string path){
 
             istringstream iss(vec[i]);
             getline(iss,input,'!');
-            dvector param = tovec(input);
-            read.LmR.push_back(toLame({param[0],param[1]}));
+            dvector inp = tovec(input);
+            read.LmR.push_back(toLame({inp[0],inp[1]}));
 
             // Adds the surface parameter in small strain
 
             if(read.deformation=="smallstrain"){
-                read.LmS.push_back({param[2],param[3],param[4]});
+                read.LmS.push_back({inp[2],inp[3],inp[4]});
             }
         }
     }
@@ -221,7 +234,7 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
     istringstream iss(input);
     while(getline(iss,input,';')){vec.push_back(input);}
 
-    // Reads the size of the elements
+    // Reads the initial size of the hexahedrons
 
     for(int i=0; i<vec.size(); i++){
         if(vec[i].find("MCsize") != string::npos){
@@ -229,11 +242,21 @@ void readMeshSize(readStruct &read,dataStruct &data,string path){
             istringstream iss(vec[i]);
             getline(iss,input,'>');
             getline(iss,input);
-            read.eSize = tovec(input);
+
+            read.scale = 1;
+            dvector eSize = tovec(input);
+
+            // Makes the size at least equal to Nascam resolution
+
+            for(int j=0; j<3; j++){
+                
+                if(read.eSize[j]<eSize[j]){read.eSize[j] = eSize[j];}
+                read.scale *= abs(eSize[j]/read.eSize[j]);
+            }
             break;
         }
     }
-
+    
     // Reads the size of the cubic domain
 
     for(int i=0; i<vec.size(); i++){
@@ -427,7 +450,7 @@ void readSpecies(readStruct &read,dataStruct &data,string path){
         // Splits the filling fraction between the elements
 
         unordered_set<int> eList = locSpecies(read,coord);
-        for (int i:eList){frac[i][layer] += stod(input)/eList.size();}
+        for (int i:eList){frac[i][layer] += read.scale*stod(input)/eList.size();}
     }
 
     // Stores the mixed mechanical parameters of the elements
