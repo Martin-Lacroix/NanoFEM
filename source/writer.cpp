@@ -100,8 +100,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM,vector<bool> &empty){
     double scale = abs(mesh.data.nXYZ[1][2]-mesh.data.nXYZ[0][2]);
 
     vector<string> header(18);
-    vector<string> uName = {"X","Y","Z"};
-    vector<string> sName = {"XX","YY","ZZ","XY","YZ","ZX"};
+    vector<string> name = {"X","Y","Z"};
     vector<bool> free(nLen,1);
 
     // Parameters for the colour legend
@@ -144,7 +143,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM,vector<bool> &empty){
 
     for(int k=0; k<3; k++){
 
-        ofstream uXYZ("output/displacement-"+uName[k]+".xyz");
+        ofstream uXYZ("output/displacement-"+name[k]+".xyz");
         double min = 0;
         double max = 0;
 
@@ -158,7 +157,7 @@ void writeJmol(Mesh &mesh,darray &disp,dvector &VM,vector<bool> &empty){
 
         // Header parameters for Jmol
 
-        header[0] = "Displacement field u"+uName[k];
+        header[0] = "Displacement field u"+name[k];
         header[14] = "select atomno="+to_string(1);
         header[15] = "label "+to_string(min)+" nm";
         header[16] = "select atomno="+to_string(barLength);
