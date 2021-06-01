@@ -239,23 +239,5 @@ int main(){
     end(time);
     
     cout << endl;
-
-
-/*
-    cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << setprecision(7) << "Node " << i << " -- ux = " << disp[i] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << setprecision(7) << "Node " << i << " -- uy = " << disp[i+mesh.nLen] << "\n";
-    }
-    cout << "\n";
-    for(int i=0; i<mesh.nLen; i++){
-        cout << setprecision(7) << "Node " << i << " -- uz = " << disp[i+2*mesh.nLen] << "\n";
-    }
-    cout << "\n";
-    */
-
     return 0;
 }
