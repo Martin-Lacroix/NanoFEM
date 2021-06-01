@@ -4,8 +4,8 @@
 	<info>
 		<version>1.0</version>
 		<executable>Mechanics.exe</executable>
-		<developer name="You" email="Your email"/>
-		<readme>readme.txt</readme>
+		<developer name="Martin Lacroix" email="martin.lacroix@student.unamur.be"/>
+		<readme>README.txt</readme>
 	</info>
 
 	<requiredFiles>
