@@ -1,8 +1,6 @@
 #include "..\include\mesh.h"
 using namespace std;
 
-#include <iomanip>
-
 // -------------------------------------------------------------|
 // Builds the elements list, shape functions and quadratures    |
 // -------------------------------------------------------------|
@@ -484,11 +482,11 @@ void Mesh::update(darray &u){
     }
 }
 
-// -----------------------------------------------------------|
-// Averaged second Von Mises Stress stress in the elements    |
-// -----------------------------------------------------------|
+// ---------------------------------------------|
+// Averaged Von Mises stress in the elements    |
+// ---------------------------------------------|
 
-dvector Mesh::stress(darray &u,int large){
+dvector Mesh::stress(darray &u,int svk){
 
     darray ue;
     dvector VM(eLen);
@@ -511,7 +509,7 @@ dvector Mesh::stress(darray &u,int large){
 
         // Computes the averaged Von Mises stress
 
-        if(large){
+        if(svk){
 
             elem[i].updateJ(shape3D);
             elem[i].updateF(shape3D,ue);
