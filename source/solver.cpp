@@ -41,9 +41,9 @@ void end(double start){
     cout << endl;
 }
 
-// ---------------------------------------------------|
-// Solves the linear system for small deformations    |
-// ---------------------------------------------------|
+// ----------------------------------------------|
+// Solves the linear system for SST/SET model    |
+// ----------------------------------------------|
 
 darray solveS(Mesh &mesh,ivector opposite){
 
@@ -97,9 +97,9 @@ darray solveS(Mesh &mesh,ivector opposite){
     return u;
 }
 
-// -------------------------------------------------------|
-// Solves the non-linear system for large deformations    |
-// -------------------------------------------------------|
+// ----------------------------------------------|
+// Solves the non-linear system for SVK model    |
+// ----------------------------------------------|
 
 darray solveL(Mesh &mesh,ivector &opposite){
 

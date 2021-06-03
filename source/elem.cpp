@@ -528,9 +528,9 @@ darray Elem::selfFX(shapeStruct &shape,array3d LmR){
     return Fx;
 }
 
-// -----------------------------------------------------------|
-// Averaged Von Mises stress in the element in large strain   |
-// -----------------------------------------------------------|
+// --------------------------------------------------|
+// Averaged Von Mises stress in the element in SVK   |
+// --------------------------------------------------|
 
 double Elem::stress(shapeStruct &shape,array3d LmR){
 
@@ -575,9 +575,9 @@ double Elem::stress(shapeStruct &shape,array3d LmR){
     return VM;
 }
 
-// -----------------------------------------------------------|
-// Averaged Von Mises stress in the element in small strain   |
-// -----------------------------------------------------------|
+// ------------------------------------------------------|
+// Averaged Von Mises stress in the element in SST/SET   |
+// ------------------------------------------------------|
 
 double Elem::stress(shapeStruct &shape,array3d LmR,darray u){
 
