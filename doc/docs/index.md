@@ -12,10 +12,58 @@ The `step` must be a strictly positive integer, this gives the nulmber of interm
 <br />
 
 ```cpp
-    std::vector<array3d> nXYZ;
+    std::vector<array3d> nXYZ;          // Coordinates of the nodes
 ```
 
 The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes in the mesh. Each `array3d` stores the 3 coordinates (x,y,z) of the node assigned with the corresponding index.
+
+<br />
+
+```cpp
+    std::vector<ivector> eNode;         // Nodes of each element
+```
+
+The vector `eNode` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of nodes in each of these element, an element of order **n** contains **(n+1)^3** nodes. Each `ivector` contains the list of the nodes of the element assigned with the corresponding index. The nodes are stored in the order z->y->x increasing coordinate in the local space.
+
+<br />
+
+```cpp
+    std::vector<ivector> eSurf;         // Free surfaces of each element
+```
+
+The vector `eSurf` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of free surface in each of these element, an element can have up to 6 free surfaces. Each `ivector` contains a list of the indices of the free surfaces of the element. The indices of the surfaces of an element are noted [-z,+z,-y,+y,-x,+x] = [0,1,2,3,4,5], where **-z** denotes the face perpendicular to the **z** axis and located at **z=-1** in the local space. This vector is empty is the element has no free surfaces.
+
+<br />
+
+```cpp
+    std::vector<ivector> neuFace;       // Faces for Neumann boundary conditions
+```
+
+The vector `neuFace` has the dimension **(f,k)** where **f** is the number of faces where Neumann boundary conditions are applied and **k** is the number of nodes in each of these faces, a face of order **n** contains **(n+1)^2** nodes. Each `ivector` contains the list of the nodes of the face assigned with the corresponding index. The nodes are stored in the order y->x increasing coordinate in the local space.
+
+<br />
+
+```cpp
+    std::vector<darray> neuVal;         // Forces for Neumann boundary conditions
+```
+
+The vector `neuVal` has the dimension **(f,3)** where **f** is the number of faces where Neumann boundary conditions are applied, the indices correspond to the face described in the `neuFace` vector. Each `darray` contains the 3 components (x,y,z) of the applied force on the corresponding face.
+
+<br />
+
+```cpp
+    ivector dirNode[3];         // Nodes for Dirichlet boundary conditions
+```
+
+The vector `dirNode` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contain the list of node indices where the Dirichlet BC is imposed.
+
+<br />
+
+```cpp
+    dvector dirVal[3];          // Displacment for Dirichlet boundary conditions
+```
+
+The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contain the list of values of the Dirichlet BC in the corresponding dimension.
 
 <br />
 
