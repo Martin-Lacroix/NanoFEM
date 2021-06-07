@@ -1,21 +1,15 @@
-# <img src="Cpp.svg" width="60"/> Distributions
+# <img src="Cpp.svg" width="60"/> Data Structure
 --------------------------------------------------
 
 Chaoslib provides basic classes of well-know one-dimensional probability distributions for which the three terms recurrence coefficients can be computed analytically:
 
-```python
-    dist = Beta(a,b)                    # Beta distribution
-    dist = Gamma(a,b)                   # Gamma distribution
-    dist = Normal(a,b)                  # Normal distribution
-    dist = Uniform(a,b)                 # Uniform distribution
-    dist = Lognorm(a,b)                 # Lognormal distribution
-    dist = Expo(a)                      # Exponential distribution
+```cpp
+    int step;                   // Number of load steps
+    int order;                  // Order of the quadrature and the elements
+    double tol;                 // Tolerance for Newton-Raphson
 ```
 
-| Input             | Type              | Description                                   |
-|-------------------|-------------------|-----------------------------------------------|
-| *a*               | *float*           | *first parameter of the distribution*         |
-| *b*               | *float*           | *second parameter of the distribution*        |
+The `step` must be a strictly positive number, this gives the nulmber of intermediate equilibrium configurations computed in the SVK model. The `order` must be a strictly positive number, but is generally fixed at 1 or 2. The `tol` is the value of the relative correction of the displacement under which the convergence of the Newton-Raphson algorithm ends, generally 1e-6.
 
 <br />
 
