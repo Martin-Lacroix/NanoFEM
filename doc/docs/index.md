@@ -1,74 +1,21 @@
 # <img src="Cpp.svg" width="60"/> Data Structure
 --------------------------------------------------
 
-Chaoslib provides basic classes of well-know one-dimensional probability distributions for which the three terms recurrence coefficients can be computed analytically:
-
 ```cpp
     int step;                   // Number of load steps
     int order;                  // Order of the quadrature and the elements
     double tol;                 // Tolerance for Newton-Raphson
 ```
 
-The `step` must be a strictly positive number, this gives the nulmber of intermediate equilibrium configurations computed in the SVK model. The `order` must be a strictly positive number, but is generally fixed at 1 or 2. The `tol` is the value of the relative correction of the displacement under which the convergence of the Newton-Raphson algorithm ends, generally 1e-6.
+The `step` must be a strictly positive integer, this gives the nulmber of intermediate equilibrium configurations computed in the SVK model. The `order` must be a strictly positive integer, but is generally fixed at 1 or 2. The `tol` is the value of the relative correction of the displacement under which the convergence of the Newton-Raphson algorithm ends, generally 1e-6.
 
 <br />
 
-Each of these classes contains different built-in methods:
-
-```python
-    dist.pdf(x)                          # Probability density function
-    dist.cdf(x)                          # Cumulative distribution function
-    dist.invcdf(x)                       # Inverse cumulative distribution function
-    dist.coef(n)                         # Computes the n first recurrence coefficients
+```cpp
+    std::vector<array3d> nXYZ;
 ```
 
-| Input             | Type                      | Description                               |
-|-------------------|---------------------------|-------------------------------------------|
-| *x*               | *float or (n) array*      | *points to be evaluated*                  |
-
-<br />
-
-Random samples or different low-discrepancy sequences can be generated from any of these distributions:
-
-```python
-    dist.random(n)                      # Generates random realisations from the distribution
-    dist.halton(n)                      # Generates a Halton sequence from the distribution
-    dist.sobol(n)                       # Generates a Sobol sequence from the distribution
-    dist.rseq(n)                        # Generates a R-sequence points from the distribution
-```
-
-| Input             | Type                      | Description                               |
-|-------------------|---------------------------|-------------------------------------------|
-| *n*               | *int*                     | *number of points to generate*            |
-
-<br />
-
-Finally, independent one-dimensional distributions can be joint together, for instance:
-
-```python
-    dist = Joint([Normal(a,b),Beta(a,b)])          # Joint probability density function
-```
-
-| Input             | Type                  | Description                               |
-|-------------------|-------------------|-----------------------------------------------|
-| *a*               | *float*           | *first parameter of the distribution*         |
-| *b*               | *float*           | *second parameter of the distribution*        |
-
-<br />
-
-And allow the computation to the joint probability distribution function and the generation of a random sample or a low-discrepancy sequences. The parameter `d` is the dimension of the density.
-
-```python
-    dist.pdf(x)                        # Joint probability density function
-    dist.sampler(n)                    # Generates n samples from the distribution
-    dist[i] = Uniform(a,b)             # Updates the i-th distribution
-```
-
-| Input             | Type                      | Description                               |
-|-------------------|---------------------------|-------------------------------------------|
-| *x*               | *float or (n,d) array*    | *exponent table*                          |
-| *n*               | *int*                     | *number of points or coefficients*        |
-| *i*               | *int*                     | *index of the distribution to update*     |
+The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes in the mesh. Each `array3d` stores the 3 coordinates (x,y,z) of the node assigned with the corresponding index.
 
 <br />
 
