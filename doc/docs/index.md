@@ -185,10 +185,17 @@ This class if the main class of the algoirithm and contains all the methods, obj
     dataStruct data;                // main information about the mesh
     shapeStruct shape3D;            // Shape functions for 3D hexahedrons
     shapeStruct shape2D;            // Shape functions for 2D quadrangles
+```
+
+The structure `data` is the one presented in the first section. The structures `shape3D` and `shape2D` are the ones presented in the second section, they are computed respectively for the 3D hexahedrons used for elemental matruces, and the 2D quadrangles ujused in Neumann boundary conditions.
+
+<br />
+
+```cpp
     shapeStruct shapeS[6];          // Shape functions 3D -> 2D for element faces
 ```
 
-The structure `data` is the one presented in the first section. The structures `shape3D` and `shape2D` are the ones presented in the second section, they are computed respectively for the 3D hexahedrons used for elemental matruces, and the 2D quadrangles ujused in Neumann boundary conditions. The array `shape3D` contains the 2D shape functions of the 6 element faces defined in the 3D local space of the element. The indices of the faces of an element are noted **(-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5)** with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. 
+The array `shape3D` contains the 2D shape functions of the 6 element faces defined in the 3D local space of the element. The indices of the faces of an element are noted **(-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5)** with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. 
 
 <br />
 
