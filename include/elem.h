@@ -73,8 +73,6 @@ class Elem{
     matrix dNs[6][3];
     dvector detJ;
     matrix dN[3];
-
-    std::vector<matrix> E2;
 };
 
 // --------------------------------------------------|

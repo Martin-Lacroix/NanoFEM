@@ -23,7 +23,7 @@ The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes
     std::vector<ivector> eNode;         // Nodes of each element
 ```
 
-The vector `eNode` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of nodes in each of these element, an element of order **n** contains **(n+1)^3** nodes. Each `ivector` contains the list of the nodes of the element assigned with the corresponding index. The nodes are stored in the order z->y->x increasing coordinate in the local space.
+The vector `eNode` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of nodes in each of these element, an element of order **n** contains **(n+1)^3** nodes. Each `ivector` contains the list of the nodes of the element assigned with the corresponding index. The nodes are stored in the order z -> y -> x increasing coordinate in the local space.
 
 <br />
 
@@ -31,7 +31,7 @@ The vector `eNode` has the dimension **(e,k)** where **e** is the number of elem
     std::vector<ivector> eSurf;         // Free surfaces of each element
 ```
 
-The vector `eSurf` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of free surface in each of these element, an element can have up to 6 free surfaces. Each `ivector` contains a list of the indices of the free surfaces of the element. The indices of the surfaces of an element are noted [-z,+z,-y,+y,-x,+x] = [0,1,2,3,4,5], where **-z** denotes the face perpendicular to the **z** axis and located at **z=-1** in the local space. This vector is empty is the element has no free surfaces.
+The vector `eSurf` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of free surface in each of these element, an element can have up to 6 free surfaces. Each `ivector` contains a list of the indices of the free surfaces of the element. The indices of the surfaces of an element are noted (-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5) with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. This vector is empty is the element has no free surfaces.
 
 <br />
 
@@ -55,7 +55,7 @@ The vector `neuVal` has the dimension **(f,3)** where **f** is the number of fac
     ivector dirNode[3];         // Nodes for Dirichlet boundary conditions
 ```
 
-The vector `dirNode` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contain the list of node indices where the Dirichlet BC is imposed.
+The vector `dirNode` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contains the list of node indices where the Dirichlet BC is imposed.
 
 <br />
 
@@ -63,7 +63,23 @@ The vector `dirNode` has the dimension **(3,n)** where **n** is the number of no
     dvector dirVal[3];          // Displacment for Dirichlet boundary conditions
 ```
 
-The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contain the list of values of the Dirichlet BC in the corresponding dimension.
+The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the imposed displacement. Each `ivector` contains the list of values of the Dirichlet BC in the corresponding dimension.
+
+<br />
+
+```cpp
+    std::vector<ivector> coupNode[3];       // List of coupled pack of nodes
+```
+
+The vector `coupNode` has the dimension **(3,k,n)** where **k** is the number of packs of coupled nodes, **n** is the number of nodes in a pack. The first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the coupled displacement. Each `ivector` contains the list of coupled node indices. All coupled nodes of a same pack will have the same displacement in the corresponding dimension.
+
+<br />
+
+```cpp
+    std::vector<std::pair<int,int>> deltaNode[3];       // List of delta pair of nodes
+```
+
+The vector `deltaNode` has the dimension **(3,k,2)** where **k** is the number of change of variables. The first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the change of variable. Each `pair` contains the two nodes indices for the change of variable (u1,u2) -> (u1-u2,u2) such that the first variable (nodal value) gives now the relative displacement between the two nodes in the pair in the corresponding dimension, while the second variable remains unchanged.
 
 <br />
 
