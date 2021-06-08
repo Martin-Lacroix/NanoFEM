@@ -6,11 +6,7 @@ using namespace std;
 // -----------------------------------------------------------|
 
 Elem::Elem(vector<array3d> inp1,ivector inp2) : nXYZ{inp1},surface{inp2}{
-
-    // Sets the number of nodes in each dimension
-
     nLen = nXYZ.size();
-    sLen = cbrt(nLen+1e-5);
 }
 
 // ---------------------------------------------------------|
@@ -181,8 +177,6 @@ void Elem::updateF(shapeStruct &shape,darray u){
     F.resize(shape.gLen);
     E.resize(shape.gLen);
 
-    E2.resize(shape.gLen);
-
     for(int i=0; i<shape.gLen; i++){
         for(int j=0; j<nLen; j++){
 
@@ -219,8 +213,6 @@ void Elem::updateF(shapeStruct &shape,darray u){
         E[i](3) = Ev[0][1]/2;
         E[i](4) = Ev[1][2]/2;
         E[i](5) = Ev[2][0]/2;
-
-        E2[i] = Ev;
     }
 }
 

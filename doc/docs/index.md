@@ -154,7 +154,7 @@ This structure is computed automatically by the algorithm according to the patra
     int gLen;               // Number of integration points
 ```
 
-The value of `gLen` is positive and is equal to **(n+1)^d** where **n** is the order of the quadrature rule and **d** is the dimension. This integer must be strictly positive.
+The value of `gLen` is positive and is equal to **(n+1)^d** where **n** is the order of the quadrature rule and **d** is the dimension. This integer must be strictly positive and equal to the length of the `weight` vector.
 
 <br />
 
@@ -206,5 +206,94 @@ The integer `nLen` is strictly positive and denotes the number of nodes in the m
 -----------------------------------------------------
 
 This class represent a single finite element composing the mesh. They are stored in a vector into the `Mesh` class, but are regularily cleaned and rebuilt in order to save memory.
+
+<br />
+
+```cpp
+    int nLen;           // Number of nodes
+```
+
+The integer `nLen` is strictly positive and denotes the number of nodes in the element. This number of nodes is given by **(n+1)^d** where **n** is the order of the element and **d=3** is the dimension.
+
+<br />
+
+```cpp
+    ivector surface;            // Free surfaces index
+```
+
+The vector `surface` contains the list of indices of the free surfaces of the element, so the faces on which surface stiffness and surface tension are applied. The indices of the faces of an element are noted **(-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5)** with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space.
+
+<br />
+
+```cpp
+    std::vector<array3d> nXYZ;              // Nodes coordinates
+```
+
+The vector `nXYZ` has the size **(n,3)** where **n** is the number of nodes in the element. Each `array3d` stores the 3 coordinates **(x,y,z)** of the node assigned with the corresponding index. The indices are local but the coordinates are global.
+
+<br />
+
+```cpp
+    std::vector<array3d> norm[6];           // Norms of the faces
+```
+
+The vector `norm` has the size **(6,g,3)** where **g** is the number of integration points of a 2D face. Each `vector<array3d>` contains **g** normals evaluated at the integration points of the face with corresponding index, the 3 components of the normal vector are stored in an `array3d` array.
+
+<br />
+
+```cpp
+    std::vector<matrix> F;              // Deformation gradient tensor
+    std::vector<darray> E;              // Green-Lagrange strain tensor
+```
+
+The vector `F` has the size **(g,3,3)** where **g** is the number of integration points in the element. Each `matrix` represents the deformation gradient tensor evaluated at the integration point of corresponding index. The vector `E` has the size **(g,6)** and each `darray` contains the 6 unique components of the Green-Lagrange strain tensor evaluated at the integration points of corresponding index.
+
+<br />
+
+```cpp
+    dvector detJ2D[6];              // Determinant of the face Jacobian
+    dvector detJ;                   // Determinant of the bulk Jacobian
+```
+
+The array `detJ2D` has the size **(6,g)** where **g** is the number of integration points for a 2D face of the element. Each `dvector` contains a list of value of the determinant of the Jacobian matrix for the face of corresponding index. The vector `detJ` contains the determinant of the Jacobian of the element evaluated at each integration points.
+
+<br />
+
+```cpp
+    matrix dNs[6][3];           // Derivative of shape functions at the face
+```
+
+The array `dNs` has the size **(6,3,n,g)** where **g** is the number of integration points for a 2D face of the element and **n** is the number of nodes in the element. The first index correspond to the index of the face, the second index is the dimension **(0,1,2) = (r,s,t)** for the derivative. Each `matrix` contains the value of the derivatives of the shape functions of each nodes at each integration point of the corresponding face.
+
+<br />
+
+```cpp
+    matrix dN[3];           // Derivative of shape functions in the bulk
+```
+
+The array `dN` has the size **(3,n,g)** where **g** is the number of integration points in the element and **n** is the number of nodes in the element. The first index correspond to the dimension **(0,1,2) = (r,s,t)** for the derivative. Each `matrix` contains the value of the derivatives of the shape functions of each nodes at each integration point.
+
+<br />
+
+# <img src="Cpp.svg" width="60"/> Face Class
+-----------------------------------------------------
+
+This class represent a single 2D finite element on which Neumann boundary conditions are applied. They are generated when needed and destroyed after their use in order to save memory. This is the 2D equivalent of the `Element` class.
+
+<br />
+
+```cpp
+    int nLen;           // Number of nodes
+```
+
+The integer `nLen` is strictly positive and denotes the number of nodes in the face. This number of nodes is given by **(n+1)^d** where **n** is the order of the element and **d=2** is the dimension.
+
+<br />
+
+```cpp
+    dvector detJ2D;         // Determinant of the Jacobian
+```
+
+The array `detJ2D` contains the determinant of the Jacobian of the element evaluated at each integration points of the face. This variable is the 2D equivalent of `detJ` in the `Element` class.
 
 <br />

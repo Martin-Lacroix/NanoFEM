@@ -61,7 +61,6 @@ class Elem{
 
     std::vector<array3d> nXYZ;
     ivector surface;
-    int sLen;
     int nLen;
 
     // Parameters at quadrature nodes
