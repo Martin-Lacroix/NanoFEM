@@ -1,6 +1,10 @@
 # <img src="Cpp.svg" width="60"/> Data Structure
 --------------------------------------------------
 
+This structure is located in `Mesh` and contains all the information required for building the mesh and computing the finite element solution. This is the most important input of the algorithm.
+
+<br />
+
 ```cpp
     int step;                   // Number of load steps
     int order;                  // Order of the quadrature and the elements
@@ -15,7 +19,7 @@ The `step` must be a strictly positive integer, this gives the nulmber of interm
     std::vector<array3d> nXYZ;          // Coordinates of the nodes
 ```
 
-The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes in the mesh. Each `array3d` stores the 3 coordinates (x,y,z) of the node assigned with the corresponding index.
+The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes in the mesh. Each `array3d` stores the 3 coordinates **(x,y,z)** of the node assigned with the corresponding index.
 
 <br />
 
@@ -23,7 +27,7 @@ The vector `nXYZ` has the dimension **(n,3)** where **n** is the number of nodes
     std::vector<ivector> eNode;         // Nodes of each element
 ```
 
-The vector `eNode` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of nodes in each of these element, an element of order **n** contains **(n+1)^3** nodes. Each `ivector` contains the list of the nodes of the element assigned with the corresponding index. The nodes are stored in the order z -> y -> x increasing coordinate in the local space.
+The vector `eNode` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of nodes in each of these element, an element of order **n** contains **(n+1)^3** nodes. Each `ivector` contains the list of the nodes of the element assigned with the corresponding index. The nodes are stored in the order **z -> y -> x** increasing coordinate in the local space.
 
 <br />
 
@@ -31,7 +35,7 @@ The vector `eNode` has the dimension **(e,k)** where **e** is the number of elem
     std::vector<ivector> eSurf;         // Free surfaces of each element
 ```
 
-The vector `eSurf` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of free surface in each of these element, an element can have up to 6 free surfaces. Each `ivector` contains a list of the indices of the free surfaces of the element. The indices of the surfaces of an element are noted (-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5) with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. This vector is empty is the element has no free surfaces.
+The vector `eSurf` has the dimension **(e,k)** where **e** is the number of element in the mesh and **k** is the number of free surface in each of these element, an element can have up to 6 free surfaces. Each `ivector` contains a list of the indices of the free surfaces of the element. The indices of the surfaces of an element are noted **(-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5)** with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. This vector is empty is the element has no free surfaces.
 
 <br />
 
@@ -47,7 +51,7 @@ The vector `neuFace` has the dimension **(f,k)** where **f** is the number of fa
     std::vector<darray> neuVal;         // Forces for Neumann boundary conditions
 ```
 
-The vector `neuVal` has the dimension **(f,3)** where **f** is the number of faces where Neumann boundary conditions are applied, the indices correspond to the face described in the `neuFace` vector. Each `darray` contains the 3 components (x,y,z) of the applied force on the corresponding face.
+The vector `neuVal` has the dimension **(f,3)** where **f** is the number of faces where Neumann boundary conditions are applied, the indices correspond to the face described in the `neuFace` vector. Each `darray` contains the 3 components **(x,y,z)** of the applied force on the corresponding face.
 
 <br />
 
@@ -55,7 +59,7 @@ The vector `neuVal` has the dimension **(f,3)** where **f** is the number of fac
     ivector dirNode[3];         // Nodes for Dirichlet boundary conditions
 ```
 
-The vector `dirNode` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (x,y,z) of the imposed displacement. Each `ivector` contains the list of node indices where the Dirichlet BC is imposed.
+The vector `dirNode` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space **(x,y,z)** of the imposed displacement. Each `ivector` contains the list of node indices where the Dirichlet BC is imposed.
 
 <br />
 
@@ -63,7 +67,7 @@ The vector `dirNode` has the dimension **(3,n)** where **n** is the number of no
     dvector dirVal[3];          // Displacment for Dirichlet boundary conditions
 ```
 
-The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the imposed displacement. Each `ivector` contains the list of values of the Dirichlet BC in the corresponding dimension.
+The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nodes where Dirichlet boundary conditions are applied, the first dimension of length 3 corresponds to the direction in space **(0,1,2) = (x,y,z)** of the imposed displacement. Each `ivector` contains the list of values of the Dirichlet BC in the corresponding dimension.
 
 <br />
 
@@ -71,7 +75,7 @@ The vector `dirVal` has the dimension **(3,n)** where **n** is the number of nod
     std::vector<ivector> coupNode[3];       // List of coupled pack of nodes
 ```
 
-The vector `coupNode` has the dimension **(3,k,n)** where **k** is the number of packs of coupled nodes, **n** is the number of nodes in a pack. The first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the coupled displacement. Each `ivector` contains the list of coupled node indices. All coupled nodes of a same pack will have the same displacement in the corresponding dimension.
+The vector `coupNode` has the dimension **(3,k,n)** where **k** is the number of packs of coupled nodes, **n** is the number of nodes in a pack. The first dimension of length 3 corresponds to the direction in space **(0,1,2) = (x,y,z)** of the coupled displacement. Each `ivector` contains the list of coupled node indices. All coupled nodes of a same pack will have the same displacement in the corresponding dimension.
 
 <br />
 
@@ -79,254 +83,128 @@ The vector `coupNode` has the dimension **(3,k,n)** where **k** is the number of
     std::vector<std::pair<int,int>> deltaNode[3];       // List of delta pair of nodes
 ```
 
-The vector `deltaNode` has the dimension **(3,k,2)** where **k** is the number of change of variables. The first dimension of length 3 corresponds to the direction in space (0,1,2) = (x,y,z) of the change of variable. Each `pair` contains the two nodes indices for the change of variable (u1,u2) -> (u1-u2,u2) such that the first variable (nodal value) gives now the relative displacement between the two nodes in the pair in the corresponding dimension, while the second variable remains unchanged.
+The vector `deltaNode` has the dimension **(3,k,2)** where **k** is the number of change of variables. The first dimension of length 3 corresponds to the direction in space **(0,1,2) = (x,y,z)** of the change of variable. Each `pair` contains the two nodes indices for the change of variable **(u1,u2) -> (u1-u2,u2)** such that the first variable (nodal value) gives now the relative displacement between the two nodes in the pair in the corresponding dimension, while the second variable remains unchanged.
 
 <br />
 
-# <img src="Cpp.svg" width="60"/> Polynomial Basis
+```cpp
+    std::vector<array3d> LmR;           // Bulk element parameters
+    std::vector<array3d> LmS;           // Surface element parameters
+```
+
+Both `LmR` and `LmS` have the dimension **(n,3)** where **n** is the number of elements in the mesh. Each `array3d` contains the first and second Lamé parameters for the bulk or the surface material. The last entry if the density for `LmR` and the surface tension for the `LmS` vector.
+
+<br />
+
+# <img src="Cpp.svg" width="60"/> Shape Structure
 -----------------------------------------------------
 
-A polynomial basis can be constructed by with an exponent table and a coefficient matrix. The parameter `d` is the dimension, `m` the number of monomials and `p` is the number of polynomials.
-
-```python
-    poly = Polynomial(expo,coef,csr=0)              # Class of olynomial basis
-```
-
-| Input             | Type                  | Description                       |
-|-------------------|-----------------------|-----------------------------------|
-| *expo*            | *(d,m) array*         | *exponent table*                  |
-| *coef*            | *(p,m) array*         | *coefficients matrix*             |
-| *csr*             | *bool*                | *for sparse csr format*           |
+This structure is computed automatically by the algorithm according to the patrameters located in the `Data` structure. It contains the informations about the Legendre shape functions and Legendre quadrature rule for numerical integration. This structure is the same for all elements and is strus stored only once.
 
 <br />
 
-The class of polynomial basis contains some in-built methods such as the evaluation of its polynomials at an array of `n` point:
-
-```python
-    V = poly.eval(point)                                # Computes the Vandermonde matrix
-    poly.clean(index)                                   # Selects the relevant polynomials
-    poly.trunc(order)                                   # Truncates the polynomial basis
+```cpp
+    int gLen;               // Number of integration points
 ```
 
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *point*           | *(n,d) array*         | *points to evaluate polynomials*              |
-| *index*           | *(-) array*           | *indices of the polynomials to keep*          |
-| *order*           | *int*                 | *order of truncation*                         |
+The value of `gLen` is positive and is equal to **(n+1)^d** where **n** is the order of the quadrature rule and **d** is the dimension. This integer must be strictly positive.
 
 <br />
 
-An orthonormal polynomial basis with respect to a sample can be generated by Gram Schmidt process. The parameter `weight` must be provided if the points are quadrature nodes, otherwise a Monte Carlo integration is assumed.
-
-```python
-    poly = gschmidt(order,point,weight=0,trunc=1)               # Gram-Schmidt process
+```cpp
+    matrix N;               // Nodal shape function
 ```
 
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *order*           | *int*                 | *maximum order of the polynomials*            |
-| *point*           | *(n,d) array*         | *points for the quadrature*                   |
-| *weight*          | *(n) array*           | *weights associated to the points*            |
-| *trunc*           | *float*               | *hyperbolic truncation q-norm*                |
+The matrix `N` has the size **(n,g)** where **n** is the number of shape functions (so the number of nodes in an element) and **g** is the number of integration points. This matrix contains the value of each shape function evaluated at each integration points.
 
 <br />
 
-Similarly, orthogonal polynomials can be constructed using a three terms recurrence coefficients relation related to a well-knows distribution or joint distribution.
-
-```python
-    poly = polyrecur(order,dist,trunc=1)                    # Three terms recurrence relation
+```cpp
+    dvector weight;         // Nodal shape function
 ```
 
-| Input             | Type                          | Description                                           |
-|-------------------|-------------------------------|-------------------------------------------------------|
-| *order*           | *int*                         | *maximum order of the polynomials*                    |
-| *dist*            | *oject or (-) array*          | *joint distribution or list of distributions*         |
-| *trunc*           | *float*                       | *hyperbolic truncation norm*                          |
+The vector `weight` has the size **g** which is the number of integration points. This vector contains the weights corresponding to the integration points located in the vector `gRST` with corresponding indices.
 
 <br />
 
-# <img src="Cpp.svg" width="60"/> Quadrature Rules
+```cpp
+    std::vector<matrix> dN;         // Nodal shape function
+```
+
+The vector `dN` has the size **(d,n,g)** where **d** is the dimension (1, 2 or 3), **n** is the number of shape functions of the elements and **g** is the number of integration points. It contains **d** matrices, each `matrix` contains the value of derivative of the shape functions wity respect to the dimension **d** evaluated at the corresponding integration point in local coordinates.
+
+<br />
+
+```cpp
+    std::vector<dvector> gRST;          // Nodal shape function
+```
+
+The vector `gRST` has the size **(g,d)** where **g** is the number of integration points and **d** is the dimension. Each `dvector` contains the coordinates of the integration points **(r,s)** or **(r,s,t)** in the local space.
+
+<br />
+
+# <img src="Cpp.svg" width="60"/> Quad Structure
 -----------------------------------------------------
 
-A quasi-Monte Carlo quadrature rule can be generated with a low-discrepancy sequence. The parameter `pdf` must have the same behaviour as the `pdf` method of a distribution class.
-
-```python
-    point,weight = qmcquad(nbrPts,dom,pdf=0,seq='halton')       # Quasi-Monte Carlo quadrature
-```
-
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *nbrPts*          | *int*                 | *number pf points to generate*                |
-| *dist*            | *(d,2) array*         | *multidimentional integration domain*         |
-| *pdf*             | *callable*            | *callable probability density function*       |
-| *seq*             | *string*              | *name of the low-discrepancy sequence*        |
+This structure is computed automatically by the algorithm according to the patrameters located in the `Data` structure. It is a temporary structure used to construct `Shape` and contains only ine informations about the quadrature rule.
 
 <br />
 
-A tensor product quadrature rule with respect to the probability density function of a well-known distribution or joint disctrubution can be generated by
-
-```python
-    point,weight = tensquad(order,dist)           # Tensor product quadrature
+```cpp
+    int gLen;               // Number of integration points
 ```
 
-| Input             | Type                          | Description                                           |
-|-------------------|-------------------------------|-------------------------------------------------------|
-| *order*           | *int*                         | *order of the quadrature rule*                        |
-| *dist*            | *oject or (-) array*          | *joint distribution or list of distributions*         |
+The value of `gLen` is positive and is equal to **(n+1)^d** where **n** is the order of the quadrature rule and **d** is the dimension. This integer must be strictly positive.
 
 <br />
 
-Different sparse quadrature rules for a polynomial basis can be generated from a Monte Carlo integration set. The original number of points must be larger than the number of polynomials in the basis.
-
-```python
-    index,weight = simquad(point,poly)                 # Revised simplex algorithm
-    index,weight = fekquad(point,poly)                 # Approximate Fekete points
-    index,weight = nulquad(point,poly,weight)          # Positive quadrature with null space
-    index,weight = newquad(point,poly,weight)          # Positive quadrature with Newton
+```cpp
+    dvector weight;         // Nodal shape function
 ```
 
-| Input             | Type                  | Description                           |
-|-------------------|-----------------------|---------------------------------------|
-| *point*           | *(n,d) array*         | *original set of points*              |
-| *poly*            | *object*              | *polynomial basis object*             |
-| *weight*          | *(n) array*           | *previous weights of the points*      |
+The vector `weight` has the size **g** which is the number of integration points. This vector contains the weights corresponding to the integration points located in the vector `gRST` with corresponding indices.
 
 <br />
 
-# <img src="Cpp.svg" width="60"/> Expansion Coefficients
------------------------------------------------------------
-
-The polynomial chaos coefficients can be computed by spectral projection of least squares regression. The parameter `n` is the number of points and `d` the dimension. The parameter `weight` must be provided if the points are quadrature nodes, otherwise a Monte Carlo integration is assumed.
-
-```python
-    coef = spectral(resp,poly,point,weight=0)              # Spectral projection
-    coef = colloc(resp,poly,point,weight=0)                # Point collocation
+```cpp
+    std::vector<dvector> gRST;          // Nodal shape function
 ```
 
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *resp*            | *(n,-) array*         | *response of thr model at the points*         |
-| *poly*            | *object*              | *polynomial basis object*                     |
-| *point*           | *(n,d) array*         | *quadrature points*                           |
-| *weight*          | *(n) array*           | *weights of the points*                       |
+The vector `gRST` has the size **(g,d)** where **g** is the number of integration points and **d** is the dimension. Each `dvector` contains the coordinates of the integration points **(r,s)** or **(r,s,t)** in the local space.
 
 <br />
 
-The least angle regression algorithm selects the relevant polynomials in addition to compute their coefficients. The parameter `index` is the indices of the selected polynomials, if `it` is not provided, all the available polynomials are selected.
+# <img src="Cpp.svg" width="60"/> Mesh Class
+-----------------------------------------------------
 
-```python
-    coef,index = lars(resp,poly,point,weight=0,it=np.inf)           # Least angle regression
-    coef,index = lasso(resp,poly,point,weight=0,it=np.inf)          # Least shrinkage operator
-```
-
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *resp*            | *(n,-) array*         | *response of thr model at the points*         |
-| *poly*            | *object*              | *polynomial basis object*                     |
-| *point*           | *(n,d) array*         | *original set of points*                      |
-| *weight*          | *(n) array*           | *weights of the points*                       |
-| *it*              | *int*                 | *maximum number of iterations*                |
+This class if the main class of the algoirithm and contains all the methods, objects and structures required for the computation of the global matrices and global vector used in the linear system of equation representing the problem.
 
 <br />
 
-# <img src="Cpp.svg" width="60"/> Surrogate Model
-----------------------------------------------------
-
-The polynomial chaos model can be constructed by invoking the constructor of the expansion class. The parameter `p` is the number of polynomials in the basis. The class provides different built-in methods:
-
-```python
-    model = Expansion(coef,poly)                # Class containing the surrogate model
-    resp = model.eval(point)                    # Evaluates the surrogate model
-    mean = model.mean                           # Returns the mean of the output
-    var = model.var                             # Return the variance of the output
+```cpp
+    dataStruct data;                // main information about the mesh
+    shapeStruct shape3D;            // Shape functions for 3D hexahedrons
+    shapeStruct shape2D;            // Shape functions for 2D quadrangles
+    shapeStruct shapeS[6];          // Shape functions 3D -> 2D for element faces
 ```
 
-| Input             | Type                  | Description                                   |
-|-------------------|-----------------------|-----------------------------------------------|
-| *coef*            | *(p,-) array*         | *polynomial chaos coefficients*               |
-| *poly*            | *object*              | *polynomial basis object*                     |
-| *point*           | *(n,d) array*         | *points at which evaluate the model*          |
+The structure `data` is the one presented in the first section. The structures `shape3D` and `shape2D` are the ones presented in the second section, they are computed respectively for the 3D hexahedrons used for elemental matruces, and the 2D quadrangles ujused in Neumann boundary conditions. The array `shape3D` contains the 2D shape functions of the 6 element faces defined in the 3D local space of the element. The indices of the faces of an element are noted **(-z,+z,-y,+y,-x,+x) = (0,1,2,3,4,5)** with **-z** denoting the face perpendicular to the **z** axis and located at **z=-1** in the local space. 
 
 <br />
 
-In addition, a simple polynomial mapping between two one-dimensional random variables can be computed by
-
-```python
-    mapping = transfo(invcdf,order,dist)            # Transforms a distribution
-    y = mapping(x)                                  # Mapping from the x space to the y space
+```cpp
+    int nLen;           // Number of nodes
+    int eLen;           // Number of elements
+    int fLen;           // Number of Neumann BC
 ```
 
-| Input             | Type                  | Description                                       |
-|-------------------|-----------------------|---------------------------------------------------|
-| *invcdf*          | *callable*            | *inverse cumulative distribution function*        |
-| *order*           | *int*                 | *order of the expansion*                          |
-| *dist*            | *object*              | *distribution object*                             |
+The integer `nLen` is strictly positive and denotes the number of nodes in the mesh. The integer `eLen` is strictly positive and denotes the number of Lagrange hexahedrons in the mesh. The integer `fLen` is positive and denotes the number of faces on which Neumann boundary conditions are applied.
 
 <br />
 
-# <img src="Cpp.svg" width="60"/> Other Functions
-----------------------------------------------------
+# <img src="Cpp.svg" width="60"/> Element Class
+-----------------------------------------------------
 
-A class of principal components analysis whitening can be created for a linearly correlated sample. The parameter `n` is the number of points and `d` is the dimension.
-
-```python
-    mapping = Pca(sample)                   # Class of PCA whitening
-```
-
-| Input             | Type                  | Description                           |
-|-------------------|-----------------------|---------------------------------------|
-| *sample*          | *(n,d) array*         | *reference sample of points*          |
+This class represent a single finite element composing the mesh. They are stored in a vector into the `Mesh` class, but are regularily cleaned and rebuilt in order to save memory.
 
 <br />
-
-The class will act as a mapping function between the whitened and the original random vectors.
-
-```python
-    whitened = mapping.white(sample)            # Whitens a sample of points
-    sample = mapping.corr(whitened)             # Recovers the original sample
-```
-
-| Input             | Type                  | Description                                               |
-|-------------------|-----------------------|-----------------------------------------------------------|
-| *sample*          | *(n,d) array*         | *sample from the same distributio as the reference*       |
-| *whitened*        | *(n,d) array*         | *white noise sample of points*                            |
-
-<br />
-
-The Sobol sensitivity indices of a model can be directly obtained from the polynomial chaos coefficients by
-
-```python
-    sobol = anova(coef,poly)           # Computes the Sobol sensitivity indices
-```
-
-| Input             | Type                  | Description                               |
-|-------------------|-----------------------|-------------------------------------------|
-| *coef*            | *(p,-) array*         | *polynomial chaos coefficients*           |
-| *poly*            | *object*              | *polynomial basis object*                 |
-
-<br />
-
-For dependent random variables, the analysis of covariance indices can be obtained from the polynomial chaos model with
-
-```python
-    index,ancova = ancova(model,point,weight=0)         # Computes the ancova indices
-```
-
-| Input             | Type                  | Description                           |
-|-------------------|-----------------------|---------------------------------------|
-| *model*           | *object*              | *expansion object*                    |
-| *point*           | *(n,d) array*         | *quadrature points*                   |
-| *weight*          | *(n) array*           | *weights of the points*               |
-
-<br />
-
-Finally, any objects generated by Chaoslib can be saved in a pickle file:
-
-```python
-    save(item,name)                # Saves an object in a file.pickle
-```
-
-| Input             | Type                  | Description                               |
-|-------------------|-----------------------|-------------------------------------------|
-| *item*            | *object*              | *any object to be saved*                  |
-| *name*            | *string*              | *desired name for the object*             |
