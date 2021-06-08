@@ -182,7 +182,7 @@ This class if the main class of the algoirithm and contains all the methods, obj
 <br />
 
 ```cpp
-    dataStruct data;                // main information about the mesh
+    dataStruct data;                // Main information about the mesh
     shapeStruct shape3D;            // Shape functions for 3D hexahedrons
     shapeStruct shape2D;            // Shape functions for 2D quadrangles
 ```
