@@ -301,9 +301,9 @@ matrix Elem::selfM(shapeStruct &shape,double rho){
     return M;
 }
 
-// ---------------------------------------------------------|
-// Computes the surface stiffness matrix Ks for local FEM   |
-// ---------------------------------------------------------|
+// ------------------------------------------------------|
+// Computes the surface stiffness matrix Ks for SST/SET  |
+// ------------------------------------------------------|
 
 matrix Elem::selfKS(shapeStruct (&shape)[6],array3d LmS){
 
@@ -345,9 +345,9 @@ matrix Elem::selfKS(shapeStruct (&shape)[6],array3d LmS){
     return K;
 }
 
-// --------------------------------------------------------|
-// Computes the surface boundary vector Fs for local FEM   |
-// --------------------------------------------------------|
+// ------------------------------------------------------|
+// Computes the surface boundary vector Fs for SST/SET   |
+// ------------------------------------------------------|
 
 darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
 
@@ -389,9 +389,9 @@ darray Elem::selfFS(shapeStruct (&shape)[6],array3d LmS){
     return F;
 }
 
-// -------------------------------------------------------------|
-// Computes the non-linear stiffness matrix for finite strain   |
-// -------------------------------------------------------------|
+// ---------------------------------------------------|
+// Computes the non-linear stiffness matrix for SVK   |
+// ---------------------------------------------------|
 
 matrix Elem::selfKN(shapeStruct &shape,array3d LmR){
 
@@ -430,9 +430,9 @@ matrix Elem::selfKN(shapeStruct &shape,array3d LmR){
     return K;
 }
 
-// ---------------------------------------------------------|
-// Computes the linear stiffness matrix for finite strain   |
-// ---------------------------------------------------------|
+// -----------------------------------------------|
+// Computes the linear stiffness matrix for SVK   |
+// -----------------------------------------------|
 
 matrix Elem::selfKL(shapeStruct &shape,array3d LmR){
 
@@ -478,9 +478,9 @@ matrix Elem::selfKL(shapeStruct &shape,array3d LmR){
     return K;
 }
 
-// --------------------------------------------------------------|
-// Computes the non-linear equilibrium force for finite strain   |
-// --------------------------------------------------------------|
+// ----------------------------------------------------|
+// Computes the non-linear equilibrium force for SVK   |
+// ----------------------------------------------------|
 
 darray Elem::selfFX(shapeStruct &shape,array3d LmR){
 

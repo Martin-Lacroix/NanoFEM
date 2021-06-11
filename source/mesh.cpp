@@ -95,9 +95,9 @@ shapeStruct Mesh::shape(quadStruct &quad){
     return shape;
 }
 
-// -------------------------------------------------------|
-// Computes the total stiffness matrix K for local FEM    |
-// -------------------------------------------------------|
+// -----------------------------------------------------|
+// Computes the total stiffness matrix K for SST/SET    |
+// -----------------------------------------------------|
 
 void Mesh::totalKB(sparse &K,darray &B){
 
@@ -147,9 +147,9 @@ void Mesh::totalKB(sparse &K,darray &B){
     }
 }
 
-// -------------------------------------------------------|
-// Computes the total stiffness matrix K for local FEM    |
-// -------------------------------------------------------|
+// -------------------------------------------------|
+// Computes the total stiffness matrix K for SVK    |
+// -------------------------------------------------|
 
 void Mesh::totalKT(sparse &K,darray &B,darray &u){
 

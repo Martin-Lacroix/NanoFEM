@@ -43,7 +43,7 @@ The vector `eSurf` has the dimension **(e,k)** where **e** is the number of elem
     std::vector<ivector> neuFace;       // Faces for Neumann boundary conditions
 ```
 
-The vector `neuFace` has the dimension **(f,k)** where **f** is the number of faces where Neumann boundary conditions are applied and **k** is the number of nodes in each of these faces, a face of order **n** contains **(n+1)^2** nodes. Each `ivector` contains the list of the nodes of the face assigned with the corresponding index. The nodes are stored in the order y->x increasing coordinate in the local space.
+The vector `neuFace` has the dimension **(f,k)** where **f** is the number of faces where Neumann boundary conditions are applied and **k** is the number of nodes in each of these faces, a face of order **n** contains **(n+1)^2** nodes. Each `ivector` contains the list of the nodes of the face assigned with the corresponding index. The nodes are stored in the order **y->x** increasing coordinate in the local space.
 
 <br />
 

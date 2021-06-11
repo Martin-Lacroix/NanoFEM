@@ -1,6 +1,8 @@
-#include "..\include\parser.h"
+#include "..\include\mesh.h"
 #include "solvers.h"
 #include <windows.h>
+#include <direct.h>
+#include <fstream>
 #include <iomanip>
 #include <chrono>
 using namespace std;
@@ -41,11 +43,51 @@ void end(double start){
     cout << endl;
 }
 
+// ------------------------------------------------|
+// Writes the simulation results in a text file    |
+// ------------------------------------------------|
+
+void write(Mesh &mesh,darray &disp,dvector &VM){
+
+    mkdir("output");
+    ofstream uXYZ("output/disp.txt");
+    ofstream elem("output/elem.txt");
+    ofstream node("output/node.txt");
+    ofstream stress("output/stress.txt");
+
+    // Writes the displacement field in a text file
+
+    for(int i=0; i<mesh.nLen; i++){
+        for(int j=0; j<2; j++){uXYZ << disp[i+j*mesh.nLen] << ",";}
+        uXYZ << disp[i+2*mesh.nLen] << "\n";
+    }
+
+    // Writes the node coordinates as (x,y,z)
+
+    for(array3d nXYZ:mesh.data.nXYZ){
+        for(int i=0; i<nXYZ.size()-1; i++){node << nXYZ[i] << ",";}
+        node << nXYZ.back() << "\n";
+    }
+
+    // Writes the element nodes as (elem,node)
+
+    for(ivector eNode:mesh.data.eNode){
+        for(int i=0; i<eNode.size()-1; i++){elem << eNode[i] << ",";}
+        elem << eNode.back() << "\n";
+    }
+
+    // Writes the averaged elemental Von Mises stress
+
+    for(int i=0; i<mesh.eLen; i++){
+        stress << VM[i] << "\n";
+    }
+}
+
 // ----------------------------------------------|
 // Solves the linear system for SST/SET model    |
 // ----------------------------------------------|
 
-darray solveS(Mesh &mesh,ivector opposite){
+darray solveS(Mesh &mesh){
 
     double time;
     int nLen = 3*mesh.nLen;
@@ -91,7 +133,6 @@ darray solveS(Mesh &mesh,ivector opposite){
 
     // Prints if the solver success or not
 
-    graph(mesh,u,opposite);
     cout << "Output of the solver = " << int(rep.terminationtype);
     cout << "\n" << endl;
     return u;
@@ -101,7 +142,7 @@ darray solveS(Mesh &mesh,ivector opposite){
 // Solves the non-linear system for SVK model    |
 // ----------------------------------------------|
 
-darray solveL(Mesh &mesh,ivector &opposite){
+darray solveL(Mesh &mesh){
 
     double time;
     int max = 30;
@@ -180,7 +221,6 @@ darray solveL(Mesh &mesh,ivector &opposite){
             if(rez<mesh.data.tol){break;}
         }
 
-        graph(mesh,u,opposite);
         cout << endl;
     }
     return u;
@@ -196,45 +236,32 @@ int main(){
     double time;
     darray disp;
     dataStruct data;
+    string model = "SST/SET";
     alglib::setglobalthreading(alglib::parallel);
 
     // Reads the input files from Nascam
 
-    time = start("\nReads the files");
-    readStruct read = reader("input.txt",data);
+    time = start("\nReads input data");
+    // data = [your input data here] <====== [!]
     end(time);
-
-    // Writes some outputs and logs
-
-    cout << "\n----------------------\n";
-    cout << "FEM algorithm";
-    cout << "\n----------------------\n";
-    cout << endl;
-
-    mkdir("output");
-    ofstream graph("output/stress-strain.csv");
-    graph << "Absolute stress (GPa);Absolute strain X (%);Absolute strain Y (%);Absolute strain Z (%)\n";
-    graph << 0 << ";" << 0 << ";" << 0 << ";" << 0 << "\n";
-    graph.close();
 
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(read.model=="linearset/sstmodel"){disp = solveS(mesh,read.opposite);}
-    if(read.model=="saintvenant-kirchhoff"){disp = solveL(mesh,read.opposite);}
+    if(model=="SST/SET"){disp = solveS(mesh);}
+    if(model=="SVK"){disp = solveL(mesh);}
 
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    if(read.model=="linearset/sstmodel"){VM = mesh.stress(disp,0);}
-    if(read.model=="saintvenant-kirchhoff"){VM = mesh.stress(disp,1);}
+    if(model=="SST/SET"){VM = mesh.stress(disp,0);}
+    if(model=="SVK"){VM = mesh.stress(disp,1);}
     mesh.update(disp);
     end(time);
 
     // Writes the results in a text file
 
     time = start("Writes the results");
-    writeJmol(mesh,disp,VM,read.empty);
     write(mesh,disp,VM);
     end(time);
     
