@@ -206,7 +206,6 @@ The integer `nLen` is strictly positive and denotes the number of nodes in the m
 <br />
 
 # <img src="Cpp.svg" width="60"/> Element Class
------------------------------------------------------
 
 This class represent a single finite element composing the mesh. They are stored in a vector into the `Mesh` class, but are regularly cleaned and rebuilt in order to save memory.
 
@@ -279,7 +278,6 @@ The array `dN` has the size **(3,n,g)** where **g** is the number of integration
 <br />
 
 # <img src="Cpp.svg" width="60"/> Face Class
------------------------------------------------------
 
 This class represent a single 2D finite element on which Neumann boundary conditions are applied. They are generated when needed and destroyed after their use in order to save memory. This is the 2D equivalent of the `Element` class.
 
