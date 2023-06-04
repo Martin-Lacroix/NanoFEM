@@ -1,4 +1,4 @@
-# CGFEM-Nano
+# FEM-Nano
 
 Code developped for obtaining the **advanced Master's degree in Nanotechnology**. The code is a finite element algorithm for linear elasticity with surface stress and surface stiffness theory, or non-linear saint Venant-Kirchhoff elasticity for large deformations. The doc folder contains a compilable documentation of the input parameters. This code is not standalone and requiers an input in solver.cpp. [Thesis report here](https://hdl.handle.net/2268/293576).
 
