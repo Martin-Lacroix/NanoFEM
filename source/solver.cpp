@@ -1,7 +1,6 @@
-#include "..\include\mesh.h"
+#include "../include/mesh.h"
 #include "solvers.h"
-#include <windows.h>
-#include <direct.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <iomanip>
 #include <chrono>
@@ -49,7 +48,7 @@ void end(double start){
 
 void write(Mesh &mesh,darray &disp,dvector &VM){
 
-    mkdir("output");
+    mkdir("output",S_IRWXU);
     ofstream uXYZ("output/disp.txt");
     ofstream elem("output/elem.txt");
     ofstream node("output/node.txt");

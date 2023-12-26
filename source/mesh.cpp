@@ -1,4 +1,4 @@
-#include "..\include\mesh.h"
+#include "../include/mesh.h"
 using namespace std;
 
 // -------------------------------------------------------------|

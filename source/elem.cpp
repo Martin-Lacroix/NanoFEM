@@ -1,4 +1,4 @@
-#include "..\include\elem.h"
+#include "../include/elem.h"
 using namespace std;
 
 // -----------------------------------------------------------|
