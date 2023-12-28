@@ -21,7 +21,7 @@ struct dataStruct{
     // Neumann boundary conditions
     
     std::vector<ivector> neuFace;
-    std::vector<darray> neuVal;
+    std::vector<darray3d> neuVal;
 
     // Dirichlet boundary conditions
 

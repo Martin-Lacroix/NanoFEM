@@ -1,3 +1,10 @@
-g++ -msse2 -I /opt/alglib/src -o Mechanics -O3 \
--pthread -static -static-libgcc -static-libstdc++ \
-/opt/alglib/src/*.cpp source/*.cpp -lm
+# Creates the folders
+
+rm -rf build
+mkdir build
+cd build
+
+# Compile with CMake
+
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j8

@@ -1,4 +1,4 @@
-#include "../include/math.h"
+#include "math.h"
 using namespace std;
 
 namespace math{
@@ -9,9 +9,8 @@ namespace math{
 
     matrix stiffness(array3d LmX){
 
-        matrix D;
-        D.setlength(6,6);
-        math::zero(D);
+        matrix D(6,6);
+        D.setZero();
 
         // Fills the elements of the stiffness tensor
 
@@ -29,40 +28,66 @@ namespace math{
 
     quadStruct legendre(int dim,int order){
 
-        matrix M;
         quadStruct quad;
-        int nbr = order+1;
-        darray Ja; Ja.setlength(nbr);
-        darray Jb; Jb.setlength(nbr-1);
+        matrix M(order+1,order+1);
+        M.setZero();
 
         // Generates the three term recurrence coefficients
-        
-        for(int i=1; i<nbr; i++){Jb(i-1) = i/sqrt(4*i*i-1);}
-        for(int i=0; i<nbr; i++){Ja(i) = 0;}
-        alglib::smatrixtdevd(Ja,Jb,nbr,3,M);
 
-        // Quadrature rule for 8-node brick linear element in 3D
+        for(int i = 0; i < order; ++i){
+            M(i,i+1) = (i+1)/sqrt(4*(i+1)*(i+1)-1);
+            M(i+1,i) = (i+1)/sqrt(4*(i+1)*(i+1)-1);
+        }
 
-        if(dim==3){     
-            for(int i=0; i<nbr; i++){
-                for(int j=0; j<nbr; j++){
-                    for(int k=0; k<nbr; k++){
+        Eigen::SelfAdjointEigenSolver<matrix> solver(M);
+        darray vec = solver.eigenvectors().col(0);
+        darray val = solver.eigenvalues();
 
-                        quad.gRST.push_back({Ja(i),Ja(j),Ja(k)});
-                        quad.weight.push_back(8*M(0,i)*M(0,i)*M(0,j)*M(0,j)*M(0,k)*M(0,k));
-                    }
-                }
+        // Quadrature rule for a linear element in 2D/3D
+
+        if(dim == 2) return math::makeQuad2D(vec,val);
+        else if(dim == 3) return math::makeQuad3D(vec,val);
+        else throw std::runtime_error("Incorrect dimension");
+    }
+
+    // -----------------------------------------------|
+    // Create and fill the quadrature class in 2D     |
+    // -----------------------------------------------|
+
+    quadStruct makeQuad2D(darray &vec, darray &val){
+
+        quadStruct quad;
+        int nLen = vec.size();
+
+        for(int i = 0; i < nLen; i++){
+            for(int j = 0; j < nLen; j++){
+
+                double W = 4*vec(i)*vec(i)*vec(j)*vec(j);
+                quad.gRST.push_back({val(i),val(j)});
+                quad.weight.push_back(W);
             }
         }
 
-        // Quadrature rule for 4-node quadrangle linear element in 2D
+        quad.gLen = quad.weight.size();
+        return quad;
+    }
 
-        if(dim==2){
-            for(int i=0; i<nbr; i++){
-                for(int j=0; j<nbr; j++){
+    // -----------------------------------------------|
+    // Create and fill the quadrature class in 3D     |
+    // -----------------------------------------------|
 
-                    quad.gRST.push_back({Ja(i),Ja(j)});
-                    quad.weight.push_back(4*M(0,i)*M(0,i)*M(0,j)*M(0,j));
+    quadStruct makeQuad3D(darray &vec, darray &val){
+
+        quadStruct quad;
+        int nLen = vec.size();
+
+        for(int i = 0; i < nLen; i++){
+            for(int j = 0; j < nLen; j++){
+                for(int k = 0; k < nLen; k++){
+                    
+                    double W = 8*vec(i)*vec(i)*vec(j)*vec(j)*vec(k)*vec(k);
+                    quad.gRST.push_back({val(i),val(j),val(k)});
+                    quad.weight.push_back(W);
                 }
             }
         }
@@ -93,98 +118,24 @@ namespace math{
         array3d V3;
         double k = 0;
 
-        for(int i=0; i<3; i++){k += V1[i]*V2[i];}
-        for(int i=0; i<3; i++){V3[i] = V2[i]-k*V1[i];}
+        for(int i = 0; i < 3; i++) k += V1[i]*V2[i];
+        for(int i = 0; i < 3; i++) V3[i] = V2[i]-k*V1[i];
         return V3;
-    }
-
-    // ------------------------------------------------------|
-    // Standard matrix-matrix addition M2 = k1 M1 + k2 M2    |
-    // ------------------------------------------------------|
-
-    void add(double k1,double k2,matrix &M1,matrix &M2){
-
-        int m = M1.rows();
-        int n = M1.cols();
-        alglib::rmatrixgencopy(m,n,k1,M1,0,0,k2,M2,0,0);
-    }
-
-    // --------------------------------------------------------------------------|
-    // Matrix-matrix product M3 = k M1 M2, tj = 1 means that Mj is transposed    |
-    // --------------------------------------------------------------------------|
-
-    matrix prod(double k,matrix &M1,matrix &M2,int t1,int t2){
-
-        int m = M1.rows();
-        int n = M2.cols();
-        int w = M1.cols();
-
-        // Transpose the matrices if required
-
-        if(t1==1){w = M1.rows(); m = M1.cols();}
-        if(t2==1){n = M2.rows();}
-
-        // Performs the product with Alglib
-
-        matrix M3; M3.setlength(m,n);
-        alglib::rmatrixgemm(m,n,w,k,M1,0,0,t1,M2,0,0,t2,0,M3,0,0);
-        return M3;
-    }
-
-    // --------------------------------------------------------------------------|
-    // Matrix-vector product V2 = k M1 V1, t1 = 1 means that M1 is transposed    |
-    // --------------------------------------------------------------------------|
-
-    darray prod(double k,matrix &M1,darray &V1,int t1){
-
-        int m = M1.rows();
-        int n = M1.cols();
-
-        // Transpose the matrices if required
-
-        if(t1==1){
-            n = M1.rows();
-            m = M1.cols();
-        }
-
-        // Performs the product with Alglib
-
-        darray V2; V2.setlength(m);
-        alglib::rmatrixgemv(m,n,k,M1,0,0,t1,V1,0,0,V2,0);
-        return V2;
-    }
-
-    // --------------------------------------------------|
-    // Fills an initialized dense matrix M with zeros    |
-    // --------------------------------------------------|
-
-    void zero(matrix &M){
-
-        for(int i=0; i<M.rows(); i++){
-            for(int j=0; j<M.cols(); j++){
-                M(i,j) = 0;
-            }
-        }
-    }
-
-    void zero(darray &V){
-        for(int i=0; i<V.length(); i++){V(i) = 0;}
     }
 
     // ------------------------------------------------|
     // Computes the inverse of a 3×3 general matrix    |
     // ------------------------------------------------|
 
-    matrix invert(matrix &M,double det){
+    matrix3d invert(matrix3d &M,double det){
 
-        matrix invM;
-        invM.setlength(3,3);
+        matrix3d invM;
 
-        for(int i=0; i<3; i++){
-            for(int j=0; j<3; j++){
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
 
-                invM(i,j) = M[(i+1)%3][(j+1)%3]*M[(i+2)%3][(j+2)%3];
-                invM(i,j) -= M[(i+2)%3][(j+1)%3]*M[(i+1)%3][(j+2)%3];
+                invM(i,j) = M((i+1)%3,(j+1)%3)*M((i+2)%3,(j+2)%3);
+                invM(i,j) -= M((i+2)%3,(j+1)%3)*M((i+1)%3,(j+2)%3);
                 invM(i,j) /= det;
             }
         }
@@ -195,17 +146,10 @@ namespace math{
     // Computes the L2 norm of a general vector or array    |
     // -----------------------------------------------------|
 
-    double norm(darray &V){
-
-        double norm = alglib::vdotproduct(&V[0],&V[0],V.length());
-        norm = sqrt(norm);
-        return norm;
-    }
-
     double norm(array3d &V){
 
         double norm = 0;
-        for(int i=0; i<3; i++){norm += V[i]*V[i];}
+        for(int i = 0; i < 3; i++) norm += V[i]*V[i];
         norm = sqrt(norm);
         return norm;
     }
@@ -216,18 +160,18 @@ namespace math{
 
     vector<ivector> sparsemap(sparse &M){
 
-        double val;
-        alglib::ae_int_t i=0,j=0;
-        alglib::ae_int_t I=0,J=0;
-        int nLen = alglib::sparsegetnrows(M);
+        int nLen = M.rows();
         vector<ivector> row(3*nLen);
         
         // Stores the non-zero indice locations per row and column
 
-        while(alglib::sparseenumerate(M,I,J,i,j,val)){
+        for (int i = 0; i < M.outerSize(); i++){
+            for (sparse::InnerIterator it(M,i); it; ++it){
 
-            row[i].push_back(j);
-            if(i!=j){row[j].push_back(i);}
+                int j = it.row();
+                row[j].push_back(i);
+                if(j != i) row[i].push_back(j);
+            }
         }
         return row;
     }
@@ -238,8 +182,8 @@ namespace math{
 
     void symset(sparse &M,int row,int col,double val){
 
-        if(row>col){alglib::sparseset(M,col,row,val);}
-        else{alglib::sparseset(M,row,col,val);}
+        if(row > col) M.coeffRef(col,row) = val;
+        else M.coeffRef(row,col) = val;
     }
 
     // ------------------------------------------------------------------|
@@ -248,8 +192,8 @@ namespace math{
 
     void symadd(sparse &M,int row,int col,double val){
 
-        if(row>col){alglib::sparseadd(M,col,row,val);}
-        else{alglib::sparseadd(M,row,col,val);}
+        if(row > col) M.coeffRef(col,row) += val;
+        else M.coeffRef(row,col) += val;
     }
 
     // ------------------------------------------------------------------------|
@@ -259,8 +203,8 @@ namespace math{
     double get(sparse &M,int row,int col){
 
         double val;
-        if(row>col){val = alglib::sparseget(M,col,row);}
-        else{val = alglib::sparseget(M,row,col);}
+        if(row > col) val = M.coeff(col,row);
+        else val = M.coeff(row,col);
         return val;
     }
 
@@ -277,24 +221,24 @@ namespace math{
 
         // Var is the index of the variable we want to derivate
 
-        for(int n=0; n<dim; n++){
+        for(int n = 0; n < dim; n++){
             dvector N1;
 
             // Computes the derivative of Lagrange polynomial for this variable
 
-            if(n==dvar){
+            if(n == dvar){
                 N1.resize(sLen,0);
 
-                for(int j=0; j<sLen; j++){
-                    for(int i=0; i<sLen; i++){
+                for(int j = 0; j < sLen; j++){
+                    for(int i = 0; i < sLen; i++){
 
                         // Computes the first term of the summ of products
 
-                        if(i!=j){
+                        if(i != j){
                             double La = 1/(node[j]-node[i]);
 
-                            for(int k=0; k<sLen; k++){
-                                if(k!=j && k!=i){La *= (val[n]-node[k])/(node[j]-node[k]);}
+                            for(int k = 0; k < sLen; k++){
+                                if((k != j) && (k != i)) La *= (val[n]-node[k])/(node[j]-node[k]);
                             }
                             N1[j] += La;
                         }
@@ -307,18 +251,18 @@ namespace math{
             else{
                 N1.resize(sLen,1);
 
-                for(int i=0; i<sLen; i++){
-                    for(int j=0; j<sLen; j++){
-                        if(i!=j){N1[j] *= (val[n]-node[i])/(node[j]-node[i]);}
+                for(int i = 0; i < sLen; i++){
+                    for(int j = 0; j < sLen; j++){
+                        if(i != j) N1[j] *= (val[n]-node[i])/(node[j]-node[i]);
                     }
                 }
             }
 
             // Product of the Lagrange polynomials in the 2D case
 
-            if(dim==2){
-                for(int i=0; i<sLen; i++){
-                    for(int j=0; j<sLen; j++){
+            if(dim == 2){
+                for(int i = 0; i < sLen; i++){
+                    for(int j = 0; j < sLen; j++){
                             
                         ivector loop = {i,j};
                         N[i*sLen+j] *= N1[loop[n]];
@@ -328,10 +272,10 @@ namespace math{
 
             // Product of the Lagrange polynomials in the 3D case
 
-            if(dim==3){
-                for(int i=0; i<sLen; i++){
-                    for(int j=0; j<sLen; j++){
-                        for(int k=0; k<sLen; k++){
+            if(dim == 3){
+                for(int i = 0; i < sLen; i++){
+                    for(int j = 0; j < sLen; j++){
+                        for(int k = 0; k < sLen; k++){
                             
                             ivector loop = {i,j,k};
                             N[i*sLen*sLen+j*sLen+k] *= N1[loop[n]];
@@ -349,17 +293,16 @@ namespace math{
 
     matrix projection(array3d norm){
 
-        matrix T,P;
-        P.setlength(3,3);
-        T.setlength(6,6);
+        matrix3d P;
+        matrix T(6,6);
 
         // Computes the surface gredient ∇s = (I-n⊗n)∇
 
-        for(int j=0; j<3; j++){
-            for(int k=0; k<3; k++){
+        for(int j = 0; j < 3; j++){
+            for(int k = 0; k < 3; k++){
                 
-                if(j==k){P(j,k) = 1-norm[j]*norm[k];}
-                else{P(j,k) = -norm[j]*norm[k];}
+                if(j == k) P(j,k) = 1-norm[j]*norm[k];
+                else P(j,k) = -norm[j]*norm[k];
             }
         }
 

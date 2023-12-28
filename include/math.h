@@ -1,6 +1,7 @@
+#include <Eigen/Sparse>
+#include <Eigen/Dense>
 #include <algorithm>
-#include "linalg.h"
-#include "stdafx.h"
+#include <iostream>
 #include <array>
 
 #ifndef MATH_H
@@ -10,10 +11,13 @@
 
 typedef std::vector<int> ivector;
 typedef std::vector<double> dvector;
-typedef alglib::sparsematrix sparse;
-typedef alglib::real_2d_array matrix;
-typedef alglib::real_1d_array darray;
 typedef std::array<double,3> array3d;
+typedef Eigen::SparseMatrix<double> sparse;
+
+typedef Eigen::Matrix3d matrix3d;
+typedef Eigen::Vector3d darray3d;
+typedef Eigen::MatrixXd matrix;
+typedef Eigen::VectorXd darray;
 
 // ----------------------------------------|
 // Structure storing the quadrature rule   |
@@ -36,26 +40,19 @@ namespace math{
     quadStruct legendre(int dim,int order);
     dvector lagrange(int var,dvector node,dvector val);
 
-    // Matrix-matrix or matrix-array operations
+    // Creates and fill a quadrature rule structure
 
-    void add(double k1,double k2,matrix &M1,matrix &M2);
-    darray prod(double k,matrix &M1,darray &V1,int t1=0);
-    matrix prod(double k,matrix &M1,matrix &M2,int t1=0,int t2=0);
-    
-    // Fills a matrix or an array with zeros
-
-    void zero(darray &V);
-    void zero(matrix &M);
+    quadStruct makeQuad2D(darray &V, darray &val);
+    quadStruct makeQuad3D(darray &V, darray &val);
 
     // Computes the L2 norm of a vector
 
-    double norm(darray &V);
     double norm(array3d &V);
 
-    // Other general fiunctions for sparse or dense matrices
+    // Other general functions for sparse or dense matrices
     
     matrix projection(array3d norm);
-    matrix invert(matrix &M,double det);
+    matrix3d invert(matrix3d &M,double det);
     array3d cross(array3d &V1,array3d &V2);
     array3d dotsub(array3d &V1,array3d &V2);
     std::vector<ivector> sparsemap(sparse &M);

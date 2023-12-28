@@ -1,9 +1,9 @@
-#include "../include/mesh.h"
-#include "solvers.h"
+#include "mesh.h"
 #include <sys/stat.h>
 #include <fstream>
 #include <iomanip>
 #include <chrono>
+#include <iostream>
 using namespace std;
 
 // -------------------------------------------|
@@ -37,8 +37,8 @@ void end(double start){
 
     // Prints the computation time
     
-    if(min>0){cout << "Done in " << min << " min " << setprecision(2) << sec << " sec";}
-    else{cout << "Done in " << setprecision(2) << sec << " sec";}
+    if(min > 0) cout << "Done in " << min << " min " << setprecision(2) << sec << " sec";
+    else cout << "Done in " << setprecision(2) << sec << " sec";
     cout << endl;
 }
 
@@ -56,28 +56,28 @@ void write(Mesh &mesh,darray &disp,dvector &VM){
 
     // Writes the displacement field in a text file
 
-    for(int i=0; i<mesh.nLen; i++){
-        for(int j=0; j<2; j++){uXYZ << disp[i+j*mesh.nLen] << ",";}
+    for(int i = 0; i < mesh.nLen; i++){
+        for(int j = 0; j < 2; j++) uXYZ << disp[i+j*mesh.nLen] << ",";
         uXYZ << disp[i+2*mesh.nLen] << "\n";
     }
 
     // Writes the node coordinates as (x,y,z)
 
-    for(array3d nXYZ:mesh.data.nXYZ){
-        for(int i=0; i<nXYZ.size()-1; i++){node << nXYZ[i] << ",";}
+    for(array3d nXYZ : mesh.data.nXYZ){
+        for(int i = 0; i < nXYZ.size()-1; i++) node << nXYZ[i] << ",";
         node << nXYZ.back() << "\n";
     }
 
     // Writes the element nodes as (elem,node)
 
-    for(ivector eNode:mesh.data.eNode){
-        for(int i=0; i<eNode.size()-1; i++){elem << eNode[i] << ",";}
+    for(ivector eNode : mesh.data.eNode){
+        for(int i = 0; i < eNode.size()-1; i++) elem << eNode[i] << ",";
         elem << eNode.back() << "\n";
     }
 
     // Writes the averaged elemental Von Mises stress
 
-    for(int i=0; i<mesh.eLen; i++){
+    for(int i = 0; i < mesh.eLen; i++){
         stress << VM[i] << "\n";
     }
 }
@@ -94,15 +94,9 @@ darray solveS(Mesh &mesh){
 
     // Initializes the solver parameters
 
-    sparse K;
-    darray B,u;
-    u.setlength(nLen);
-    B.setlength(nLen);
-    math::zero(B);
-
-    alglib::lincgreport rep;
-    alglib::lincgstate state;
-    alglib::sparsecreate(nLen,nLen,size,K);
+    sparse K(nLen,nLen);
+    darray B(nLen);
+    B.setZero();
 
     // Builds the system matrix and vector
 
@@ -122,17 +116,17 @@ darray solveS(Mesh &mesh){
     
     // Solves the symmetric linear system with Alglib
 
+    K.makeCompressed();
     time = start("Solves the system");
-    alglib::sparseconverttocrs(K);
-    alglib::lincgcreate(nLen,state);
-    alglib::lincgsolvesparse(state,K,1,B);
-    alglib::lincgresults(state,u,rep);
+    Eigen::ConjugateGradient<sparse,Eigen::Upper> cg;
+    cg.compute(K);
+    darray u = cg.solve(B);
     mesh.complete(u);
     end(time);
 
     // Prints if the solver success or not
 
-    cout << "Output of the solver = " << int(rep.terminationtype);
+    cout << "Output of the solver = " << cg.info();
     cout << "\n" << endl;
     return u;
 }
@@ -148,43 +142,37 @@ darray solveL(Mesh &mesh){
     int nLen = 3*mesh.nLen;
     int step = mesh.data.step;
     int size = 9*mesh.eLen*pow(mesh.data.order+1,6)/4;
-    vector<darray> neuVal = mesh.data.neuVal;
+    vector<darray3d> neuVal = mesh.data.neuVal;
 
     // Initializes the solver parameters
 
-    darray u,du;
-    u.setlength(nLen);
-    du.setlength(nLen);
-    math::zero(u);
+    darray u(nLen);
+    darray du(nLen);
+    u.setZero();
 
     // Performs the load iterations
 
-    for(int i=0; i<step; i++){
+    for(int i = 0; i < step; i++){
         double norm = 0;
         
         // Updates the surface traction vector
 
-        for(int k=0; k<3; k++){
-            for(int j=0; j<neuVal.size(); j++){
+        for(int k = 0; k < 3; k++){
+            for(int j = 0; j < neuVal.size(); j++){
                 mesh.data.neuVal[j](k) = (i+1)*neuVal[j][k]/step;
             }
         }
 
-        for(int j=0; j<max; j++){
+        for(int j = 0; j < max; j++){
             
             cout << "[" << i+1 << "/" << step << "] - Newton step ";
             time = start(to_string(j+1));
 
             // Performs a Newton-Raphson iteration
 
-            sparse K;
-            darray B;
-            B.setlength(nLen);
-            math::zero(B);
-
-            alglib::lincgreport rep;
-            alglib::lincgstate state;
-            alglib::sparsecreate(nLen,nLen,size,K);
+            sparse K(nLen,nLen);
+            darray B(nLen);
+            B.setZero();
 
             // Builds the system matrix and vector
 
@@ -199,25 +187,25 @@ darray solveL(Mesh &mesh){
             
             // Solves the symmetric linear system with Alglib
 
-            alglib::sparseconverttocrs(K);
-            alglib::lincgcreate(nLen,state);
-            alglib::lincgsolvesparse(state,K,1,B);
-            alglib::lincgresults(state,du,rep);
+            K.makeCompressed();
+            Eigen::ConjugateGradient<sparse,Eigen::Upper> cg;
+            cg.compute(K);
+            du = cg.solve(B);
 
             // Update solution and success state
 
             mesh.complete(du);
-            alglib::vadd(&u[0],1,&du[0],1,nLen);
+            u = u+du;
             end(time);
 
             // Check the convergence criteria
 
             double prec = norm;
-            norm = math::norm(u);
+            norm = u.norm();
             double rez = abs(norm-prec)/norm;
-            cout << "Output of the solver = " << int(rep.terminationtype) << endl;
+            cout << "Output of the solver = " << cg.info() << endl;
             cout << "Relative correction = " << rez << endl;
-            if(rez<mesh.data.tol){break;}
+            if(rez < mesh.data.tol) break;
         }
 
         cout << endl;
@@ -235,8 +223,7 @@ int main(){
     double time;
     darray disp;
     dataStruct data;
-    string model = "SST/SET";
-    alglib::setglobalthreading(alglib::parallel);
+    string model = "SVK";
 
     // Reads the input files from Nascam
 
@@ -247,14 +234,14 @@ int main(){
     // Creates the mesh and solves with conjugate gradient
 
     Mesh mesh(move(data));
-    if(model=="SST/SET"){disp = solveS(mesh);}
-    if(model=="SVK"){disp = solveL(mesh);}
+    if(model == "SST/SET") disp = solveS(mesh);
+    if(model == "SVK") disp = solveL(mesh);
 
     // Computes Von Mises stresses and updates the nodes
 
     time = start("Stress extraction");
-    if(model=="SST/SET"){VM = mesh.stress(disp,0);}
-    if(model=="SVK"){VM = mesh.stress(disp,1);}
+    if(model == "SST/SET") VM = mesh.stress(disp,0);
+    if(model == "SVK") VM = mesh.stress(disp,1);
     mesh.update(disp);
     end(time);
 
