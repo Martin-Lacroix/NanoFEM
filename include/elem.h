@@ -65,7 +65,7 @@ class Elem{
 
     // Parameters at quadrature nodes
 
-    std::vector<array3d> norm[6];
+    std::vector<darray3d> norm[6];
     std::vector<matrix3d> F;
     std::vector<darray> E;
     dvector detJ2D[6];

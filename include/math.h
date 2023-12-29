@@ -45,16 +45,9 @@ namespace math{
     quadStruct makeQuad2D(darray &V, darray &val);
     quadStruct makeQuad3D(darray &V, darray &val);
 
-    // Computes the L2 norm of a vector
-
-    double norm(array3d &V);
-
     // Other general functions for sparse or dense matrices
     
-    matrix projection(array3d norm);
-    matrix3d invert(matrix3d &M,double det);
-    array3d cross(array3d &V1,array3d &V2);
-    array3d dotsub(array3d &V1,array3d &V2);
+    matrix projection(darray3d norm);
     std::vector<ivector> sparsemap(sparse &M);
 
     // Symmetric sparse matrix operations only

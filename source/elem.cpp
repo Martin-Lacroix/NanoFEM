@@ -48,8 +48,8 @@ void Elem::updateJ(shapeStruct &shape){
 
     for(int i = 0; i < shape.gLen; i++){
 
+        invJ[i] = J[i].inverse();
         detJ[i] = J[i].determinant();
-        invJ[i] = math::invert(J[i],detJ[i]);
 
         // Global derivatives of shape functions
 
@@ -71,7 +71,7 @@ void Elem::updateS(shapeStruct (&shape)[6]){
 
     for(int s : surface){
 
-        array3d v;
+        darray3d v;
         norm[s].resize(shape[s].gLen);
         detJ2D[s].resize(shape[s].gLen);
         vector<matrix3d> J(shape[s].gLen);
@@ -103,34 +103,34 @@ void Elem::updateS(shapeStruct (&shape)[6]){
 
             // Normal to the s-th surface of the element
 
-            array3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
-            array3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
-            array3d vt = {J[i](2,0),J[i](2,1),J[i](2,2)};
+            darray3d vr = {J[i](0,0),J[i](0,1),J[i](0,2)};
+            darray3d vs = {J[i](1,0),J[i](1,1),J[i](1,2)};
+            darray3d vt = {J[i](2,0),J[i](2,1),J[i](2,2)};
 
             switch(s){
             case 0:
-                v = math::dotsub(vs,vr);
-                norm[s][i] = math::cross(vs,v);
+                v = vs-vs.dot(vr)*vr;
+                norm[s][i] = vs.cross(v);
                 break;
             case 1:
-                v = math::dotsub(vs,vr);
-                norm[s][i] = math::cross(v,vs);
+                v = vs-vs.dot(vr)*vr;
+                norm[s][i] = v.cross(vs);
                 break;
             case 2:
-                v = math::dotsub(vr,vt);
-                norm[s][i] = math::cross(v,vr);
+                v = vr-vr.dot(vt)*vt;
+                norm[s][i] = v.cross(vr);
                 break;
             case 3:
-                v = math::dotsub(vr,vt);
-                norm[s][i] = math::cross(vr,v);
+                v = vr-vr.dot(vt)*vt;
+                norm[s][i] = vr.cross(v);
                 break;
             case 4:
-                v = math::dotsub(vt,vs);
-                norm[s][i] = math::cross(vt,v);
+                v = vt-vt.dot(vs)*vs;
+                norm[s][i] = vt.cross(v);
                 break;
             case 5:
-                v = math::dotsub(vt,vs);
-                norm[s][i] = math::cross(v,vt);
+                v = vt-vt.dot(vs)*vs;
+                norm[s][i] = v.cross(vt);
                 break;
             }
         }
@@ -138,13 +138,9 @@ void Elem::updateS(shapeStruct (&shape)[6]){
         // Determinant and inverse of the Jacobian matrix
 
         for(int i = 0; i < shape[s].gLen; i++){
-
-            double detJ = J[i].determinant();
-            invJ[i] = math::invert(J[i],detJ);
-
-            // 2D Jacobian determinant and the surface normal
-
-            detJ2D[s][i] = math::norm(norm[s][i]);
+            
+            invJ[i] = J[i].inverse();
+            detJ2D[s][i] = norm[s][i].norm();
             for(int j = 0; j < 3; j++) norm[s][i][j] /= detJ2D[s][i];
 
             // Global derivatives of shape functions
@@ -230,7 +226,7 @@ void Elem::clean(){
     for(int s : surface){
         
         dvector().swap(detJ2D[s]);
-        vector<array3d>().swap(norm[s]);
+        vector<darray3d>().swap(norm[s]);
         for(int i = 0; i < 3; i++) dNs[s][i].resize(0,0);
     }
 }
@@ -604,8 +600,8 @@ Face::Face(vector<array3d> nXYZ,shapeStruct &shape){
 
     for(int j = 0; j < shape.gLen; j++){
 
-        array3d J2Dr = {0,0,0};
-        array3d J2Ds = {0,0,0};
+        darray3d J2Dr = darray3d::Zero();
+        darray3d J2Ds = darray3d::Zero();
 
         // Computes the partial Jacobian vectors for 3D to 2D mapping
 
@@ -619,7 +615,7 @@ Face::Face(vector<array3d> nXYZ,shapeStruct &shape){
 
         // Computes the cross product and takes the norm
 
-        array3d dJ = math::cross(J2Dr,J2Ds);
+        darray3d dJ = J2Dr.cross(J2Ds);
         for(int i = 0; i < 3; i++) detJ2D[j] += dJ[i]*dJ[i];
         detJ2D[j] = sqrt(detJ2D[j]);
     }

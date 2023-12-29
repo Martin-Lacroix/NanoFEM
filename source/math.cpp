@@ -34,7 +34,8 @@ namespace math{
 
         // Generates the three term recurrence coefficients
 
-        for(int i = 0; i < order; ++i){
+        for(int i = 0; i < order; i++){
+
             M(i,i+1) = (i+1)/sqrt(4*(i+1)*(i+1)-1);
             M(i+1,i) = (i+1)/sqrt(4*(i+1)*(i+1)-1);
         }
@@ -94,64 +95,6 @@ namespace math{
 
         quad.gLen = quad.weight.size();
         return quad;
-    }
-
-    // --------------------------------------------------|
-    // Performs the vector cross product V3 = V1 × V2    |
-    // --------------------------------------------------|
-
-    array3d cross(array3d &V1,array3d &V2){
-
-        array3d V3;
-        V3[0] = V1[1]*V2[2]-V1[2]*V2[1];
-        V3[1] = V1[2]*V2[0]-V1[0]*V2[2];
-        V3[2] = V1[0]*V2[1]-V1[1]*V2[0];
-        return V3;
-    }
-
-    // ------------------------------------------------------|
-    // Computes the vector operation V3 = V1 - (V1·V2) V2    |
-    // ------------------------------------------------------|
-
-    array3d dotsub(array3d &V1,array3d &V2){
-
-        array3d V3;
-        double k = 0;
-
-        for(int i = 0; i < 3; i++) k += V1[i]*V2[i];
-        for(int i = 0; i < 3; i++) V3[i] = V2[i]-k*V1[i];
-        return V3;
-    }
-
-    // ------------------------------------------------|
-    // Computes the inverse of a 3×3 general matrix    |
-    // ------------------------------------------------|
-
-    matrix3d invert(matrix3d &M,double det){
-
-        matrix3d invM;
-
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
-
-                invM(i,j) = M((i+1)%3,(j+1)%3)*M((i+2)%3,(j+2)%3);
-                invM(i,j) -= M((i+2)%3,(j+1)%3)*M((i+1)%3,(j+2)%3);
-                invM(i,j) /= det;
-            }
-        }
-        return invM;
-    }
-
-    // -----------------------------------------------------|
-    // Computes the L2 norm of a general vector or array    |
-    // -----------------------------------------------------|
-
-    double norm(array3d &V){
-
-        double norm = 0;
-        for(int i = 0; i < 3; i++) norm += V[i]*V[i];
-        norm = sqrt(norm);
-        return norm;
     }
 
     // -----------------------------------------------------------------------|
@@ -291,7 +234,7 @@ namespace math{
     // Projection matrix for the surface gradient in a 3D element    |
     // --------------------------------------------------------------|
 
-    matrix projection(array3d norm){
+    matrix projection(darray3d norm){
 
         matrix3d P;
         matrix T(6,6);
@@ -301,8 +244,8 @@ namespace math{
         for(int j = 0; j < 3; j++){
             for(int k = 0; k < 3; k++){
                 
-                if(j == k) P(j,k) = 1-norm[j]*norm[k];
-                else P(j,k) = -norm[j]*norm[k];
+                if(j == k) P(j,k) = 1-norm(j)*norm(k);
+                else P(j,k) = -norm(j)*norm(k);
             }
         }
 
